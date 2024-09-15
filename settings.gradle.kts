@@ -19,5 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Ecosyle"
+rootProject.name = "EcoStyle"
 include(":app")
+ 

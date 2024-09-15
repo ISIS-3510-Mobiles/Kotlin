@@ -1,4 +1,4 @@
-package com.example.ecosyle
+package com.example.ecostyle
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.example.ecosyle", appContext.packageName)
+        assertEquals("com.example.ecostyle", appContext.packageName)
     }
 }

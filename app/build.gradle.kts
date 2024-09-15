@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.ecosyle"
+    namespace = "com.example.ecostyle"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.ecosyle"
+        applicationId = "com.example.ecostyle"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

@@ -1,4 +1,4 @@
-package com.example.ecosyle
+package com.example.ecostyle
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
