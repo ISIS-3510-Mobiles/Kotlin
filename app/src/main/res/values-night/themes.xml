@@ -3,5 +3,7 @@
     <style name="Base.Theme.EcoStyle" parent="Theme.Material3.DayNight">
         <!-- Customize your dark theme here. -->
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+
+        <item name="actionBarTheme">@style/MyActionBar</item>
     </style>
 </resources>
