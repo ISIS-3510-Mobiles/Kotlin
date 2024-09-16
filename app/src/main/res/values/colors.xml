@@ -2,4 +2,11 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Colores adicionales -->
+    <color name="dark_green">#012826</color>
+    <color name="dark_green_50">#7F012826</color> <!-- Dark green 50% opacidad -->
+    <color name="lima_green">#007451</color>
+    <color name="gray_light">#ECECEC</color>
+    <color name="gray_medium">#ACACAC</color>
 </resources>

@@ -1,9 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.EcoStyle" parent="Theme.Material3.DayNight">
+    <style name="Base.Theme.EcoStyle" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-        <item name="actionBarTheme">@style/MyActionBar</item>
+         <item name="colorPrimary">#012826</item>
+        <item name="colorPrimaryDark">#012826</item>
+
     </style>
 
     <style name="Theme.EcoStyle" parent="Base.Theme.EcoStyle" />
