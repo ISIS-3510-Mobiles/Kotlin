@@ -54,7 +54,8 @@ class MainActivity : AppCompatActivity() {
             if (auth.currentUser != null) {
                 supportActionBar?.title = auth.currentUser?.displayName
             } else {
-                val providers = arrayListOf(AuthUI.IdpConfig.EmailBuilder().build())
+                val providers = arrayListOf(AuthUI.IdpConfig.EmailBuilder().build(),
+                    AuthUI.IdpConfig.GoogleBuilder().build())
 
                 resultLauncher.launch(AuthUI.getInstance()
                     .createSignInIntentBuilder()
