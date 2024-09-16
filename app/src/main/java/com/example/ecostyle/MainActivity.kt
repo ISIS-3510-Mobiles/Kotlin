@@ -10,8 +10,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.transition.Visibility
 import com.example.ecostyle.databinding.ActivityMainBinding
 import com.firebase.ui.auth.AuthUI
+import com.firebase.ui.auth.ErrorCodes
 import com.firebase.ui.auth.IdpResponse
 import com.google.firebase.auth.FirebaseAuth
 
@@ -35,6 +37,14 @@ class MainActivity : AppCompatActivity() {
             if (response == null){
                 Toast.makeText( this, "Hasta Pronto", Toast.LENGTH_SHORT).show()
                 finish()
+            } else {
+                response.error?.let {
+                    if (it.errorCode == ErrorCodes.NO_NETWORK) {
+                        Toast.makeText( this, "Sin red", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText( this, "Código de error: ${it.errorCode}", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
 
@@ -53,6 +63,8 @@ class MainActivity : AppCompatActivity() {
         authStateListener = FirebaseAuth.AuthStateListener { auth ->
             if (auth.currentUser != null) {
                 supportActionBar?.title = auth.currentUser?.displayName
+                binding.llProgress.visibility = View.GONE
+                binding.tvInit.visibility = View.VISIBLE
             } else {
                 val providers = arrayListOf(AuthUI.IdpConfig.EmailBuilder().build(),
                     AuthUI.IdpConfig.GoogleBuilder().build())
@@ -93,6 +105,7 @@ class MainActivity : AppCompatActivity() {
                     .addOnCompleteListener {
                         if (it.isSuccessful){
                             binding.tvInit.visibility = View.GONE
+                            binding.llProgress.visibility = View.VISIBLE
                         } else {
                             Toast.makeText( this, "No se pudo cerrar la sesión", Toast.LENGTH_SHORT).show()
                         }
