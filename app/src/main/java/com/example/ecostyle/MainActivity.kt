@@ -38,13 +38,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 //import androidx.compose.material.icons.filled.FavoriteBorder
 import com.example.ecostyle.ui.theme.EcoStyleTheme
 
-class MainActivity : ComponentActivity() {  // Changed to ComponentActivity
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // MyFirstComposeApp()
             EcoStyleTheme {
-            //    MyFirstComposeApp()
+
                 val sampleProducts = listOf(
                     Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
                     Product("Reusable Water Bottle", "$9.99", "https://example.com/bottle.jpg"),
@@ -55,20 +54,6 @@ class MainActivity : ComponentActivity() {  // Changed to ComponentActivity
         }
     }
 }
-/*
-@Composable
-fun MyFirstComposeApp() {
-
-}
-// Preview function to see how the composable looks in Android Studio Preview window
-@Preview(showBackground = true, apiLevel = 34)
-@Composable
-fun PreviewMyFirstComposeApp() {
-    MaterialTheme {
-        MyFirstComposeApp()
-    }
-}
-*/
 
 data class Product(
     val name: String,
@@ -106,7 +91,7 @@ fun ProductGridView(products: List<Product>) {
 @Composable
 fun ProductCard(product: Product) {
     Card(
-        backgroundColor = MaterialTheme.colors.surface,  // Use surface color for card background
+        backgroundColor = MaterialTheme.colors.surface,
         elevation = 4.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -118,7 +103,6 @@ fun ProductCard(product: Product) {
                 .padding(16.dp),
             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
         ) {
-            // Placeholder for the product image (later we’ll load it from Firebase)
             Box(
                 modifier = Modifier
                     .size(100.dp)
@@ -149,28 +133,27 @@ fun SampleProductListScreen() {
 @Composable
 fun TopBar() {
     TopAppBar(
-        backgroundColor = MaterialTheme.colors.primary,  // Dark green background
+        backgroundColor = MaterialTheme.colors.primary,
         title = {
-            // Update the TextField to be more visible
             OutlinedTextField(
-                value = "",  // Add a default value if needed
+                value = "",
                 onValueChange = {},
-                placeholder = { Text("Busca en EcoStyle") },  // Ensure the placeholder is visible
-                shape = RoundedCornerShape(24.dp),  // Round the edges of the search bar
+                placeholder = { Text("Busca en EcoStyle") },
+                shape = RoundedCornerShape(24.dp),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                    backgroundColor = MaterialTheme.colors.surface,  // Make it stand out against the background
-                    focusedBorderColor = MaterialTheme.colors.onSurface,  // Define border colors for better visibility
+                    backgroundColor = MaterialTheme.colors.surface,
+                    focusedBorderColor = MaterialTheme.colors.onSurface,
                     unfocusedBorderColor = MaterialTheme.colors.onSurface
                 ),
                 modifier = Modifier
-                    .fillMaxWidth(0.75f)  // Adjust the width for more space
-                    .height(50.dp)  // Ensure the height is sufficient
+                    .fillMaxWidth(0.75f)
+                    .height(50.dp)
             )
         },
         navigationIcon = {
             // Menu icon (commented for now)
             /*
-            IconButton(onClick = { /* Handle menu click */ }) {
+            IconButton(onClick = { }) {
                 Icon(Icons.Default.Menu, contentDescription = "Menu")
             }
             */
@@ -178,7 +161,7 @@ fun TopBar() {
         actions = {
             // Shopping cart icon (commented for now)
             /*
-            IconButton(onClick = { /* Handle cart click */ }) {
+            IconButton(onClick = {  }) {
                 Icon(Icons.Default.ShoppingCart, contentDescription = "Cart")
             }
             */
@@ -194,8 +177,8 @@ fun MainScreen(products: List<Product>) {
             Box(
                 modifier = Modifier
                     .padding(padding)
-                    .background(MaterialTheme.colors.background)  // Apply the background color here
-                    .fillMaxSize()  // Make sure the background covers the whole screen
+                    .background(MaterialTheme.colors.background)
+                    .fillMaxSize()
             ) {
                 ProductGridView(products)
             }
@@ -206,16 +189,15 @@ fun MainScreen(products: List<Product>) {
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
 fun PreviewProductListScreen() {
-    //MaterialTheme {
     EcoStyleTheme {
-        MaterialTheme { // Fallback to ensure proper preview rendering
+        MaterialTheme {
             val sampleProducts = listOf(
                 Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
-                Product("Reusable Water Bottle", "$9.99", "https://example.com/bottle.jpg"),
-                Product("Organic Cotton Bag", "$14.99", "https://example.com/bag.jpg"),
-                Product("Eco-friendly T-shirt", "$19.99", "https://example.com/tshirt.jpg"),
-                Product("Reusable Water Bottle", "$9.99", "https://example.com/bottle.jpg"),
-                Product("Organic Cotton Bag", "$14.99", "https://example.com/bag.jpg")
+                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
+                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
+                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
+                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
+                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
             )
             MainScreen(sampleProducts)
         }
