@@ -117,12 +117,12 @@ fun ProductDetailScreen(product: Product) {
                         color = MaterialTheme.colors.primary
                     )
 
-                    // Heart icon (commented out for now)
+                    //Heart icon
                     /*
-                    IconButton(onClick = { /* Handle favorite click */ }) {
+                    IconButton(onClick = {}) {
                         Icon(Icons.Default.FavoriteBorder, contentDescription = "Favorite")
                     }
-                    */
+*/
                 }
 
                 // Product Description
@@ -180,17 +180,17 @@ fun TopBar() {
             )
         },
         navigationIcon = {
-            // Menu icon (commented for now)
+            // Menu icon
             /*
-            IconButton(onClick = { /* Handle menu click */ }) {
+            IconButton(onClick = { }) {
                 Icon(Icons.Default.Menu, contentDescription = "Menu")
             }
             */
         },
         actions = {
-            // Shopping cart icon (commented for now)
+            // Shopping cart icon
             /*
-            IconButton(onClick = { /* Handle cart click */ }) {
+            IconButton(onClick = {}) {
                 Icon(Icons.Default.ShoppingCart, contentDescription = "Cart")
             }
             */
