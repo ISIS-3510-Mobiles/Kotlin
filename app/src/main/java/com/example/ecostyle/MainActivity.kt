@@ -39,13 +39,12 @@ import androidx.compose.ui.Alignment
 //import androidx.compose.material.icons.filled.FavoriteBorder
 import com.example.ecostyle.ui.theme.EcoStyleTheme
 
-class MainActivity : ComponentActivity() {  // Changed to ComponentActivity
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // MyFirstComposeApp()
             EcoStyleTheme {
-                MaterialTheme { // Fallback to ensure proper preview rendering
+                MaterialTheme {
                     val sampleProduct = Product(
                         name = "Saco uniandes",
                         price = "$120 000",
@@ -70,13 +69,13 @@ data class Product(
 @Composable
 fun ProductDetailScreen(product: Product) {
     Scaffold(
-        topBar = { TopBar() },  // Reuse the top bar with the search functionality
+        topBar = { TopBar() },
         content = { padding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .background(MaterialTheme.colors.background)  // Apply background color
+                    .background(MaterialTheme.colors.background)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.Top
             ) {
@@ -99,7 +98,7 @@ fun ProductDetailScreen(product: Product) {
                         .padding(bottom = 16.dp)
                 )
 */
-                // Price and Heart Icon Row
+                // Price and Heart Icon
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -132,7 +131,7 @@ fun ProductDetailScreen(product: Product) {
 
                 // Buttons: Comprar and Agregar al Carrito
                 Button(
-                    onClick = { /* Handle Comprar click */ },
+                    onClick = { },
                     colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -142,7 +141,7 @@ fun ProductDetailScreen(product: Product) {
                 }
 
                 Button(
-                    onClick = { /* Handle Agregar al Carrito click */ },
+                    onClick = {  },
                     colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -162,18 +161,18 @@ fun TopBar() {
         title = {
             // Update the TextField to be more visible
             OutlinedTextField(
-                value = "",  // Add a default value if needed
+                value = "",
                 onValueChange = {},
-                placeholder = { Text("Busca en EcoStyle") },  // Ensure the placeholder is visible
-                shape = RoundedCornerShape(24.dp),  // Round the edges of the search bar
+                placeholder = { Text("Busca en EcoStyle") },
+                shape = RoundedCornerShape(24.dp),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                    backgroundColor = MaterialTheme.colors.surface,  // Make it stand out against the background
-                    focusedBorderColor = MaterialTheme.colors.onSurface,  // Define border colors for better visibility
+                    backgroundColor = MaterialTheme.colors.surface,
+                    focusedBorderColor = MaterialTheme.colors.onSurface,
                     unfocusedBorderColor = MaterialTheme.colors.onSurface
                 ),
                 modifier = Modifier
-                    .fillMaxWidth(0.75f)  // Adjust the width for more space
-                    .height(50.dp)  // Ensure the height is sufficient
+                    .fillMaxWidth(0.75f)
+                    .height(50.dp)
             )
         },
         navigationIcon = {
@@ -199,9 +198,8 @@ fun TopBar() {
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
 fun PreviewProductListScreen() {
-    //MaterialTheme {
     EcoStyleTheme {
-        MaterialTheme { // Fallback to ensure proper preview rendering
+        MaterialTheme {
             val sampleProduct = Product(
                 name = "Saco uniandes",
                 price = "$120 000",
