@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
 //import androidx.compose.material:material-icons-extended
 //import androidx.compose.material.Icon
 //import androidx.compose.material.icons.Icons
@@ -44,108 +45,116 @@ class MainActivity : ComponentActivity() {  // Changed to ComponentActivity
         setContent {
             // MyFirstComposeApp()
             EcoStyleTheme {
-            //    MyFirstComposeApp()
-                val sampleProducts = listOf(
-                    Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
-                    Product("Reusable Water Bottle", "$9.99", "https://example.com/bottle.jpg"),
-                    Product("Organic Cotton Bag", "$14.99", "https://example.com/bag.jpg")
-                )
-                MainScreen(sampleProducts)
+                MaterialTheme { // Fallback to ensure proper preview rendering
+                    val sampleProduct = Product(
+                        name = "Saco uniandes",
+                        price = "$120 000",
+                        description = "Saco uniandes talla XL. Me cambié a la nacho, ya no uso el saco",
+                        imageUrl = "https://via.placeholder.com/150"
+                    )
+                    ProductDetailScreen(sampleProduct)
+                }
             }
         }
     }
 }
-/*
-@Composable
-fun MyFirstComposeApp() {
-
-}
-// Preview function to see how the composable looks in Android Studio Preview window
-@Preview(showBackground = true, apiLevel = 34)
-@Composable
-fun PreviewMyFirstComposeApp() {
-    MaterialTheme {
-        MyFirstComposeApp()
-    }
-}
-*/
 
 data class Product(
     val name: String,
     val price: String,
+    val description: String,
     val imageUrl: String
 )
 
-//Display List of Products
-@Composable
-fun ProductListView(products: List<Product>) {
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(products) { product ->
-            ProductCard(product)
-        }
-    }
-}
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun ProductGridView(products: List<Product>) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(products) { product ->
-            ProductCard(product)
-        }
-    }
-}
 
 @Composable
-fun ProductCard(product: Product) {
-    Card(
-        backgroundColor = MaterialTheme.colors.surface,  // Use surface color for card background
-        elevation = 4.dp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
-        ) {
-            // Placeholder for the product image (later we’ll load it from Firebase)
-            Box(
+fun ProductDetailScreen(product: Product) {
+    Scaffold(
+        topBar = { TopBar() },  // Reuse the top bar with the search functionality
+        content = { padding ->
+            Column(
                 modifier = Modifier
-                    .size(100.dp)
-                    .background(MaterialTheme.colors.onSurface.copy(alpha = 0.2f))
-            )
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(MaterialTheme.colors.background)  // Apply background color
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Top
+            ) {
+                // Product Title
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.h4,
+                    color = MaterialTheme.colors.onBackground,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                )
+/*
+                // Product Image
+                Image(
+                    painter = rememberImagePainter(data = product.imageUrl),
+                    contentDescription = product.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp)  // Adjust the image size
+                        .padding(bottom = 16.dp)
+                )
+*/
+                // Price and Heart Icon Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Product Price
+                    Text(
+                        text = product.price,
+                        style = MaterialTheme.typography.h5,
+                        color = MaterialTheme.colors.onBackground
+                    )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    // Heart icon (commented out for now)
+                    /*
+                    IconButton(onClick = { /* Handle favorite click */ }) {
+                        Icon(Icons.Default.FavoriteBorder, contentDescription = "Favorite")
+                    }
+                    */
+                }
 
-            // Texts: Product name and price
-            Text(text = product.name, style = MaterialTheme.typography.h6)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = product.price, style = MaterialTheme.typography.body1)
+                // Product Description
+                Text(
+                    text = "Saco uniandes talla XL. Me cambié a la nacho, ya no uso el saco",  // Update as needed
+                    style = MaterialTheme.typography.body1,
+                    color = MaterialTheme.colors.onBackground,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                // Buttons: Comprar and Agregar al Carrito
+                Button(
+                    onClick = { /* Handle Comprar click */ },
+                    colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                ) {
+                    Text(text = "Comprar", color = MaterialTheme.colors.onPrimary)
+                }
+
+                Button(
+                    onClick = { /* Handle Agregar al Carrito click */ },
+                    colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    Text(text = "Agregar al Carrito", color = MaterialTheme.colors.onSecondary)
+                }
+            }
         }
-    }
-}
-
-
-@Composable
-fun SampleProductListScreen() {
-    val sampleProducts = listOf(
-        Product("Eco-friendly T-shirt", "$19.99", "https://example.com/tshirt.jpg"),
-        Product("Reusable Water Bottle", "$9.99", "https://example.com/bottle.jpg"),
-        Product("Organic Cotton Bag", "$14.99", "https://example.com/bag.jpg")
     )
-
-    ProductListView(products = sampleProducts)
 }
+
+
 @Composable
 fun TopBar() {
     TopAppBar(
@@ -186,22 +195,6 @@ fun TopBar() {
     )
 }
 
-@Composable
-fun MainScreen(products: List<Product>) {
-    Scaffold(
-        topBar = { TopBar() },
-        content = { padding ->
-            Box(
-                modifier = Modifier
-                    .padding(padding)
-                    .background(MaterialTheme.colors.background)  // Apply the background color here
-                    .fillMaxSize()  // Make sure the background covers the whole screen
-            ) {
-                ProductGridView(products)
-            }
-        }
-    )
-}
 
 @Preview(showBackground = true, apiLevel = 34)
 @Composable
@@ -209,15 +202,13 @@ fun PreviewProductListScreen() {
     //MaterialTheme {
     EcoStyleTheme {
         MaterialTheme { // Fallback to ensure proper preview rendering
-            val sampleProducts = listOf(
-                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
-                Product("Reusable Water Bottle", "$9.99", "https://example.com/bottle.jpg"),
-                Product("Organic Cotton Bag", "$14.99", "https://example.com/bag.jpg"),
-                Product("Eco-friendly T-shirt", "$19.99", "https://example.com/tshirt.jpg"),
-                Product("Reusable Water Bottle", "$9.99", "https://example.com/bottle.jpg"),
-                Product("Organic Cotton Bag", "$14.99", "https://example.com/bag.jpg")
+            val sampleProduct = Product(
+                name = "Saco uniandes",
+                price = "$120 000",
+                description = "Saco uniandes talla XL. Me cambié a la nacho, ya no uso el saco",
+                imageUrl = "https://via.placeholder.com/150"
             )
-            MainScreen(sampleProducts)
+            ProductDetailScreen(sampleProduct)
         }
     }
 }
