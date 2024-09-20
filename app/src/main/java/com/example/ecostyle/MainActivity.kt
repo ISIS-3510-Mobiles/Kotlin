@@ -48,9 +48,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             EcoStyleTheme {
                 val sampleProducts = listOf(
-                    Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
-                    Product("Reusable Water Bottle", "$9.99", "https://example.com/bottle.jpg"),
-                    Product("Organic Cotton Bag", "$14.99", "https://example.com/bag.jpg")
+                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra")
                 )
                 MainScreen(sampleProducts)
             }
@@ -61,7 +64,7 @@ class MainActivity : ComponentActivity() {
 data class Product(
     val name: String,
     val price: String,
-    val imageUrl: String
+    val description: String
 )
 
 //Display List of Products
@@ -120,6 +123,7 @@ fun ProductCard(product: Product) {
             Text(text = product.name, style = MaterialTheme.typography.h6)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = product.price, style = MaterialTheme.typography.body1)
+            //Text(text = product.description, style = MaterialTheme.typography.body1)
         }
     }
 }
@@ -128,9 +132,12 @@ fun ProductCard(product: Product) {
 @Composable
 fun SampleProductListScreen() {
     val sampleProducts = listOf(
-        Product("Eco-friendly T-shirt", "$19.99", "https://example.com/tshirt.jpg"),
-        Product("Reusable Water Bottle", "$9.99", "https://example.com/bottle.jpg"),
-        Product("Organic Cotton Bag", "$14.99", "https://example.com/bag.jpg")
+        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra")
     )
 
     ProductListView(products = sampleProducts)
@@ -197,12 +204,12 @@ fun PreviewProductListScreen() {
     EcoStyleTheme {
         MaterialTheme {
             val sampleProducts = listOf(
-                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
-                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
-                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
-                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
-                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
-                Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
+                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra")
             )
             MainScreen(sampleProducts)
         }
