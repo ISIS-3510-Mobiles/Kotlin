@@ -50,9 +50,9 @@ class MainActivity : ComponentActivity() {
             EcoStyleTheme {
                 MaterialTheme {
                     val sampleProduct = Product(
-                        name = "Saco uniandes",
+                        name = "Uniandes Jacket",
                         price = "$120 000",
-                        description = "Saco uniandes talla XL. Me cambié a la nacho, ya no uso el saco",
+                        description = "Uniandes jacket size XL. I changed to the Nacho, I no longer use the jacket",
                         imageUrl = "https://via.placeholder.com/150"
                     )
                     ProductDetailScreen(sampleProduct)
@@ -127,7 +127,7 @@ fun ProductDetailScreen(product: Product) {
 
                 // Product Description
                 Text(
-                    text = "Saco uniandes talla XL. Me cambié a la nacho, ya no uso el saco",  // Update as needed
+                    text = "Uniandes jacket size XL. I changed to the Nacho, I no longer use the jacket",  // Update as needed
                     style = MaterialTheme.typography.body1,
                     color = MaterialTheme.colors.primary,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -141,7 +141,7 @@ fun ProductDetailScreen(product: Product) {
                         .fillMaxWidth()
                         .padding(bottom = 8.dp)
                 ) {
-                    Text(text = "Comprar", color = MaterialTheme.colors.onPrimary)
+                    Text(text = "Buy", color = MaterialTheme.colors.onPrimary)
                 }
 
                 Button(
@@ -150,7 +150,7 @@ fun ProductDetailScreen(product: Product) {
                     modifier = Modifier
                         .fillMaxWidth()
                 ) {
-                    Text(text = "Agregar al Carrito", color = MaterialTheme.colors.onSecondary)
+                    Text(text = "Add to Cart", color = MaterialTheme.colors.onSecondary)
                 }
             }
         }
@@ -167,7 +167,7 @@ fun TopBar() {
             OutlinedTextField(
                 value = "",
                 onValueChange = {},
-                placeholder = { Text("Busca en EcoStyle") },
+                placeholder = { Text("Search in EcoStyle") },
                 shape = RoundedCornerShape(24.dp),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     backgroundColor = MaterialTheme.colors.surface,
@@ -205,9 +205,9 @@ fun PreviewProductListScreen() {
     EcoStyleTheme {
         MaterialTheme {
             val sampleProduct = Product(
-                name = "Saco uniandes",
+                name = "Uniandes Jacket",
                 price = "$120 000",
-                description = "Saco uniandes talla XL. Me cambié a la nacho, ya no uso el saco",
+                description = "Uniandes jacket size XL. I changed to the Nacho, I no longer use the jacket",
                 imageUrl = "https://via.placeholder.com/150"
             )
             ProductDetailScreen(sampleProduct)
