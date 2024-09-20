@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.painterResource
 //import androidx.compose.material:material-icons-extended
 //import androidx.compose.material.Icon
 //import androidx.compose.material.icons.Icons
@@ -37,13 +38,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 //import androidx.compose.material.icons.filled.ShoppingCart
 //import androidx.compose.material.icons.filled.FavoriteBorder
 import com.example.ecostyle.ui.theme.EcoStyleTheme
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             EcoStyleTheme {
-
                 val sampleProducts = listOf(
                     Product("Uniandes Sweater", "$19.99", "https://example.com/tshirt.jpg"),
                     Product("Reusable Water Bottle", "$9.99", "https://example.com/bottle.jpg"),
@@ -101,12 +104,14 @@ fun ProductCard(product: Product) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+            horizontalAlignment = androidx.compose.ui.Alignment.Start
         ) {
-            Box(
+            Image(
+                painter = painterResource(id = R.drawable.gorra),  // Temporary image from drawable
+                contentDescription = product.name,
                 modifier = Modifier
                     .size(100.dp)
-                    .background(MaterialTheme.colors.onSurface.copy(alpha = 0.2f))
+                    .padding(bottom = 8.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
