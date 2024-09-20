@@ -83,7 +83,7 @@ fun ProductDetailScreen(product: Product) {
                 Text(
                     text = product.name,
                     style = MaterialTheme.typography.h4,
-                    color = MaterialTheme.colors.onBackground,
+                    color = MaterialTheme.colors.primary,
                     modifier = Modifier
                         .padding(bottom = 16.dp)
                 )
@@ -110,7 +110,7 @@ fun ProductDetailScreen(product: Product) {
                     Text(
                         text = product.price,
                         style = MaterialTheme.typography.h5,
-                        color = MaterialTheme.colors.onBackground
+                        color = MaterialTheme.colors.primary
                     )
 
                     // Heart icon (commented out for now)
@@ -125,7 +125,7 @@ fun ProductDetailScreen(product: Product) {
                 Text(
                     text = "Saco uniandes talla XL. Me cambié a la nacho, ya no uso el saco",  // Update as needed
                     style = MaterialTheme.typography.body1,
-                    color = MaterialTheme.colors.onBackground,
+                    color = MaterialTheme.colors.primary,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
