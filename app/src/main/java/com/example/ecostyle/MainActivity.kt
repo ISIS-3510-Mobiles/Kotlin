@@ -48,12 +48,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             EcoStyleTheme {
                 val sampleProducts = listOf(
-                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-                    Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra")
+                    Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                    Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                    Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                    Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                    Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                    Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra")
                 )
                 MainScreen(sampleProducts)
             }
@@ -128,20 +128,6 @@ fun ProductCard(product: Product) {
     }
 }
 
-
-@Composable
-fun SampleProductListScreen() {
-    val sampleProducts = listOf(
-        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-        Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra")
-    )
-
-    ProductListView(products = sampleProducts)
-}
 @Composable
 fun TopBar() {
     TopAppBar(
@@ -204,12 +190,12 @@ fun PreviewProductListScreen() {
     EcoStyleTheme {
         MaterialTheme {
             val sampleProducts = listOf(
-                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
-                Product("Uniandes Sweater", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra")
+                Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra"),
+                Product("Uniandes Hat", "$19.99", "Tengo la cabeza muy grande y me quedo pequeña la gorra")
             )
             MainScreen(sampleProducts)
         }
