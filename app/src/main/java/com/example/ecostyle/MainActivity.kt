@@ -31,6 +31,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
 //import androidx.compose.material:material-icons-extended
 //import androidx.compose.material.Icon
 //import androidx.compose.material.icons.Icons
@@ -38,6 +39,9 @@ import androidx.compose.ui.Alignment
 //import androidx.compose.material.icons.filled.ShoppingCart
 //import androidx.compose.material.icons.filled.FavoriteBorder
 import com.example.ecostyle.ui.theme.EcoStyleTheme
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,17 +91,17 @@ fun ProductDetailScreen(product: Product) {
                     modifier = Modifier
                         .padding(bottom = 16.dp)
                 )
-/*
+
                 // Product Image
                 Image(
-                    painter = rememberImagePainter(data = product.imageUrl),
+                    painter = painterResource(id = R.drawable.buzouniandes),
                     contentDescription = product.name,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(250.dp)  // Adjust the image size
+                        .height(250.dp)
                         .padding(bottom = 16.dp)
                 )
-*/
+
                 // Price and Heart Icon
                 Row(
                     modifier = Modifier
