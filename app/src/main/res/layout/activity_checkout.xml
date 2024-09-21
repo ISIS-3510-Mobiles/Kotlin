@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center"
+    android:background="@android:color/white">
+
+    <!-- Barra de búsqueda -->
+    <EditText
+        android:id="@+id/search_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Busca en EcoStyle"
+        android:drawableStart="@android:drawable/ic_menu_search"
+        android:padding="8dp"
+        android:background="@android:color/white"/>
+
+    <!-- Nombre y Apellido -->
+    <EditText
+        android:id="@+id/editTextName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nombre y Apellido"
+        android:layout_marginTop="16dp"
+        android:padding="10dp"
+        android:background="@android:color/darker_gray" />
+
+    <!-- Dirección -->
+    <EditText
+        android:id="@+id/editTextAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Dirección"
+        android:layout_marginTop="8dp"
+        android:padding="10dp"
+        android:background="@android:color/darker_gray" />
+
+    <!-- Teléfono de contacto -->
+    <EditText
+        android:id="@+id/editTextPhone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Teléfono de contacto"
+        android:layout_marginTop="8dp"
+        android:padding="10dp"
+        android:background="@android:color/darker_gray"
+        android:inputType="phone" />
+
+    <!-- Métodos de Pago -->
+    <TextView
+        android:id="@+id/payment_methods_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Métodos de Pago:"
+        android:layout_marginTop="16dp" />
+
+    <Spinner
+        android:id="@+id/payment_methods_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@android:color/darker_gray" />
+
+    <!-- Detalles del pedido -->
+    <TextView
+        android:id="@+id/product_quantity"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cantidad de productos: 2"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/total_price"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Total a pagar: $150.000"
+        android:layout_marginTop="8dp" />
+
+    <!-- Botón Completar Compra -->
+    <Button
+        android:id="@+id/complete_purchase_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Completar compra"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="@android:color/holo_green_dark"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>
