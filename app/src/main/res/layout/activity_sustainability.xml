@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/sustainability_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".SustainabilityActivity"
+    android:background="@android:color/white"
+    android:padding="16dp">
+
+    <!-- RelativeLayout para el icono de reciclaje con las barras de progreso circulares -->
+    <RelativeLayout
+
+
+        android:id="@+id/relativeLayoutProgress"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/progressBarsLayout"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintHeight_percent="0.5">
+
+        <!-- Barra de progreso circular para Residuos desviados -->
+        <ProgressBar
+            android:id="@+id/circularProgressBarWaste"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="260dp"
+            android:layout_height="260dp"
+            android:layout_centerInParent="true"
+            android:indeterminate="false"
+            android:progress="100"
+            android:max="100"
+            android:progressDrawable="@drawable/circular_progress_bar_waste" />
+        <ImageView
+            android:id="@+id/recycleIcon"
+            android:layout_width="230dp"
+            android:layout_height="230dp"
+            android:layout_centerInParent="true"
+            android:src="@drawable/ic_recycle"
+            android:background="@drawable/circular_image_background"
+            android:contentDescription="@string/recycle_icon_description" />
+
+    </RelativeLayout>
+
+    <!-- Layout para las barras de progreso horizontales -->
+    <LinearLayout
+        android:id="@+id/progressBarsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/relativeLayoutProgress"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ProgressBar
+            android:id="@+id/progress_water_saved"
+            style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Horizontal"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:progressDrawable="@drawable/progress_bar_blue"
+            android:max="100"
+            android:progress="75"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/text_water_saved"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/water_saved"
+            android:layout_marginTop="4dp"
+            android:textColor="@android:color/black" />
+
+        <ProgressBar
+            android:id="@+id/progress_waste_diverted"
+            style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Horizontal"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:progressDrawable="@drawable/progress_bar_yellow"
+            android:max="100"
+            android:progress="50"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/text_waste_diverted"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/waste_diverted"
+            android:layout_marginTop="4dp"
+            android:textColor="@android:color/black" />
+
+        <!-- Barra de progreso horizontal para CO2 prevenido -->
+        <ProgressBar
+            android:id="@+id/progress_co2_prevented"
+            style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Horizontal"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:progressDrawable="@drawable/progress_bar_green"
+            android:max="100"
+            android:progress="40"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/text_co2_prevented"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/co2_prevented"
+            android:layout_marginTop="4dp"
+            android:textColor="@android:color/black" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+

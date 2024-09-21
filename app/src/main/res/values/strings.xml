@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">EcoStyle</string>
+    <string name="recycle_icon_description">Recycle Icon</string>
+    <string name="learn_more_about_impact">Learn more about your impact</string>
+    <string name="water_saved">Water Saved</string>
+    <string name="waste_diverted">Waste Diverted from Landfill</string>
+    <string name="co2_prevented">CO2 Emissions Prevented</string>
 </resources>
