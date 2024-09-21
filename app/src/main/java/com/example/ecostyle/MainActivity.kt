@@ -31,12 +31,12 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.res.painterResource
-//import androidx.compose.material:material-icons-extended
-//import androidx.compose.material.Icon
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.Menu
-//import androidx.compose.material.icons.filled.ShoppingCart
-//import androidx.compose.material.icons.filled.FavoriteBorder
+
+import androidx.compose.material.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.FavoriteBorder
 import com.example.ecostyle.ui.theme.EcoStyleTheme
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
@@ -119,11 +119,28 @@ fun ProductCard(product: Product) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Texts: Product name and price
-            Text(text = product.name, style = MaterialTheme.typography.h6)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = product.price, style = MaterialTheme.typography.body1)
-            //Text(text = product.description, style = MaterialTheme.typography.body1)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Column {
+                    // Product name
+                    Text(text = product.name, style = MaterialTheme.typography.h6)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Product price
+                    Text(text = product.price, style = MaterialTheme.typography.body1)
+                }
+                // Heart icon
+                IconButton(onClick = {}) {
+                    Icon(
+                        Icons.Default.FavoriteBorder,
+                        contentDescription = "Favorite",
+                        tint = MaterialTheme.colors.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -150,19 +167,15 @@ fun TopBar() {
         },
         navigationIcon = {
             // Menu icon (commented for now)
-            /*
             IconButton(onClick = { }) {
                 Icon(Icons.Default.Menu, contentDescription = "Menu")
             }
-            */
         },
         actions = {
             // Shopping cart icon (commented for now)
-            /*
             IconButton(onClick = {  }) {
                 Icon(Icons.Default.ShoppingCart, contentDescription = "Cart")
             }
-            */
         }
     )
 }

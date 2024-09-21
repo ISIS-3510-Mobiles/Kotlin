@@ -25,7 +25,7 @@ fun EcoStyleTheme(
 ) {
     MaterialTheme(
         colors = LightColorPalette,
-        //typography = EcoStyleTypography,
+        typography = EcoStyleTypography,
         shapes = MaterialTheme.shapes,
         content = content
     )
