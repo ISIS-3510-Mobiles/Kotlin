@@ -37,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Favorite
 import com.example.ecostyle.ui.theme.EcoStyleTheme
 import androidx.compose.foundation.Image
 
@@ -116,7 +117,12 @@ fun ProductDetailScreen(product: Product) {
                     )
                     //Heart icon
                     IconButton(onClick = {}) {
-                        Icon(Icons.Default.FavoriteBorder, contentDescription = "Favorite")
+                        Icon(
+                            Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = MaterialTheme.colors.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
 
@@ -175,19 +181,15 @@ fun TopBar() {
         },
         navigationIcon = {
             // Menu icon
-            /*
             IconButton(onClick = { }) {
                 Icon(Icons.Default.Menu, contentDescription = "Menu")
             }
-            */
         },
         actions = {
             // Shopping cart icon
-            /*
             IconButton(onClick = {}) {
                 Icon(Icons.Default.ShoppingCart, contentDescription = "Cart")
             }
-            */
         }
     )
 }
