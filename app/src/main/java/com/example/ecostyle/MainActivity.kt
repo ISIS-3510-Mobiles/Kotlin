@@ -32,15 +32,13 @@ import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.painterResource
-//import androidx.compose.material:material-icons-extended
-//import androidx.compose.material.Icon
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.Menu
-//import androidx.compose.material.icons.filled.ShoppingCart
-//import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.FavoriteBorder
 import com.example.ecostyle.ui.theme.EcoStyleTheme
 import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
 
 
 class MainActivity : ComponentActivity() {
@@ -116,13 +114,10 @@ fun ProductDetailScreen(product: Product) {
                         style = MaterialTheme.typography.h5,
                         color = MaterialTheme.colors.primary
                     )
-
                     //Heart icon
-                    /*
                     IconButton(onClick = {}) {
                         Icon(Icons.Default.FavoriteBorder, contentDescription = "Favorite")
                     }
-*/
                 }
 
                 // Product Description
@@ -163,7 +158,6 @@ fun TopBar() {
     TopAppBar(
         backgroundColor = MaterialTheme.colors.primary,  // Dark green background
         title = {
-            // Update the TextField to be more visible
             OutlinedTextField(
                 value = "",
                 onValueChange = {},
