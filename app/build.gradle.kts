@@ -72,6 +72,11 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core:1.7.2")
     implementation("androidx.compose.material:material-icons-extended:1.7.2")
 
+    implementation ("androidx.fragment:fragment-ktx:1.8.3")
+    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.8.6")
+
     // Compose Navigation
     implementation("androidx.navigation:navigation-compose:2.8.1")
+
+    implementation ("androidx.compose.runtime:runtime-livedata:1.7.2")
 }

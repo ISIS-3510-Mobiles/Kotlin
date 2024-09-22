@@ -1,72 +1,27 @@
-package com.example.ecostyle
+package com.example.ecostyle.view
 
-import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
-import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.transition.Visibility
-import com.example.ecostyle.databinding.ActivityMainBinding
-import com.firebase.ui.auth.AuthUI
-import com.firebase.ui.auth.ErrorCodes
-import com.firebase.ui.auth.IdpResponse
-import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.lazy.grid.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.example.ecostyle.R
+import com.example.ecostyle.viewmodel.ProductViewModel
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.ui.Alignment
+import com.example.ecostyle.model.Product
 import com.example.ecostyle.ui.theme.EcoStyleTheme
-import androidx.compose.foundation.Image
-
-
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            EcoStyleTheme {
-                MaterialTheme {
-                    val sampleProduct = Product(
-                        name = "Uniandes Jacket",
-                        price = "$120 000",
-                        description = "Uniandes jacket size XL. I changed to the Nacho, I no longer use the jacket",
-                        imageUrl = "https://via.placeholder.com/150"
-                    )
-                    ProductDetailScreen(sampleProduct)
-                }
-            }
-        }
-    }
-}
-
-data class Product(
-    val name: String,
-    val price: String,
-    val description: String,
-    val imageUrl: String
-)
-
 
 @Composable
 fun ProductDetailScreen(product: Product) {
@@ -193,19 +148,17 @@ fun TopBar() {
     )
 }
 
-
-@Preview(showBackground = true, apiLevel = 34)
+@Preview(showBackground = true)
 @Composable
-fun PreviewProductListScreen() {
+fun PreviewProductDetailScreen() {
     EcoStyleTheme {
-        MaterialTheme {
-            val sampleProduct = Product(
-                name = "Uniandes Jacket",
-                price = "$120 000",
-                description = "Uniandes jacket size XL. I changed to the Nacho, I no longer use the jacket",
-                imageUrl = "https://via.placeholder.com/150"
-            )
-            ProductDetailScreen(sampleProduct)
-        }
+        // Mock product data for preview
+        val sampleProduct = Product(
+            name = "Uniandes Jacket",
+            price = "$120 000",
+            description = "Uniandes jacket size XL. I changed to the Nacho, I no longer use the jacket",
+            imageUrl = "https://via.placeholder.com/150"
+        )
+        ProductDetailScreen(product = sampleProduct)
     }
 }
