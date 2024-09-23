@@ -43,7 +43,7 @@
                     android:layout_weight="1"
                     android:background="@android:color/white"
                     android:iconifiedByDefault="false"
-                    android:queryHint="Busca en EcoStyle" />
+                    android:queryHint="@string/search_hint" />
 
                 <ImageView
                     android:id="@+id/cart_icon"
@@ -56,39 +56,51 @@
             </LinearLayout>
         </androidx.appcompat.widget.Toolbar>
 
+        <!-- EditText fields with input types and autofill -->
         <EditText
             android:id="@+id/editTextName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Nombre y Apellido"
+            android:hint="@string/name_hint"
             android:layout_marginTop="16dp"
             android:padding="16dp"
-            android:background="@android:color/darker_gray" />
+            android:inputType="textPersonName"
+            android:importantForAutofill="yes"
+            android:background="@android:color/darker_gray"
+            android:textColor="@android:color/black"
+            android:textColorHint="@android:color/white" />
 
         <EditText
             android:id="@+id/editTextAddress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Dirección"
+            android:hint="@string/address_hint"
             android:layout_marginTop="8dp"
             android:padding="16dp"
-            android:background="@android:color/darker_gray" />
+            android:inputType="textPostalAddress"
+            android:importantForAutofill="yes"
+            android:background="@android:color/darker_gray"
+            android:textColor="@android:color/black"
+            android:textColorHint="@android:color/white" />
 
         <EditText
             android:id="@+id/editTextPhone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Teléfono de contacto"
+            android:hint="@string/phone_hint"
             android:layout_marginTop="8dp"
             android:padding="16dp"
+            android:inputType="phone"
+            android:importantForAutofill="yes"
             android:background="@android:color/darker_gray"
-            android:inputType="phone" />
+            android:textColor="@android:color/black"
+            android:textColorHint="@android:color/white" />
 
         <TextView
             android:id="@+id/payment_methods_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Métodos de Pago:"
+            android:text="@string/payment_methods"
             android:layout_marginTop="16dp" />
 
         <Spinner
@@ -103,26 +115,27 @@
             android:id="@+id/product_quantity"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Cantidad de productos: 2"
+            android:text="@string/product_quantity"
             android:layout_marginTop="16dp" />
 
         <TextView
             android:id="@+id/total_price"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Total a pagar: $150.000"
+            android:text="@string/total_price"
             android:layout_marginTop="8dp" />
 
         <Button
             android:id="@+id/complete_purchase_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Completar compra"
+            android:text="@string/complete_purchase"
             android:layout_marginTop="16dp"
             android:padding="16dp"
             android:layout_gravity="center"
-            android:backgroundTint="@android:color/holo_green_dark"
+            android:backgroundTint="#FF007451"
             android:textColor="@android:color/white" />
 
     </LinearLayout>
 </ScrollView>
+
