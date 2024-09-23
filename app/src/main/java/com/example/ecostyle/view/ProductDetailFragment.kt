@@ -25,12 +25,11 @@ class ProductDetailFragment : Fragment() {
         return ComposeView(requireContext()).apply {
             setContent {
                 EcoStyleTheme {
-                    // Observe the product and pass it to the Composable
-                    val product = productViewModel.products.value?.firstOrNull() // Get the first product (or handle empty state)
+                    // Observe the product and pass it
+                    val product = productViewModel.products.value?.firstOrNull()
                     product?.let {
-                        ProductDetailScreen(product = it)  // Pass the product to the Composable function
+                        ProductDetailScreen(product = it)
                     } ?: run {
-                        // Handle case where there is no product, e.g., show a loading or error state
                         Text("No product available or loading")
                     }
                 }
