@@ -38,6 +38,12 @@ android {
     viewBinding {
         enable = true
     }
+    buildFeatures {
+        compose = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.2"
+    }
 }
 
 dependencies {
@@ -55,4 +61,22 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // Jetpack Compose dependencies
+    implementation("androidx.activity:activity-compose:1.9.2")      // Compose activity integration
+    implementation("androidx.compose.material:material:1.7.2")     // Material Design components for Compose
+    implementation("androidx.compose.ui:ui-tooling-preview:1.7.2") // Previewing composables in Android Studio
+    implementation("androidx.compose.ui:ui:1.7.2") // Core Compose UI library (contains Modifier, etc.)
+    implementation("androidx.compose.runtime:runtime:1.7.2")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.7.2")  // For Compose Preview tools
+    implementation("androidx.compose.material:material-icons-core:1.7.2")
+    implementation("androidx.compose.material:material-icons-extended:1.7.2")
+
+    implementation ("androidx.fragment:fragment-ktx:1.8.3")
+    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.8.6")
+
+    // Compose Navigation
+    implementation("androidx.navigation:navigation-compose:2.8.1")
+
+    implementation ("androidx.compose.runtime:runtime-livedata:1.7.2")
 }
