@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".RegisterActivity">
+    <!-- Registration form -->
+    <LinearLayout
+        android:id="@+id/registration_formRegister"
+        android:layout_width="340dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="240dp"
+        android:background="@drawable/rounded_graylight"
+        android:elevation="4dp"
+        android:orientation="vertical"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.487"
+        app:layout_constraintStart_toStartOf="parent"
+        >
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="Log in"
+        android:textColor="@color/dark_green"
+        android:textSize="30dp"
+        android:textStyle="bold" />
+    <!-- Email input -->
+    <EditText
+        android:id="@+id/emailEditTextRegister"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/rounded_white"
+        android:hint="Email"
+        android:inputType="textEmailAddress"
+        android:paddingHorizontal="25dp"
+        android:paddingVertical="7dp"
+        android:textColorHint="@color/gray_medium" />
+
+    <!-- Password input -->
+        <EditText
+            android:id="@+id/name_input"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/rounded_white"
+            android:hint="Name"
+            android:inputType="textPersonName"
+            android:paddingHorizontal="25dp"
+            android:paddingVertical="7dp"
+            android:textColorHint="@color/gray_medium" />
+
+        <EditText
+        android:id="@+id/passwordEditTextRegister"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/rounded_white"
+        android:hint="Password"
+        android:inputType="textPassword"
+        android:paddingHorizontal="25dp"
+        android:paddingVertical="7dp"
+        android:textColorHint="@color/gray_medium" />
+
+    <!-- Name input -->
+
+        <EditText
+        android:id="@+id/emailEditText"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Adress"
+        android:inputType="textPostalAddress"
+        android:background="@drawable/rounded_white"
+        android:paddingHorizontal="25dp"
+        android:paddingVertical="7dp"
+        android:textColorHint="@color/gray_medium"
+        android:layout_marginBottom="8dp" />
+
+
+    <EditText
+        android:id="@+id/phone_input"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Cellphone Number"
+        android:inputType="phone"
+        android:background="@drawable/rounded_white"
+        android:paddingHorizontal="25dp"
+        android:paddingVertical="7dp"
+        android:textColorHint="@color/gray_medium"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Submit button -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="right"
+        android:orientation="horizontal"
+        android:padding="10dp">
+
+        <Button
+            android:id="@+id/loginButtonRegister"
+            android:layout_width="120dp"
+            android:layout_height="50dp"
+            android:layout_margin="5dp"
+            android:background="@drawable/rounded_lima_green"
+            android:text="Save"
+
+            android:textColor="@color/white" />
+
+
+    </LinearLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
