@@ -11,7 +11,7 @@
         android:id="@+id/registration_formRegister"
         android:layout_width="340dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="240dp"
+        android:layout_marginBottom="350dp"
         android:background="@drawable/rounded_graylight"
         android:elevation="4dp"
         android:orientation="vertical"
@@ -45,33 +45,33 @@
         android:textColorHint="@color/gray_medium" />
 
     <!-- Password input -->
-        <EditText
-            android:id="@+id/name_input"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/rounded_white"
-            android:hint="Name"
-            android:inputType="textPersonName"
-            android:paddingHorizontal="25dp"
-            android:paddingVertical="7dp"
-            android:textColorHint="@color/gray_medium" />
+        <!--  <EditText
+              android:id="@+id/name_input"
+              android:layout_width="match_parent"
+              android:layout_height="48dp"
+              android:layout_marginBottom="8dp"
+              android:background="@drawable/rounded_white"
+              android:hint="Name"
+              android:inputType="textPersonName"
+              android:paddingHorizontal="25dp"
+              android:paddingVertical="7dp"
+              android:textColorHint="@color/gray_medium" />-->
 
-        <EditText
-        android:id="@+id/passwordEditTextRegister"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginBottom="8dp"
-        android:background="@drawable/rounded_white"
-        android:hint="Password"
-        android:inputType="textPassword"
-        android:paddingHorizontal="25dp"
-        android:paddingVertical="7dp"
-        android:textColorHint="@color/gray_medium" />
+          <EditText
+          android:id="@+id/passwordEditTextRegister"
+          android:layout_width="match_parent"
+          android:layout_height="48dp"
+          android:layout_marginBottom="8dp"
+          android:background="@drawable/rounded_white"
+          android:hint="Password"
+          android:inputType="textPassword"
+          android:paddingHorizontal="25dp"
+          android:paddingVertical="7dp"
+          android:textColorHint="@color/gray_medium" />
 
-    <!-- Name input -->
+      <!-- Name input -->
 
-        <EditText
+        <!-- <EditText
         android:id="@+id/emailEditText"
         android:layout_width="match_parent"
         android:layout_height="48dp"
@@ -94,7 +94,7 @@
         android:paddingHorizontal="25dp"
         android:paddingVertical="7dp"
         android:textColorHint="@color/gray_medium"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="16dp" /> -->
 
     <!-- Submit button -->
     <LinearLayout

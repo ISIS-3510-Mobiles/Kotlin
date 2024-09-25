@@ -13,7 +13,7 @@
         android:id="@+id/registration_form"
         android:layout_width="340dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="300dp"
+        android:layout_marginBottom="350dp"
         android:background="@drawable/rounded_graylight"
         android:elevation="4dp"
         android:orientation="vertical"
