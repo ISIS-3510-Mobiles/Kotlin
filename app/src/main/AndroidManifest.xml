@@ -19,7 +19,6 @@
             android:name="checkout.CheckoutActivity"
             android:exported="true" />
         <activity
-            android:name=".MainActivity"
             android:name=".RegisterActivity"
             android:exported="false" />
         <activity
