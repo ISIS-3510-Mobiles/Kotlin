@@ -26,19 +26,6 @@ class AuthActivity : AppCompatActivity() {
         val passwordEditText = findViewById<EditText>(R.id.passwordEditText)
 
         signUpButton.setOnClickListener {
-//            if (emailEditText.text.isNotEmpty() && passwordEditText.text.isNotEmpty()) {
-//                FirebaseAuth.getInstance()
-//                    .createUserWithEmailAndPassword(
-//                        emailEditText.text.toString(),
-//                        passwordEditText.text.toString()
-//                    ).addOnCompleteListener {
-//                        if (it.isSuccessful) {
-//                            showHome(it.result?.user?.email ?: "", ProviderType.BASIC)
-//                        } else {
-//                            showAlert()
-//                        }
-//                    }
-//            }
             val homeIntent = Intent(this, RegisterActivity::class.java)
             startActivity(homeIntent)
         }
@@ -70,10 +57,11 @@ class AuthActivity : AppCompatActivity() {
     }
 
     private fun showHome(email: String, provider: ProviderType) {
-        val homeIntent = Intent(this, ProfileActivity::class.java).apply {
-            putExtra("email", email)
-            putExtra("provider", provider.name)
-        }
+//        val homeIntent = Intent(this, ProfileActivity::class.java).apply {
+//            putExtra("email", email)
+//            putExtra("provider", provider.name)
+//        }
+        val homeIntent = Intent(this, HomeActivity::class.java)
         startActivity(homeIntent)
     }
 }
