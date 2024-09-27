@@ -10,10 +10,10 @@ enum class ProviderType {
     BASIC
 }
 
-class HomeActivity : AppCompatActivity() {
+class ProfileActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_home)
+        setContentView(R.layout.activity_profile)
 
         // Inicializar vistas DENTRO de onCreate
         val emailTextView = findViewById<TextView>(R.id.emailTextView)

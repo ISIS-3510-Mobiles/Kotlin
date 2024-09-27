@@ -19,7 +19,7 @@ class AuthActivity : AppCompatActivity() {
     }
 
     private fun setup() {
-        title = "Autenticación"
+        title = "Authentication"
         val loginButton = findViewById<Button>(R.id.loginButton)
         val signUpButton = findViewById<Button>(R.id.signUpButton)
         val emailEditText = findViewById<EditText>(R.id.emailEditText)
@@ -70,7 +70,7 @@ class AuthActivity : AppCompatActivity() {
     }
 
     private fun showHome(email: String, provider: ProviderType) {
-        val homeIntent = Intent(this, HomeActivity::class.java).apply {
+        val homeIntent = Intent(this, ProfileActivity::class.java).apply {
             putExtra("email", email)
             putExtra("provider", provider.name)
         }
