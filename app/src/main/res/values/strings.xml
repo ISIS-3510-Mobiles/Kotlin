@@ -16,5 +16,7 @@
     <string name="total_price">Total Price</string>
     <string name="complete_purchase">Complete Purchase</string>
     <string name="search_hint">Search here...</string>
+    <string name="navegation_drawer_open">Open</string>
+    <string name="navegation_drawer_close">Close</string>
 
 </resources>

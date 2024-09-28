@@ -1,0 +1,26 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group >
+        <item
+            android:id="@+id/nav_item_1"
+            android:icon="@drawable/ic_home"
+            android:title="Home" />
+        <item
+            android:id="@+id/nav_item_2"
+            android:icon="@drawable/ic_cart"
+            android:title="Cart" />
+        <item
+            android:id="@+id/nav_item_4"
+            android:icon="@drawable/ic_eco"
+            android:title="Sustainability" />
+        <item
+            android:id="@+id/nav_item_5"
+            android:icon="@drawable/ic_profile"
+            android:title="Profile" />
+        <item
+            android:id="@+id/nav_item_3"
+            android:icon="@drawable/ic_settings"
+            android:title="Settings" />
+
+
+    </group>
+</menu>
