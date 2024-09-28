@@ -18,14 +18,14 @@
         android:layout_height="64dp"
         android:src="@mipmap/ic_launcher" />
 
-    <Button
+    <TextView
         android:id="@+id/nav_header_texView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="16dp"
-        android:text="Profile"
+        android:text="EcoStyle"
         android:background="@color/dark_green"
         android:textColor="@color/white"
-        android:textSize="20dp"/>
+        android:textSize="25dp"/>
 
 </LinearLayout>

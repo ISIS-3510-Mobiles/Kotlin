@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MenuItem
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
@@ -24,7 +25,6 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         val toolbar: Toolbar = findViewById(R.id.toolbar_main)
         val btn_logout = findViewById<Button>(R.id.btn_logout)
-        val nav_header_texView = findViewById<Button>(R.id.nav_header_texView)
 
         setSupportActionBar(toolbar)
 
@@ -48,15 +48,14 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             FirebaseAuth.getInstance().signOut()
             onBackPressed()
         }
-//        nav_header_texView.setOnClickListener {
-//            Toast.makeText(this, "Profile", Toast.LENGTH_SHORT).show()
-//            val intent = Intent(this, ProfileActivity::class.java)
-//            startActivity(intent)
-//        }
     }
 
     // Corrige el nombre y la implementación del método
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        val bundle = intent.extras
+        val email = bundle?.getString("email")
+        val provider = bundle?.getString("provider")
+
         when (item.itemId) {
             R.id.nav_item_1 -> {
                 Toast.makeText(this, "Home", Toast.LENGTH_SHORT).show()
@@ -70,7 +69,14 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_item_4 -> {
                 Toast.makeText(this, "Sustanilibity", Toast.LENGTH_SHORT).show()
             }
-
+            R.id.nav_item_5 -> {
+                Toast.makeText(this, "Profile", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, ProfileActivity::class.java).apply{
+                    putExtra("email", email)
+                    putExtra("provider", provider)
+                }
+                startActivity(intent)
+            }
         }
 
 
