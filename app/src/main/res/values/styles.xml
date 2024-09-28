@@ -2,16 +2,13 @@
 <resources>
     <style name="MyActionBar" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
         <item name="colorSurface">#012826</item>
+
     </style>
 
-    <style name="AppTheme.MyActivityTheme" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+    <style name="AppTheme.MyActivityTheme" parent="ThemeOverlay.AppCompat.Dark.ActionBar" >
         <item name="colorSurface">#012826</item>
     </style>
 
-    <style name="CustomMenuItemStyle">
-        <item name="android:background">#012826</item> <!-- Cambia el color a lo que desees -->
-        <item name="android:textColor">#FFFFFF</item> <!-- Cambia el color del texto si es necesario -->
-    </style>
 
 
 
