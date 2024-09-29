@@ -48,6 +48,11 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             FirebaseAuth.getInstance().signOut()
             onBackPressed()
         }
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, HomeFragment())
+                .commit()
+        }
     }
 
     // Corrige el nombre y la implementación del método
@@ -59,6 +64,9 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         when (item.itemId) {
             R.id.nav_item_1 -> {
                 Toast.makeText(this, "Home", Toast.LENGTH_SHORT).show()
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, HomeFragment()) // Asegúrate de que el contenedor exista en tu layout
+                    .commit()
             }
             R.id.nav_item_2 -> {
                 Toast.makeText(this, "Cart", Toast.LENGTH_SHORT).show()
