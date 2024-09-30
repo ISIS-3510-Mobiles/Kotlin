@@ -19,5 +19,10 @@
     <string name="navegation_drawer_open">Open</string>
     <string name="navegation_drawer_close">Close</string>
     <string name="prefs_file">user_prefs</string>
+    <string name="log_out">Log Out</string>
+    <string name="uniandes_sweater">Uniandes Sweater</string>
+    <string name="price_sweater">$100.00</string>
+    <string name="favorite_button_desc">Add to favorites</string>
+    <string name="product_description">Uniandes Sweater. I changed to th "Nacho", so I don´t use it anymore.</string>
 
 </resources>
