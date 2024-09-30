@@ -13,10 +13,11 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.example.ecostyle.R
-import com.example.ecostyle.view.HomeFragment
+import com.example.ecostyle.view.ListFragment
 import com.example.ecostyle.view.ProfileFragment
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
+
 enum class ProviderType {
     BASIC,
     GOOGLE,
@@ -80,7 +81,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // Si es la primera vez que se abre la actividad, cargar el fragmento principal
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, HomeFragment())
+                .replace(R.id.fragment_container, ListFragment())
                 .commit()
         }
     }
@@ -95,7 +96,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_item_1 -> {
                 Toast.makeText(this, "Home", Toast.LENGTH_SHORT).show()
                 supportFragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, HomeFragment())
+                    .replace(R.id.fragment_container, ListFragment())
                     .commit()
             }
             R.id.nav_item_2 -> {
