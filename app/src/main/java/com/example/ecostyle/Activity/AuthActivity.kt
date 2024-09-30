@@ -1,4 +1,4 @@
-package com.example.ecostyle
+package com.example.ecostyle.Activity
 
 import android.content.Context
 import android.content.Intent
@@ -7,6 +7,7 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.example.ecostyle.R
 import com.google.firebase.auth.FirebaseAuth
 
 class AuthActivity : AppCompatActivity() {

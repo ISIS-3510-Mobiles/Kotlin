@@ -1,4 +1,4 @@
-package com.example.ecostyle
+package com.example.ecostyle.view
 
 import android.content.Context
 import android.content.Intent
@@ -9,6 +9,8 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.example.ecostyle.Activity.AuthActivity
+import com.example.ecostyle.R
 import com.google.firebase.auth.FirebaseAuth
 
 class ProfileFragment : Fragment() {

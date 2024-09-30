@@ -1,4 +1,4 @@
-package com.example.ecostyle
+package com.example.ecostyle.Activity
 
 import android.content.Context
 import android.content.Intent
@@ -12,6 +12,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import com.example.ecostyle.R
+import com.example.ecostyle.view.HomeFragment
+import com.example.ecostyle.view.ProfileFragment
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 enum class ProviderType {

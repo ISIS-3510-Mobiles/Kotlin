@@ -1,10 +1,11 @@
-package com.example.ecostyle
+package com.example.ecostyle.view
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.example.ecostyle.R
 
 class HomeFragment : Fragment() {
 
