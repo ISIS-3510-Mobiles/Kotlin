@@ -18,5 +18,6 @@
     <string name="search_hint">Search here...</string>
     <string name="navegation_drawer_open">Open</string>
     <string name="navegation_drawer_close">Close</string>
+    <string name="prefs_file">user_prefs</string>
 
 </resources>

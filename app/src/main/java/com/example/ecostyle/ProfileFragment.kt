@@ -1,5 +1,7 @@
 package com.example.ecostyle
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,9 +20,10 @@ class ProfileFragment : Fragment() {
         // Infla el diseño del fragmento
         val view = inflater.inflate(R.layout.activity_profile, container, false)
 
-        // Obtener los argumentos pasados desde el Bundle
-        val email = arguments?.getString("email")
-        val provider = arguments?.getString("provider")
+        // Cargar datos de sesión de SharedPreferences
+        val prefs = requireActivity().getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
+        val email = prefs.getString("email", null)
+        val provider = prefs.getString("provider", null)
 
         // Inicializar vistas dentro de onCreateView
         val emailTextView = view.findViewById<TextView>(R.id.emailTextView)
@@ -49,8 +52,17 @@ class ProfileFragment : Fragment() {
             // Cerrar sesión de Firebase
             FirebaseAuth.getInstance().signOut()
 
-            // Volver a la pantalla anterior (equivalente a onBackPressed() en fragmento)
-            activity?.onBackPressed()
+            // Limpiar SharedPreferences
+            val prefsEditor = requireActivity().getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE).edit()
+            prefsEditor.clear()
+            prefsEditor.apply()
+
+            // Iniciar la actividad de autenticación
+            val authIntent = Intent(requireActivity(), AuthActivity::class.java)
+            startActivity(authIntent)
+
+            // Finalizar la actividad actual
+            requireActivity().finish()
         }
     }
 }
