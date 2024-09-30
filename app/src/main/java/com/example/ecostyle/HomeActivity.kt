@@ -79,12 +79,25 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             R.id.nav_item_5 -> {
                 Toast.makeText(this, "Profile", Toast.LENGTH_SHORT).show()
-                val intent = Intent(this, ProfileActivity::class.java).apply{
-                    putExtra("email", email)
-                    putExtra("provider", provider)
+
+                // Crear un nuevo fragmento de perfil
+                val profileFragment = ProfileFragment()
+
+                // Crear un Bundle para pasar los argumentos
+                val bundle = Bundle().apply {
+                    putString("email", email)
+                    putString("provider", provider)
                 }
-                startActivity(intent)
+
+                // Establecer los argumentos en el fragmento
+                profileFragment.arguments = bundle
+
+                // Reemplazar el fragmento en el contenedor
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, profileFragment)
+                    .commit()
             }
+
         }
 
 
