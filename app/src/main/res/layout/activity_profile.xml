@@ -12,14 +12,15 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="40dp"
         android:layout_marginEnd="16dp"
+        android:layout_marginTop="100dp"
         android:gravity="center"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_goneMarginTop="200dp">
 
         <TextView
             android:layout_width="wrap_content"
@@ -44,16 +45,16 @@
             android:id="@+id/emailTextView"
             android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:paddingHorizontal="25dp"
-            android:textSize="20dp"
             android:gravity="center_horizontal"
-            android:text="Email" />
+            android:paddingHorizontal="25dp"
+            android:text="Email"
+            android:textSize="20dp" />
 
         <TextView
             android:id="@+id/providerTextView"
             android:layout_width="match_parent"
-            android:gravity="center_horizontal"
             android:layout_height="40dp"
+            android:gravity="center_horizontal"
             android:paddingHorizontal="25dp"
             android:text="Provider" />
 

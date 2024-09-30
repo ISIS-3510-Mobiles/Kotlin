@@ -1,0 +1,13 @@
+<!-- res/layout/fragment_home.xml -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Añade aquí el contenido que desees mostrar en el Fragmento -->
+    <TextView
+        android:id="@+id/text_home"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Welcome to Home Fragment"
+        android:layout_gravity="center" />
+</FrameLayout>

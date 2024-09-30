@@ -1,5 +1,6 @@
 package com.example.ecostyle
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
@@ -8,14 +9,25 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 
-
-
 class AuthActivity : AppCompatActivity() {
+
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_auth)
 
-        setup()
+        // Verificar si hay una sesión activa
+        val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
+        val email = prefs.getString("email", null)
+        val provider = prefs.getString("provider", null)
+
+        if (email != null && provider != null) {
+            // Si ya hay una sesión guardada, ir directamente a HomeActivity
+            showHome(email, ProviderType.valueOf(provider))
+        } else {
+            setContentView(R.layout.activity_auth)
+            setup()
+        }
     }
 
     private fun setup() {
@@ -38,7 +50,15 @@ class AuthActivity : AppCompatActivity() {
                         passwordEditText.text.toString()
                     ).addOnCompleteListener {
                         if (it.isSuccessful) {
-                            showHome(it.result?.user?.email ?: "", ProviderType.BASIC)
+                            val email = it.result?.user?.email ?: ""
+                            val provider = ProviderType.BASIC
+                            // Guardar las credenciales en SharedPreferences
+                            val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE).edit()
+                            prefs.putString("email", email)
+                            prefs.putString("provider", provider.name)
+                            prefs.apply()
+
+                            showHome(email, provider)
                         } else {
                             showAlert()
                         }
@@ -57,10 +77,11 @@ class AuthActivity : AppCompatActivity() {
     }
 
     private fun showHome(email: String, provider: ProviderType) {
-        val homeIntent = Intent(this, HomeActivity::class.java).apply{
+        val homeIntent = Intent(this, HomeActivity::class.java).apply {
             putExtra("email", email)
             putExtra("provider", provider.name)
         }
         startActivity(homeIntent)
+        finish() // Cierra la actividad de autenticación para que no regrese aquí
     }
 }
