@@ -92,7 +92,6 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:1.7.2") // Previewing composables in Android Studio
     implementation("androidx.compose.ui:ui:1.7.2") // Core Compose UI library (contains Modifier, etc.)
     implementation("androidx.compose.runtime:runtime:1.7.2")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.7.2")  // For Compose Preview tools
     implementation("androidx.compose.material:material-icons-core:1.7.2")
     implementation("androidx.compose.material:material-icons-extended:1.7.2")
 

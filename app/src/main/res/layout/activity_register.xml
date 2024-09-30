@@ -44,7 +44,6 @@
         android:paddingVertical="7dp"
         android:textColorHint="@color/gray_medium" />
 
-    <!-- Password input -->
         <!--  <EditText
               android:id="@+id/name_input"
               android:layout_width="match_parent"

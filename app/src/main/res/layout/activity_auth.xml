@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:padding="16dp"
     tools:context=".Activity.AuthActivity"
-    android:background="@color/white">
+    android:background="@color/white" >
 
     <!-- Registration form -->
     <LinearLayout
@@ -58,45 +58,6 @@
             android:paddingHorizontal="25dp"
             android:paddingVertical="7dp"
             android:textColorHint="@color/gray_medium" />
-
-        <!-- Name input
-        <EditText
-            android:id="@+id/name_input"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Nombre"
-            android:inputType="textPersonName"
-            android:background="@drawable/rounded_white"
-            android:paddingHorizontal="25dp"
-            android:paddingVertical="7dp"
-            android:textColorHint="@color/gray_medium"
-            android:layout_marginBottom="8dp" />
-
-        <EditText
-            android:id="@+id/emailEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Dirección"
-            android:inputType="textPostalAddress"
-            android:background="@drawable/rounded_white"
-            android:paddingHorizontal="25dp"
-            android:paddingVertical="7dp"
-            android:textColorHint="@color/gray_medium"
-            android:layout_marginBottom="8dp" />
-
-
-        <EditText
-            android:id="@+id/phone_input"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Teléfono"
-            android:inputType="phone"
-            android:background="@drawable/rounded_white"
-            android:paddingHorizontal="25dp"
-            android:paddingVertical="7dp"
-            android:textColorHint="@color/gray_medium"
-            android:layout_marginBottom="16dp" /> -->
-
         <!-- Submit button -->
         <LinearLayout
             android:layout_width="match_parent"
