@@ -20,7 +20,7 @@ class ListFragment : Fragment() {
     private lateinit var productAdapter: ProductAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.activity_list, container, false)
+        return inflater.inflate(R.layout.activity_list, container, false) //listfragment
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
