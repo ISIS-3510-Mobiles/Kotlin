@@ -32,12 +32,10 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_list)
 
-        // Cargar datos de sesión de SharedPreferences
         val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
         val email = prefs.getString("email", null)
         val provider = prefs.getString("provider", null)
 
-        // Si no hay sesión, redirigir a AuthActivity
         if (email == null || provider == null) {
             val authIntent = Intent(this, AuthActivity::class.java)
             startActivity(authIntent)
@@ -45,7 +43,6 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             return
         }
 
-        // Configurar la barra de herramientas y el drawer
         val toolbar: Toolbar = findViewById(R.id.toolbar_main)
         setSupportActionBar(toolbar)
 
@@ -64,22 +61,18 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val navigationView: NavigationView = findViewById(R.id.nav_view)
         navigationView.setNavigationItemSelectedListener(this)
 
-        // Configurar el botón de cerrar sesión
         val btn_logout = findViewById<Button>(R.id.btn_logout)
         btn_logout.setOnClickListener {
-            // Cerrar sesión de Firebase y limpiar SharedPreferences
             FirebaseAuth.getInstance().signOut()
             val prefsEditor = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE).edit()
             prefsEditor.clear()
             prefsEditor.apply()
 
-            // Redirigir a AuthActivity
             val authIntent = Intent(this, AuthActivity::class.java)
             startActivity(authIntent)
             finish()
         }
 
-        // Si es la primera vez que se abre la actividad, cargar el fragmento principal
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, ListFragment())
@@ -88,7 +81,6 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawer.openDrawer(GravityCompat.START)
     }
 
-    // Implementación del manejo de elementos del menú de navegación
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
         val email = prefs.getString("email", null)
@@ -113,7 +105,6 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_item_5 -> {
                 Toast.makeText(this, "Profile", Toast.LENGTH_SHORT).show()
 
-                // Crear un nuevo fragmento de perfil con los datos de sesión
                 val profileFragment = ProfileFragment()
                 val bundle = Bundle().apply {
                     putString("email", email)

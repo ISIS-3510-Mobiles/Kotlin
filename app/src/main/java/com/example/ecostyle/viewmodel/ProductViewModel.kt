@@ -18,13 +18,12 @@ class ProductViewModel : ViewModel() {
 
     private fun loadProducts() {
         val products = listOf(
-            Product("Uniandes Sweater", "$100.00", R.drawable.buzouniandes),
-            Product("Uniandes Sweater", "$100.00", R.drawable.buzouniandes),
-            Product("Uniandes Sweater", "$100.00", R.drawable.buzouniandes),
-            Product("Uniandes Sweater", "$100.00", R.drawable.buzouniandes),
-            Product("Uniandes Sweater", "$100.00", R.drawable.buzouniandes),
-            Product("Uniandes Sweater", "$100.00", R.drawable.buzouniandes)
-            // Add more products as needed
+            Product(1,"Uniandes Sweater", "$100.00", R.drawable.buzouniandes, ""),
+            Product(2,"Uniandes Sweater", "$100.00", R.drawable.buzouniandes, ""),
+            Product(3,"Uniandes Sweater", "$100.00", R.drawable.buzouniandes, ""),
+            Product(4,"Uniandes Sweater", "$100.00", R.drawable.buzouniandes, ""),
+            Product(5,"Uniandes Sweater", "$100.00", R.drawable.buzouniandes, ""),
+            Product(6,"Uniandes Sweater", "$100.00", R.drawable.buzouniandes, "")
         )
         productList.value = products
     }
