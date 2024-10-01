@@ -15,6 +15,8 @@ import androidx.drawerlayout.widget.DrawerLayout
 import com.example.ecostyle.R
 import com.example.ecostyle.view.ListFragment
 import com.example.ecostyle.view.ProfileFragment
+import com.example.ecostyle.view.SustainabilityFragment
+import com.example.ecostyle.view.CheckoutFragment
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 
@@ -95,12 +97,18 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             R.id.nav_item_2 -> {
                 Toast.makeText(this, "Cart", Toast.LENGTH_SHORT).show()
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, CheckoutFragment())
+                    .commit()
             }
             R.id.nav_item_3 -> {
                 Toast.makeText(this, "Settings", Toast.LENGTH_SHORT).show()
             }
             R.id.nav_item_4 -> {
                 Toast.makeText(this, "Sustainability", Toast.LENGTH_SHORT).show()
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, SustainabilityFragment())
+                    .commit()
             }
             R.id.nav_item_5 -> {
                 Toast.makeText(this, "Profile", Toast.LENGTH_SHORT).show()
