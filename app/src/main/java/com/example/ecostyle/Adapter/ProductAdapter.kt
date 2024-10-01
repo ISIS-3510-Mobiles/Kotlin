@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.ecostyle.model.Product
 import com.example.ecostyle.R
 
-class ProductAdapter(private var productList: List<Product>) : RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
+class ProductAdapter(private var productList: List<Product>, private val onItemClicked: (Product) -> Unit) : RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
 
     class ProductViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val productImage: ImageView = itemView.findViewById(R.id.product_image)
@@ -29,6 +29,10 @@ class ProductAdapter(private var productList: List<Product>) : RecyclerView.Adap
         holder.productName.text = product.name
         holder.productPrice.text = product.price
         holder.productImage.setImageResource(product.imageResource)
+
+        holder.itemView.setOnClickListener {
+            onItemClicked(product)
+        }
     }
 
     override fun getItemCount(): Int {

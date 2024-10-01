@@ -24,5 +24,8 @@
     <string name="price_sweater">$100.00</string>
     <string name="favorite_button_desc">Add to favorites</string>
     <string name="product_description">Uniandes Sweater. I changed to th "Nacho", so I don´t use it anymore.</string>
+    <string name="add_to_cart">Add to Cart</string>
+    <string name="buy">Buy</string>
+
 
 </resources>
