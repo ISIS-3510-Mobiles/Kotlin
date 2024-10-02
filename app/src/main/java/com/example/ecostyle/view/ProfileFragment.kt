@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment
 import com.example.ecostyle.Activity.AuthActivity
 import com.example.ecostyle.R
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class ProfileFragment : Fragment() {
 
@@ -25,29 +26,16 @@ class ProfileFragment : Fragment() {
         // Cargar datos de sesión de SharedPreferences
         val prefs = requireActivity().getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
         val email = prefs.getString("email", null)
-        val provider = prefs.getString("provider", null)
 
         // Inicializar vistas dentro de onCreateView
         val emailTextView = view.findViewById<TextView>(R.id.emailTextView)
-        val providerTextView = view.findViewById<TextView>(R.id.providerTextView)
+        val nameTextView = view.findViewById<TextView>(R.id.nameTextView) // Añadir un TextView para el nombre
         val logOutButton = view.findViewById<Button>(R.id.logOutButton)
 
-        // Configurar el fragmento con los datos recibidos
-        setup(email ?: "", provider ?: "", emailTextView, providerTextView, logOutButton)
-
-        return view
-    }
-
-    private fun setup(
-        email: String,
-        provider: String,
-        emailTextView: TextView,
-        providerTextView: TextView,
-        logOutButton: Button
-    ) {
-        // Actualizar los TextView con la información del usuario
-        emailTextView.text = email
-        providerTextView.text = provider
+        if (email != null) {
+            // Recuperar el nombre del usuario desde Firestore
+            loadUserProfile(email, nameTextView, emailTextView)
+        }
 
         // Configurar el botón de cerrar sesión
         logOutButton.setOnClickListener {
@@ -65,6 +53,30 @@ class ProfileFragment : Fragment() {
 
             // Finalizar la actividad actual
             requireActivity().finish()
+        }
+
+        return view
+    }
+
+    private fun loadUserProfile(email: String, nameTextView: TextView, emailTextView: TextView) {
+        val db = FirebaseFirestore.getInstance()
+
+        // Recuperar el documento del usuario desde la colección "User"
+        val docRef = db.collection("User").document(email)
+        docRef.get().addOnSuccessListener { document ->
+            if (document != null && document.exists()) {
+                val name = document.getString("name")
+                val email = document.getString("id") // Se recupera el correo electrónico guardado
+
+                // Actualizar los TextViews con los datos obtenidos
+                nameTextView.text = name
+                emailTextView.text = email
+            } else {
+                // El documento no existe
+                println("El documento no existe.")
+            }
+        }.addOnFailureListener { exception ->
+            println("Error al obtener el documento: $exception")
         }
     }
 }

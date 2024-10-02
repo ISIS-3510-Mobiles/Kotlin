@@ -12,11 +12,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.ReportFragment.Companion.reportFragment
 import com.example.ecostyle.R
 import com.example.ecostyle.view.ListFragment
 import com.example.ecostyle.view.ProfileFragment
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.remoteconfig.ktx.remoteConfig
 
 enum class ProviderType {
     BASIC,
@@ -32,9 +35,11 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_list)
 
+        // Guardar datos
         val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
         val email = prefs.getString("email", null)
         val provider = prefs.getString("provider", null)
+
 
         if (email == null || provider == null) {
             val authIntent = Intent(this, AuthActivity::class.java)
