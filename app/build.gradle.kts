@@ -76,6 +76,7 @@ dependencies {
 
     // FirebaseUI for Firebase Auth
     implementation("com.firebaseui:firebase-ui-auth:8.0.2")
+    implementation(libs.play.services.location)
 
     // Testing dependencies
     testImplementation(libs.junit)

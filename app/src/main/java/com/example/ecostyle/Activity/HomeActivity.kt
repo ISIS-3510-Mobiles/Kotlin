@@ -1,7 +1,9 @@
 package com.example.ecostyle.Activity
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
@@ -20,11 +22,9 @@ import com.google.android.material.navigation.NavigationView
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import java.util.Calendar
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
-
+import android.location.Location
+import androidx.core.app.ActivityCompat
+import com.google.android.gms.location.LocationServices
 
 
 enum class ProviderType {
@@ -34,12 +34,12 @@ enum class ProviderType {
 }
 
 class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
+    companion object {
+        private const val LOCATION_PERMISSION_REQUEST_CODE = 1000
+    }
     private lateinit var drawer: DrawerLayout
     private lateinit var toggle: ActionBarDrawerToggle
 
-
-    private lateinit var sensorManager: SensorManager
-    private var proximitySensor: Sensor? = null
     private lateinit var firebaseAnalytics: FirebaseAnalytics
 
 
@@ -90,30 +90,29 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             finish()
         }
 
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+        } else {
+            getLastLocation()
+        }
+
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, ListFragment())
                 .commit()
         }
         drawer.openDrawer(GravityCompat.START)
-
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
-
-        if (proximitySensor == null) {
-            Log.d("ProximitySensor", "Proximity sensor not available on this device")
-        } else {
-            Log.d("ProximitySensor", "Proximity sensor available")
-        }
-
-        // Register the proximity sensor listener
-        proximitySensor?.let {
-            sensorManager.registerListener(
-                proximitySensorListener,
-                it,
-                SensorManager.SENSOR_DELAY_NORMAL
-            )
-        }
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -174,41 +173,69 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return super.onOptionsItemSelected(item)
     }
 
-    private val proximitySensorListener = object : SensorEventListener {
-        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    private fun getLastLocation() {
+        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        override fun onSensorChanged(event: SensorEvent) {
-            val distance = event.values[0]
-            if (distance < (proximitySensor?.maximumRange ?: 0f)) {
-                // User is actively using the app (object detected near sensor)
-                Log.d("ProximitySensor", "User actively using app")
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+            return
+        }
 
-                // Log active use to Firebase Analytics
-                firebaseAnalytics.logEvent("proximity_active_use", null)
+        fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+            if (location != null) {
+                val latitude = location.latitude
+                val longitude = location.longitude
+
+                firebaseAnalytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, Bundle().apply {
+                    putString(FirebaseAnalytics.Param.SCREEN_NAME, "HomeActivity")
+                    putString(FirebaseAnalytics.Param.SCREEN_CLASS, "HomeActivity")
+                    putString("session_start_time", System.currentTimeMillis().toString())
+                    putDouble("latitude", latitude)
+                    putDouble("longitude", longitude)
+                })
+
+                val calendar = Calendar.getInstance()
+                val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+
+                val bundle = Bundle().apply {
+                    putInt("day_of_week", dayOfWeek)
+                    putDouble("latitude", latitude)
+                    putDouble("longitude", longitude)
+                }
+                firebaseAnalytics.logEvent("user_activity", bundle)
             } else {
-                // User has put down the phone (no object near sensor)
-                Log.d("ProximitySensor", "User not actively using app")
+                Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
+                Log.e("HomeActivity", "Location is null")
             }
+        }.addOnFailureListener { exception ->
+            Log.e("HomeActivity", "Failed to get location: ${exception.message}")
+        }
+    }
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                getLastLocation()
+            } else {
+                Toast.makeText(this, "Location permission denied. Please enable it in settings for full functionality.", Toast.LENGTH_LONG).show()            }
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        Log.d("HomeActivity", "onStart called")
-
-        firebaseAnalytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, Bundle().apply {
-            putString(FirebaseAnalytics.Param.SCREEN_NAME, "HomeActivity")
-            putString(FirebaseAnalytics.Param.SCREEN_CLASS, "HomeActivity")
-            putString("session_start_time", System.currentTimeMillis().toString())
-        })
-        val calendar = Calendar.getInstance()
-        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-
-        val bundle = Bundle().apply {
-            putInt("day_of_week", dayOfWeek)
-        }
-        firebaseAnalytics.logEvent("user_activity", bundle)
-    }
     override fun onStop() {
         super.onStop()
         Log.d("HomeActivity", "onStop called")
@@ -219,9 +246,4 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         Log.d("HomeActivity", "Logging session_end event")
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        // Unregister the sensor listener to avoid memory leaks
-        sensorManager.unregisterListener(proximitySensorListener)
-    }
 }
