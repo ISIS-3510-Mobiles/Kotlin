@@ -25,7 +25,6 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
-import com.google.firebase.messaging.FirebaseMessaging
 
 enum class ProviderType {
     BASIC,
@@ -41,6 +40,16 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_list)
+
+        // Verifica si el Intent contiene el extra para abrir el CheckoutFragment
+        val openFragment = intent.getStringExtra("openFragment")
+        if (openFragment == "checkout") {
+            // Si debe abrir el CheckoutFragment, lo hacemos aquí
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, CheckoutFragment())
+                .commit()
+        }
+
         FirebaseApp.initializeApp(this)
         val settings = FirebaseFirestoreSettings.Builder()
             .setPersistenceEnabled(true)
@@ -69,41 +78,6 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             finish()
             return
         }
-
-
-        // Obtener el token FCM en el inicio de la actividad
-
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (!task.isSuccessful) {
-                Log.w("FCM", "Error al obtener el token FCM", task.exception)
-                return@addOnCompleteListener
-            }
-            // Token obtenido
-            val token = task.result
-            Log.d("FCM", "Token FCM obtenido: $token")
-
-            val db = FirebaseFirestore.getInstance()
-            val userRef = db.collection("User").document(email)
-
-            userRef.update("fcmToken", token)
-                .addOnSuccessListener {
-                    Log.d("Firestore", "Token FCM guardado correctamente en Firestore")
-                }
-                .addOnFailureListener { e ->
-                    Log.w("Firestore", "Error al guardar el token FCM en Firestore", e)
-                }
-            val checkoutFragment = CheckoutFragment()
-            val bundle = Bundle()
-            bundle.putString("fcmToken", token)
-            checkoutFragment.arguments = bundle
-
-            // Ahora puedes cargar CheckoutFragment cuando sea necesario, pasando el token
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, checkoutFragment)
-                .addToBackStack(null)
-                .commit()
-        }
-
 
         // Configurar la barra de herramientas y el drawer
         val toolbar: Toolbar = findViewById(R.id.toolbar_main)
@@ -215,3 +189,4 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
 }
+

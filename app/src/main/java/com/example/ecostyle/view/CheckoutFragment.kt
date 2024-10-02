@@ -1,7 +1,7 @@
 package com.example.ecostyle.view
 
+import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,27 +17,18 @@ import com.example.ecostyle.Adapter.CartAdapter
 import com.example.ecostyle.model.CartItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.messaging.FirebaseMessaging
-import com.google.firebase.messaging.RemoteMessage
 
 class CheckoutFragment : Fragment() {
 
     private lateinit var cartAdapter: CartAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var checkoutButton: Button
-    private var fcmToken: String? = null // Mantener el token en memoria
-
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.activity_checkout, container, false)
-
-        // Obtener el token FCM desde los argumentos
-        val fcmToken = arguments?.getString("fcmToken")
-        Log.d("CheckoutFragment", "Token FCM recibido en CheckoutFragment: $fcmToken")
 
         val paymentMethodsSpinner: Spinner = view.findViewById(R.id.payment_methods_spinner)
         val paymentMethods = arrayOf("Nequi", "Tarjeta de Crédito", "Tarjeta de Debito", "PSE", "Efectivo")
@@ -54,7 +45,6 @@ class CheckoutFragment : Fragment() {
         checkoutButton = view.findViewById(R.id.checkout_button)
         checkoutButton.isEnabled = false // Deshabilitar el botón por defecto
 
-
         loadCartItems()
 
         // Implementación de la lógica para realizar la compra y vaciar el carrito
@@ -69,23 +59,13 @@ class CheckoutFragment : Fragment() {
                             document.reference.delete() // Borrar cada producto en el carrito
                         }
                         Toast.makeText(context, "Compra realizada", Toast.LENGTH_SHORT).show()
+                        updateCartStatus(false) // Vaciar el carrito
                         showPurchaseConfirmation() // Redirigir a la pantalla de confirmación
                     }
             }
         }
 
         return view
-    }
-
-    override fun onPause() {
-        super.onPause()
-        println("entro")
-        // Verifica si hay productos en el carrito antes de que la app se minimice
-        if (cartAdapter.itemCount > 0 && fcmToken != null) {
-            println("entro1")
-            // Envía la notificación si hay productos en el carrito y el token FCM existe
-            sendAbandonedCartNotification(fcmToken!!)
-        }
     }
 
     private fun loadCartItems() {
@@ -107,9 +87,11 @@ class CheckoutFragment : Fragment() {
                     // Si hay productos en el carrito, habilitar el botón de Checkout
                     if (cartItems.isNotEmpty()) {
                         checkoutButton.isEnabled = true
+                        updateCartStatus(true) // Marcar que el carrito tiene productos
                     } else {
                         Toast.makeText(context, "Tu carrito está vacío", Toast.LENGTH_SHORT).show()
-                        checkoutButton.isEnabled = false // Asegurarse de que el botón esté deshabilitado si no hay productos
+                        checkoutButton.isEnabled = false
+                        updateCartStatus(false) // Marcar que el carrito está vacío
                     }
                 }
                 .addOnFailureListener {
@@ -118,25 +100,20 @@ class CheckoutFragment : Fragment() {
         }
     }
 
+    private fun updateCartStatus(hasItems: Boolean) {
+        if (isAdded) {
+            val sharedPreferences = requireContext().getSharedPreferences("CartPrefs", Context.MODE_PRIVATE)
+            val editor = sharedPreferences.edit()
+            editor.putBoolean("hasItemsInCart", hasItems)
+            editor.apply()
+        }
+    }
+
     private fun showPurchaseConfirmation() {
-        // Lógica para redirigir a la pantalla de confirmación de compra
         val transaction = parentFragmentManager.beginTransaction()
         transaction.replace(R.id.fragment_container, PurchaseConfirmationFragment())
         transaction.addToBackStack(null)
         transaction.commit()
-    }
-
-    private fun sendAbandonedCartNotification(token: String) {
-        // Crea la notificación con el título y mensaje que desees}
-
-        val notification = RemoteMessage.Builder(token)
-            .setMessageId("abandoned_cart_${System.currentTimeMillis()}")
-            .addData("title", "Carrito Abandonado")
-            .addData("body", "No olvides completar tu compra.")
-            .build()
-
-        // Envía la notificación utilizando Firebase Messaging
-        FirebaseMessaging.getInstance().send(notification)
     }
 }
 
