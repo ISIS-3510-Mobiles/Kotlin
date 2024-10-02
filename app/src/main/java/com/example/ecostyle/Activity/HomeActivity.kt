@@ -38,6 +38,8 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1000
     }
     private var sessionStartTime: Long = 0L
+    private var sessionLatitude: Double? = null
+    private var sessionLongitude: Double? = null
 
     private lateinit var drawer: DrawerLayout
     private lateinit var toggle: ActionBarDrawerToggle
@@ -49,10 +51,11 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_list)
 
+        sessionStartTime = savedInstanceState?.getLong("SESSION_START_TIME") ?: System.currentTimeMillis()
+
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         firebaseAnalytics.setAnalyticsCollectionEnabled(true)
 
-        sessionStartTime = System.currentTimeMillis()
 
         val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
         val email = prefs.getString("email", null)
@@ -200,27 +203,28 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
             if (location != null) {
-                val latitude = location.latitude
-                val longitude = location.longitude
+                sessionLatitude = location.latitude
+                sessionLongitude = location.longitude
 
-                Log.d("Location", "Latitude: $latitude, Longitude: $longitude")
+                Log.d("Location", "Latitude: $sessionLatitude, Longitude: $sessionLongitude")
 
+                // Logging SCREEN_VIEW event with location data
                 firebaseAnalytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, Bundle().apply {
                     putString(FirebaseAnalytics.Param.SCREEN_NAME, "HomeActivity")
                     putString(FirebaseAnalytics.Param.SCREEN_CLASS, "HomeActivity")
                     putString("session_start_time", System.currentTimeMillis().toString())
-                    putDouble("latitude", latitude)
-                    putDouble("longitude", longitude)
+                    putDouble("latitude", sessionLatitude ?: 0.0)
+                    putDouble("longitude", sessionLongitude ?: 0.0)
                 })
-                Log.d("FirebaseAnalytics", "Logged SCREEN_VIEW event with latitude: $latitude, longitude: $longitude")
 
+                // Logging user activity with context-aware data
                 val calendar = Calendar.getInstance()
                 val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
 
                 val bundle = Bundle().apply {
                     putInt("day_of_week", dayOfWeek)
-                    putDouble("latitude", latitude)
-                    putDouble("longitude", longitude)
+                    putDouble("latitude", sessionLatitude ?: 0.0)
+                    putDouble("longitude", sessionLongitude ?: 0.0)
                 }
                 firebaseAnalytics.logEvent("user_activity", bundle)
                 Log.d("FirebaseAnalytics", "Logged user_activity event with bundle: $bundle")
@@ -252,15 +256,26 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val sessionEndTime = System.currentTimeMillis()
         val sessionDuration = sessionEndTime - sessionStartTime
 
-        // Log session duration in Firebase
+        // Get day of the week
+        val calendar = Calendar.getInstance()
+        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+
+        // Log session duration in Firebase with context-aware information
         val sessionBundle = Bundle().apply {
             putLong("session_duration", sessionDuration)
             putLong("session_start_time", sessionStartTime)
             putLong("session_end_time", sessionEndTime)
+            putInt("day_of_week", dayOfWeek)
+            sessionLatitude?.let { putDouble("latitude", it) }
+            sessionLongitude?.let { putDouble("longitude", it) }
         }
         firebaseAnalytics.logEvent("session_info", sessionBundle)
 
-        Log.d("FirebaseAnalytics", "Logging session_info event with duration: $sessionDuration ms")
+        Log.d("FirebaseAnalytics", "Logging session_info event with duration: $sessionDuration ms, day of week: $dayOfWeek")
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong("SESSION_START_TIME", sessionStartTime)
+    }
 }
