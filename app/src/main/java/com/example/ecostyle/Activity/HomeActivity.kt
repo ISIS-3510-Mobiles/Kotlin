@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.Toast
@@ -16,7 +17,9 @@ import com.example.ecostyle.R
 import com.example.ecostyle.view.ListFragment
 import com.example.ecostyle.view.ProfileFragment
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
+import java.util.Calendar
 
 enum class ProviderType {
     BASIC,
@@ -139,4 +142,32 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return super.onOptionsItemSelected(item)
     }
 
+    override fun onStart() {
+        super.onStart()
+        Log.d("HomeActivity", "onStart called")
+
+        val firebaseAnalytics = FirebaseAnalytics.getInstance(this)
+        firebaseAnalytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, Bundle().apply {
+            putString(FirebaseAnalytics.Param.SCREEN_NAME, "HomeActivity")
+            putString(FirebaseAnalytics.Param.SCREEN_CLASS, "HomeActivity")
+            putString("session_start_time", System.currentTimeMillis().toString())
+        })
+        val calendar = Calendar.getInstance()
+        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+
+        val bundle = Bundle().apply {
+            putInt("day_of_week", dayOfWeek)
+        }
+        firebaseAnalytics.logEvent("user_activity", bundle)
+    }
+    override fun onStop() {
+        super.onStop()
+        Log.d("HomeActivity", "onStop called")
+
+        val firebaseAnalytics = FirebaseAnalytics.getInstance(this)
+        firebaseAnalytics.logEvent("session_end", Bundle().apply {
+            putString("session_end_time", System.currentTimeMillis().toString())
+        })
+        Log.d("HomeActivity", "Logging session_end event")
+    }
 }
