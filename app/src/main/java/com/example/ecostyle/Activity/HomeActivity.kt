@@ -36,6 +36,7 @@ enum class ProviderType {
 class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
     private lateinit var drawer: DrawerLayout
     private lateinit var toggle: ActionBarDrawerToggle
+    private val db = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,11 +46,8 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             .setPersistenceEnabled(true)
             .build()
 
-        val db = FirebaseFirestore.getInstance()
         db.firestoreSettings = settings
         Log.d("FirestoreInit", "Firestore inicializado correctamente")
-
-
 
         FirebaseFirestore.setLoggingEnabled(true)
 
@@ -57,6 +55,19 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
             }
+        }
+
+        // Cargar datos de sesión de SharedPreferences
+        val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
+        val email = prefs.getString("email", null)
+        val provider = prefs.getString("provider", null)
+
+        // Si no hay sesión, redirigir a AuthActivity
+        if (email == null || provider == null) {
+            val authIntent = Intent(this, AuthActivity::class.java)
+            startActivity(authIntent)
+            finish()
+            return
         }
 
 
@@ -71,35 +82,28 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val token = task.result
             Log.d("FCM", "Token FCM obtenido: $token")
 
-            // Guardar el token en Firestore
-            val userId = FirebaseAuth.getInstance().currentUser?.uid
-            if (userId != null) {
-                val db = FirebaseFirestore.getInstance()
-                val userRef = db.collection("users").document(userId)
+            val db = FirebaseFirestore.getInstance()
+            val userRef = db.collection("User").document(email)
 
-                userRef.update("fcmToken", token)
-                    .addOnSuccessListener {
-                        Log.d("Firestore", "Token FCM guardado correctamente en Firestore")
-                    }
-                    .addOnFailureListener { e ->
-                        Log.w("Firestore", "Error al guardar el token FCM en Firestore", e)
-                    }
-            }
+            userRef.update("fcmToken", token)
+                .addOnSuccessListener {
+                    Log.d("Firestore", "Token FCM guardado correctamente en Firestore")
+                }
+                .addOnFailureListener { e ->
+                    Log.w("Firestore", "Error al guardar el token FCM en Firestore", e)
+                }
+            val checkoutFragment = CheckoutFragment()
+            val bundle = Bundle()
+            bundle.putString("fcmToken", token)
+            checkoutFragment.arguments = bundle
+
+            // Ahora puedes cargar CheckoutFragment cuando sea necesario, pasando el token
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, checkoutFragment)
+                .addToBackStack(null)
+                .commit()
         }
 
-
-        // Cargar datos de sesión de SharedPreferences
-        val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
-        val email = prefs.getString("email", null)
-        val provider = prefs.getString("provider", null)
-
-        // Si no hay sesión, redirigir a AuthActivity
-        if (email == null || provider == null) {
-            val authIntent = Intent(this, AuthActivity::class.java)
-            startActivity(authIntent)
-            finish()
-            return
-        }
 
         // Configurar la barra de herramientas y el drawer
         val toolbar: Toolbar = findViewById(R.id.toolbar_main)

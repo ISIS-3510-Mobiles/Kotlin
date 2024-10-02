@@ -62,21 +62,6 @@ class AuthActivity : AppCompatActivity() {
                             prefs.putString("provider", provider.name)
                             prefs.apply()
 
-                            // Obtener el token FCM después de la autenticación
-                            FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-                                if (!task.isSuccessful) {
-                                    Log.w("FCM", "Fetching FCM registration token failed", task.exception)
-                                    return@addOnCompleteListener
-                                }
-
-                                // Obtener el token de registro FCM
-                                val token = task.result
-                                Log.d("FCM", "Token FCM: $token")
-
-                                // Puedes usar este token temporalmente sin guardarlo en la base de datos
-                                // Por ejemplo, puedes pasar el token a otra actividad si lo necesitas
-                            }
-
                             // Redirigir a HomeActivity
                             showHome(email, provider)
                         } else {

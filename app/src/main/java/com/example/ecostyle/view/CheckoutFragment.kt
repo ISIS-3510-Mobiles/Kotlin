@@ -25,13 +25,19 @@ class CheckoutFragment : Fragment() {
     private lateinit var cartAdapter: CartAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var checkoutButton: Button
-    private var fcmToken: String? = null // Mantener el token en memoria durante la sesión
+    private var fcmToken: String? = null // Mantener el token en memoria
+
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.activity_checkout, container, false)
+
+        // Obtener el token FCM desde los argumentos
+        val fcmToken = arguments?.getString("fcmToken")
+        Log.d("CheckoutFragment", "Token FCM recibido en CheckoutFragment: $fcmToken")
 
         val paymentMethodsSpinner: Spinner = view.findViewById(R.id.payment_methods_spinner)
         val paymentMethods = arrayOf("Nequi", "Tarjeta de Crédito", "Tarjeta de Debito", "PSE", "Efectivo")
@@ -48,15 +54,6 @@ class CheckoutFragment : Fragment() {
         checkoutButton = view.findViewById(R.id.checkout_button)
         checkoutButton.isEnabled = false // Deshabilitar el botón por defecto
 
-        // Obtener el token FCM cuando el fragmento se crea (solo una vez durante la sesión)
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                fcmToken = task.result // Guardar el token en memoria
-                Log.d("FCM", "Token obtenido: $fcmToken")
-            } else {
-                Log.w("FCM", "Error al obtener el token FCM", task.exception)
-            }
-        }
 
         loadCartItems()
 
@@ -82,9 +79,10 @@ class CheckoutFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-
+        println("entro")
         // Verifica si hay productos en el carrito antes de que la app se minimice
         if (cartAdapter.itemCount > 0 && fcmToken != null) {
+            println("entro1")
             // Envía la notificación si hay productos en el carrito y el token FCM existe
             sendAbandonedCartNotification(fcmToken!!)
         }
@@ -129,7 +127,8 @@ class CheckoutFragment : Fragment() {
     }
 
     private fun sendAbandonedCartNotification(token: String) {
-        // Crea la notificación con el título y mensaje que desees
+        // Crea la notificación con el título y mensaje que desees}
+
         val notification = RemoteMessage.Builder(token)
             .setMessageId("abandoned_cart_${System.currentTimeMillis()}")
             .addData("title", "Carrito Abandonado")
