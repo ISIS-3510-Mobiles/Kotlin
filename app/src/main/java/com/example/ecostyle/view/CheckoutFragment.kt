@@ -16,6 +16,8 @@ import com.example.ecostyle.Adapter.CartAdapter
 import com.example.ecostyle.model.CartItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.RemoteMessage
 
 class CheckoutFragment : Fragment() {
 
@@ -66,6 +68,16 @@ class CheckoutFragment : Fragment() {
         return view
     }
 
+    override fun onPause() {
+        super.onPause()
+
+        // Verifica si hay productos en el carrito antes de que la app se minimice
+        if (cartAdapter.itemCount > 0) {
+            // Envía la notificación si hay productos en el carrito
+            sendAbandonedCartNotification()
+        }
+    }
+
     private fun loadCartItems() {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -103,4 +115,25 @@ class CheckoutFragment : Fragment() {
         transaction.addToBackStack(null)
         transaction.commit()
     }
+    private fun sendAbandonedCartNotification() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            val db = FirebaseFirestore.getInstance()
+            db.collection("users").document(userId).get()
+                .addOnSuccessListener { document ->
+                    val fcmToken = document.getString("fcmToken")
+                    if (fcmToken != null) {
+
+                        val notification = RemoteMessage.Builder(fcmToken)
+                            .setMessageId("abandoned_cart")
+                            .addData("title", "Abandoned Cart")
+                            .addData("body", "Don't forget to complete your purchase.")
+                            .build()
+
+                        FirebaseMessaging.getInstance().send(notification)
+                    }
+                }
+        }
+    }
+
 }
