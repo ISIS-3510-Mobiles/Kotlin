@@ -100,6 +100,12 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
 
+        if (proximitySensor == null) {
+            Log.d("ProximitySensor", "Proximity sensor not available on this device")
+        } else {
+            Log.d("ProximitySensor", "Proximity sensor available")
+        }
+
         // Register the proximity sensor listener
         proximitySensor?.let {
             sensorManager.registerListener(
