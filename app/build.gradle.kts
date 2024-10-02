@@ -40,13 +40,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.0" // Cambia según tu versión de Compose
-    }
-    buildFeatures {
-        compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.2"
+        kotlinCompilerExtensionVersion = "1.5.2" // Mantén una sola versión aquí
     }
 }
 
@@ -60,11 +54,12 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
 
     // Firebase dependencies
-    implementation(platform("com.google.firebase:firebase-bom:32.3.1"))
+    implementation(platform("com.google.firebase:firebase-bom:32.7.1")) // Usa solo la versión más reciente
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx") // Firebase Storage
 
     // FirebaseUI for Firebase Auth
     implementation("com.firebaseui:firebase-ui-auth:8.0.2")
@@ -76,13 +71,11 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.2")
     debugImplementation("androidx.compose.ui:ui-tooling:1.7.2")
 
+    // Camera and Glide dependencies
+    implementation ("com.github.bumptech.glide:glide:4.15.1")
+    annotationProcessor ("com.github.bumptech.glide:compiler:4.15.1")
 
-    // Import the BoM for the Firebase platform
-    implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
-
-    // Declare the dependency for the Cloud Firestore library
-    // When using the BoM, you don't specify versions in Firebase library dependencies
-    implementation("com.google.firebase:firebase-firestore")
-
+    // Activity and Fragment KTX for registerForActivityResult
+    implementation ("androidx.activity:activity-ktx:1.7.2")
+    implementation ("androidx.fragment:fragment-ktx:1.5.7")
 }
-
