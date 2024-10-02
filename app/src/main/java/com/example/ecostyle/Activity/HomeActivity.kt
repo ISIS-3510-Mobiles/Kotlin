@@ -22,6 +22,7 @@ import com.example.ecostyle.view.SustainabilityFragment
 import com.example.ecostyle.view.CheckoutFragment
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
 
 enum class ProviderType {
@@ -45,20 +46,25 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
         // Obtener el token FCM en el inicio de la actividad
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+
+        FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener { task ->
             if (!task.isSuccessful) {
-                Log.w("FCM", "Fetching FCM registration token failed", task.exception)
+                Log.w("FCM", "Error al eliminar el token FCM", task.exception)
                 return@addOnCompleteListener
             }
+            Log.d("FCM", "Token FCM eliminado. Solicitando un nuevo token...")
 
-            // Obtener el token de registro FCM
-            val token = task.result
-            Log.d("FCM", "Token FCM: $token")
+            // Obtener un nuevo token
+            FirebaseMessaging.getInstance().token.addOnCompleteListener { tokenTask ->
+                if (!tokenTask.isSuccessful) {
+                    Log.w("FCM", "Error al obtener el nuevo token FCM", tokenTask.exception)
+                    return@addOnCompleteListener
+                }
+                val newToken = tokenTask.result
+                Log.d("FCM", "Nuevo token FCM: $newToken")
+            }
 
-            // Aquí podrías enviar el token a tu backend o guardarlo en tu base de datos
-            // saveTokenToDatabase(token)  // Método opcional para guardar el token
-        }
-
+    }
 
         // Cargar datos de sesión de SharedPreferences
         val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)

@@ -1,6 +1,7 @@
 package com.example.ecostyle.view
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -123,17 +124,29 @@ class CheckoutFragment : Fragment() {
                 .addOnSuccessListener { document ->
                     val fcmToken = document.getString("fcmToken")
                     if (fcmToken != null) {
-
-                        val notification = RemoteMessage.Builder(fcmToken)
-                            .setMessageId("abandoned_cart")
-                            .addData("title", "Abandoned Cart")
-                            .addData("body", "Don't forget to complete your purchase.")
-                            .build()
-
-                        FirebaseMessaging.getInstance().send(notification)
+                        // Enviar la notificación utilizando Firebase Messaging
+                        sendPushNotification(fcmToken)
+                    }
+                    else {
+                        Log.w("FCM", "No se encontró el token FCM.")
                     }
                 }
+                .addOnFailureListener { e ->
+                    Log.w("Firestore", "Error al recuperar el token FCM", e)
+                }
         }
+    }
+
+    private fun sendPushNotification(token: String) {
+        // Crea la notificación con el título y mensaje que desees
+        val notification = RemoteMessage.Builder(token)
+            .setMessageId("abandoned_cart_${System.currentTimeMillis()}")
+            .addData("title", "Carrito Abandonado")
+            .addData("body", "No olvides completar tu compra.")
+            .build()
+
+        // Envía la notificación utilizando Firebase Messaging
+        FirebaseMessaging.getInstance().send(notification)
     }
 
 }

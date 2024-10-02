@@ -3,16 +3,17 @@ package com.example.ecostyle.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.ecostyle.R
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 
 class AuthActivity : AppCompatActivity() {
-
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,12 +54,40 @@ class AuthActivity : AppCompatActivity() {
                         if (it.isSuccessful) {
                             val email = it.result?.user?.email ?: ""
                             val provider = ProviderType.BASIC
+
                             // Guardar las credenciales en SharedPreferences
                             val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE).edit()
                             prefs.putString("email", email)
                             prefs.putString("provider", provider.name)
                             prefs.apply()
 
+                            // Obtener el token FCM después de la autenticación
+                            FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                                if (!task.isSuccessful) {
+                                    Log.w("FCM", "Fetching FCM registration token failed", task.exception)
+                                    return@addOnCompleteListener
+                                }
+
+                                // Obtener el token de registro FCM
+                                val token = task.result
+                                Log.d("FCM", "Token FCM: $token")
+
+                                // Guardar el token FCM en Firestore
+                                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                                if (userId != null) {
+                                    val db = FirebaseFirestore.getInstance()
+                                    db.collection("users").document(userId)
+                                        .update("fcmToken", token)
+                                        .addOnSuccessListener {
+                                            Log.d("FCM", "Token FCM guardado correctamente en Firestore.")
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Log.w("FCM", "Error al guardar el token FCM en Firestore", e)
+                                        }
+                                }
+                            }
+
+                            // Redirigir a HomeActivity
                             showHome(email, provider)
                         } else {
                             showAlert()
