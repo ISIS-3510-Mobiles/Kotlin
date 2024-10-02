@@ -25,6 +25,7 @@ class CheckoutFragment : Fragment() {
     private lateinit var cartAdapter: CartAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var checkoutButton: Button
+    private var fcmToken: String? = null // Mantener el token en memoria durante la sesión
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -46,6 +47,16 @@ class CheckoutFragment : Fragment() {
 
         checkoutButton = view.findViewById(R.id.checkout_button)
         checkoutButton.isEnabled = false // Deshabilitar el botón por defecto
+
+        // Obtener el token FCM cuando el fragmento se crea (solo una vez durante la sesión)
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                fcmToken = task.result // Guardar el token en memoria
+                Log.d("FCM", "Token obtenido: $fcmToken")
+            } else {
+                Log.w("FCM", "Error al obtener el token FCM", task.exception)
+            }
+        }
 
         loadCartItems()
 
@@ -73,9 +84,9 @@ class CheckoutFragment : Fragment() {
         super.onPause()
 
         // Verifica si hay productos en el carrito antes de que la app se minimice
-        if (cartAdapter.itemCount > 0) {
-            // Envía la notificación si hay productos en el carrito
-            sendAbandonedCartNotification()
+        if (cartAdapter.itemCount > 0 && fcmToken != null) {
+            // Envía la notificación si hay productos en el carrito y el token FCM existe
+            sendAbandonedCartNotification(fcmToken!!)
         }
     }
 
@@ -116,28 +127,8 @@ class CheckoutFragment : Fragment() {
         transaction.addToBackStack(null)
         transaction.commit()
     }
-    private fun sendAbandonedCartNotification() {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
-        if (userId != null) {
-            val db = FirebaseFirestore.getInstance()
-            db.collection("users").document(userId).get()
-                .addOnSuccessListener { document ->
-                    val fcmToken = document.getString("fcmToken")
-                    if (fcmToken != null) {
-                        // Enviar la notificación utilizando Firebase Messaging
-                        sendPushNotification(fcmToken)
-                    }
-                    else {
-                        Log.w("FCM", "No se encontró el token FCM.")
-                    }
-                }
-                .addOnFailureListener { e ->
-                    Log.w("Firestore", "Error al recuperar el token FCM", e)
-                }
-        }
-    }
 
-    private fun sendPushNotification(token: String) {
+    private fun sendAbandonedCartNotification(token: String) {
         // Crea la notificación con el título y mensaje que desees
         val notification = RemoteMessage.Builder(token)
             .setMessageId("abandoned_cart_${System.currentTimeMillis()}")
@@ -148,5 +139,5 @@ class CheckoutFragment : Fragment() {
         // Envía la notificación utilizando Firebase Messaging
         FirebaseMessaging.getInstance().send(notification)
     }
-
 }
+

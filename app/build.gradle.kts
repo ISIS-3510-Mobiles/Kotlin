@@ -58,7 +58,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-messaging-ktx")  // Nota: Usa -ktx
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     // FirebaseUI for Firebase Auth
     implementation("com.firebaseui:firebase-ui-auth:8.0.2")
@@ -97,4 +97,8 @@ dependencies {
 
     // Icons Material Design
     implementation("com.google.android.material:material:1.9.0")
+
 }
+
+
+

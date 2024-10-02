@@ -9,6 +9,7 @@ import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.ecostyle.R
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
@@ -72,19 +73,8 @@ class AuthActivity : AppCompatActivity() {
                                 val token = task.result
                                 Log.d("FCM", "Token FCM: $token")
 
-                                // Guardar el token FCM en Firestore
-                                val userId = FirebaseAuth.getInstance().currentUser?.uid
-                                if (userId != null) {
-                                    val db = FirebaseFirestore.getInstance()
-                                    db.collection("users").document(userId)
-                                        .update("fcmToken", token)
-                                        .addOnSuccessListener {
-                                            Log.d("FCM", "Token FCM guardado correctamente en Firestore.")
-                                        }
-                                        .addOnFailureListener { e ->
-                                            Log.w("FCM", "Error al guardar el token FCM en Firestore", e)
-                                        }
-                                }
+                                // Puedes usar este token temporalmente sin guardarlo en la base de datos
+                                // Por ejemplo, puedes pasar el token a otra actividad si lo necesitas
                             }
 
                             // Redirigir a HomeActivity
@@ -115,3 +105,4 @@ class AuthActivity : AppCompatActivity() {
         finish() // Cierra la actividad de autenticación para que no regrese aquí
     }
 }
+

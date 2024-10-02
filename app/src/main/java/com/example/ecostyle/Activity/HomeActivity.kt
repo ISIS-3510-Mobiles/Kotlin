@@ -21,8 +21,10 @@ import com.example.ecostyle.view.ProfileFragment
 import com.example.ecostyle.view.SustainabilityFragment
 import com.example.ecostyle.view.CheckoutFragment
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.messaging.FirebaseMessaging
 
 enum class ProviderType {
@@ -38,6 +40,19 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_list)
+        FirebaseApp.initializeApp(this)
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setPersistenceEnabled(true)
+            .build()
+
+        val db = FirebaseFirestore.getInstance()
+        db.firestoreSettings = settings
+        Log.d("FirestoreInit", "Firestore inicializado correctamente")
+
+
+
+        FirebaseFirestore.setLoggingEnabled(true)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
@@ -47,24 +62,31 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         // Obtener el token FCM en el inicio de la actividad
 
-        FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener { task ->
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
-                Log.w("FCM", "Error al eliminar el token FCM", task.exception)
+                Log.w("FCM", "Error al obtener el token FCM", task.exception)
                 return@addOnCompleteListener
             }
-            Log.d("FCM", "Token FCM eliminado. Solicitando un nuevo token...")
+            // Token obtenido
+            val token = task.result
+            Log.d("FCM", "Token FCM obtenido: $token")
 
-            // Obtener un nuevo token
-            FirebaseMessaging.getInstance().token.addOnCompleteListener { tokenTask ->
-                if (!tokenTask.isSuccessful) {
-                    Log.w("FCM", "Error al obtener el nuevo token FCM", tokenTask.exception)
-                    return@addOnCompleteListener
-                }
-                val newToken = tokenTask.result
-                Log.d("FCM", "Nuevo token FCM: $newToken")
+            // Guardar el token en Firestore
+            val userId = FirebaseAuth.getInstance().currentUser?.uid
+            if (userId != null) {
+                val db = FirebaseFirestore.getInstance()
+                val userRef = db.collection("users").document(userId)
+
+                userRef.update("fcmToken", token)
+                    .addOnSuccessListener {
+                        Log.d("Firestore", "Token FCM guardado correctamente en Firestore")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.w("Firestore", "Error al guardar el token FCM en Firestore", e)
+                    }
             }
+        }
 
-    }
 
         // Cargar datos de sesión de SharedPreferences
         val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
