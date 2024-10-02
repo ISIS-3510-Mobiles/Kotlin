@@ -256,13 +256,16 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val sessionEndTime = System.currentTimeMillis()
         val sessionDuration = sessionEndTime - sessionStartTime
 
+        Log.d("SessionInfo", "sessionStartTime: $sessionStartTime")
+        Log.d("SessionInfo", "sessionEndTime: $sessionEndTime")
+        Log.d("SessionInfo", "sessionDuration: $sessionDuration")
         // Get day of the week
         val calendar = Calendar.getInstance()
         val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
 
         // Log session duration in Firebase with context-aware information
         val sessionBundle = Bundle().apply {
-            putLong("session_duration", sessionDuration)
+            putLong("user_session_duration", sessionDuration)
             putLong("session_start_time", sessionStartTime)
             putLong("session_end_time", sessionEndTime)
             putInt("day_of_week", dayOfWeek)
