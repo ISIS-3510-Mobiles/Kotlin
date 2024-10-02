@@ -2,8 +2,11 @@ package com.example.ecostyle.Activity
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.Toast
@@ -19,6 +22,7 @@ import com.example.ecostyle.view.SustainabilityFragment
 import com.example.ecostyle.view.CheckoutFragment
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.messaging.FirebaseMessaging
 
 enum class ProviderType {
     BASIC,
@@ -33,6 +37,28 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_list)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+            }
+        }
+
+
+        // Obtener el token FCM en el inicio de la actividad
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("FCM", "Fetching FCM registration token failed", task.exception)
+                return@addOnCompleteListener
+            }
+
+            // Obtener el token de registro FCM
+            val token = task.result
+            Log.d("FCM", "Token FCM: $token")
+
+            // Aquí podrías enviar el token a tu backend o guardarlo en tu base de datos
+            // saveTokenToDatabase(token)  // Método opcional para guardar el token
+        }
+
 
         // Cargar datos de sesión de SharedPreferences
         val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
