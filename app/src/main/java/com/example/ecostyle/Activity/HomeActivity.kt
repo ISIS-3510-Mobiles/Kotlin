@@ -48,6 +48,8 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setContentView(R.layout.activity_list)
 
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
+        firebaseAnalytics.setAnalyticsCollectionEnabled(true)
+
 
         val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
         val email = prefs.getString("email", null)
@@ -93,18 +95,18 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+            ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
+            ) == PackageManager.PERMISSION_GRANTED
         ) {
+            getLastLocation() // Permissions granted, proceed to get location
+        } else {
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
                 LOCATION_PERMISSION_REQUEST_CODE
             )
-        } else {
-            getLastLocation()
         }
 
         if (savedInstanceState == null) {
@@ -204,6 +206,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     putDouble("latitude", latitude)
                     putDouble("longitude", longitude)
                 })
+                Log.d("FirebaseAnalytics", "Logged SCREEN_VIEW event with latitude: $latitude, longitude: $longitude")
 
                 val calendar = Calendar.getInstance()
                 val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
@@ -214,6 +217,8 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     putDouble("longitude", longitude)
                 }
                 firebaseAnalytics.logEvent("user_activity", bundle)
+                Log.d("FirebaseAnalytics", "Logged user_activity event with bundle: $bundle")
+
             } else {
                 Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
                 Log.e("HomeActivity", "Location is null")
