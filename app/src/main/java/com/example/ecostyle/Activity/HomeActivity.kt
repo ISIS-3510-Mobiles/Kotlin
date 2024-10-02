@@ -37,6 +37,8 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1000
     }
+    private var sessionStartTime: Long = 0L
+
     private lateinit var drawer: DrawerLayout
     private lateinit var toggle: ActionBarDrawerToggle
 
@@ -50,6 +52,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         firebaseAnalytics.setAnalyticsCollectionEnabled(true)
 
+        sessionStartTime = System.currentTimeMillis()
 
         val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
         val email = prefs.getString("email", null)
@@ -115,6 +118,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 .commit()
         }
         drawer.openDrawer(GravityCompat.START)
+
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -199,6 +203,8 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 val latitude = location.latitude
                 val longitude = location.longitude
 
+                Log.d("Location", "Latitude: $latitude, Longitude: $longitude")
+
                 firebaseAnalytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, Bundle().apply {
                     putString(FirebaseAnalytics.Param.SCREEN_NAME, "HomeActivity")
                     putString(FirebaseAnalytics.Param.SCREEN_CLASS, "HomeActivity")
@@ -243,12 +249,18 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onStop() {
         super.onStop()
-        Log.d("HomeActivity", "onStop called")
+        val sessionEndTime = System.currentTimeMillis()
+        val sessionDuration = sessionEndTime - sessionStartTime
 
-        firebaseAnalytics.logEvent("session_end", Bundle().apply {
-            putString("session_end_time", System.currentTimeMillis().toString())
-        })
-        Log.d("HomeActivity", "Logging session_end event")
+        // Log session duration in Firebase
+        val sessionBundle = Bundle().apply {
+            putLong("session_duration", sessionDuration)
+            putLong("session_start_time", sessionStartTime)
+            putLong("session_end_time", sessionEndTime)
+        }
+        firebaseAnalytics.logEvent("session_info", sessionBundle)
+
+        Log.d("FirebaseAnalytics", "Logging session_info event with duration: $sessionDuration ms")
     }
 
 }
