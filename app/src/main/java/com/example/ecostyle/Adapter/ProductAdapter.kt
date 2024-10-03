@@ -1,6 +1,7 @@
 package com.example.ecostyle.Adapter
 
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,6 +36,7 @@ class ProductAdapter(private var productList: List<Product>, private val onItemC
             .into(holder.productImage)
 
         holder.itemView.setOnClickListener {
+            Log.d("ProductAdapter", "Product ID: ${product.id}")
             onItemClicked(product)
         }
     }

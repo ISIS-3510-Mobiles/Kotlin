@@ -54,7 +54,7 @@ class ListFragment : Fragment() {
         productViewModel.getProductList().observe(viewLifecycleOwner, Observer { products ->
             productAdapter = ProductAdapter(products) { product ->
                 val intent = Intent(requireContext(), ProductDetailActivity::class.java)
-                intent.putExtra("PRODUCT_ID", product.id) // Make sure `id` exists in `Product`
+                intent.putExtra("PRODUCT_ID", product.id)
                 Log.d("ListFragment", "Navigating to product details with ID: ${product.id}")
                 startActivity(intent)
             }
