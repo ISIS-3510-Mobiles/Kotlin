@@ -4,6 +4,9 @@
         <!-- Customize your light theme here. -->
          <item name="colorPrimary">#012826</item>
         <item name="colorPrimaryDark">#012826</item>
+        <item name="windowActionBar">false </item>
+        <item name="windowNoTitle">true </item>
+
 
     </style>
 

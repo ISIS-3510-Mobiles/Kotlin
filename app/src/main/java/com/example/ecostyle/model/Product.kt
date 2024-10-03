@@ -1,8 +1,11 @@
 package com.example.ecostyle.model
 
-data class Product(
+class Product
+    (
+    val id: Int,
     val name: String,
     val price: String,
+    val imageResource: Int,
     val description: String,
-    val imageUrl: String
+    var isFavorite: Boolean = false
 )

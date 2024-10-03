@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- RecyclerView para mostrar los productos del carrito -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_view_cart_items"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            tools:listitem="@layout/activity_item_product_card_checkout" />
+
+        <!-- Contenedor para resumen de precio y métodos de pago -->
+        <LinearLayout
+            android:id="@+id/price_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:orientation="vertical">
+
+            <!-- Número total de ítems -->
+            <TextView
+                android:id="@+id/item_count_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Total de ítems: 0"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Subtotal (sin impuestos) -->
+            <TextView
+                android:id="@+id/subtotal_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Subtotal: $0.00"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Texto para los impuestos -->
+            <TextView
+                android:id="@+id/taxes_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Impuestos (7%): $0.00"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Texto para el total final -->
+            <TextView
+                android:id="@+id/total_price_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Total: $0.00"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Spinner para seleccionar el método de pago -->
+
+        </LinearLayout>
+
+        <!-- Botón para finalizar la compra -->
+        <Button
+            android:id="@+id/checkout_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Checkout"
+            android:backgroundTint="@android:color/darker_gray"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
+
+</ScrollView>
