@@ -56,8 +56,8 @@ class Notification : Application() {
         // Crear la notificación
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_cart) // Icono de la notificación
-            .setContentTitle("Carrito Abandonado")
-            .setContentText("Tienes productos en tu carrito. ¡No olvides completar tu compra!")
+            .setContentTitle("Abandoned Cart")
+            .setContentText("You have items in your cart. Don’t forget to complete your purchase!")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent) // Asignamos el PendingIntent para cuando se haga click
