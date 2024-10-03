@@ -26,5 +26,11 @@
     <string name="price_sweater">$100.00</string>
     <string name="favorite_button_desc">Add to favorites</string>
     <string name="product_description">Uniandes Sweater. I changed to th "Nacho", so I don´t use it anymore.</string>
+    <string name="payment_title">Selecciona tu método de pago</string>
+    <string name="billing_address_hint">Dirección de facturación</string>
+    <string name="billing_city_hint">Ciudad</string>
+    <string name="billing_zipcode_hint">Código postal</string>
+    <string name="proceed_to_confirmation">Proceder a la confirmación</string>
+
 
 </resources>
