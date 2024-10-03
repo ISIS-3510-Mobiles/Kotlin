@@ -31,6 +31,8 @@
     <string name="billing_city_hint">Ciudad</string>
     <string name="billing_zipcode_hint">Código postal</string>
     <string name="proceed_to_confirmation">Proceder a la confirmación</string>
+    <string name="add_to_cart">Add to Cart</string>
+    <string name="buy">Buy</string>
 
 
 </resources>

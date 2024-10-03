@@ -12,7 +12,7 @@ import com.example.ecostyle.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-class ProductAdapter(private var productList: List<Product>) : RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
+class ProductAdapter(private var productList: List<Product>, private val onItemClicked: (Product) -> Unit) : RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
 
     class ProductViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val productImage: ImageView = itemView.findViewById(R.id.product_image)
