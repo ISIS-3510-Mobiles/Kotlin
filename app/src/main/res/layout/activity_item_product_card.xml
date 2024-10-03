@@ -64,6 +64,14 @@
             android:textSize="14sp"
             android:textColor="@color/black"
             android:paddingTop="4dp" />
+        <Button
+            android:id="@+id/add_to_cart_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add to cart"
+            android:backgroundTint="@color/dark_green"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="8dp" />
 
     </LinearLayout>
 
