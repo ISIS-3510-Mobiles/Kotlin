@@ -32,22 +32,23 @@
             android:textStyle="bold" />
 
 
-        <ImageView
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/profileImage"
             android:layout_width="250dp"
             android:layout_height="250dp"
             android:contentDescription="Imagen de perfil"
             android:scaleType="centerCrop"
-            android:background="@drawable/circular_background"
             app:layout_constraintTop_toBottomOf="@id/btnCamara"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            tools:srcCompat="@tools:sample/avatars"/>
+            app:shapeAppearanceOverlay="@style/CircleImageView"
+            tools:srcCompat="@tools:sample/avatars" />
+
 
         <Button
             android:id="@+id/btnCamara"
-            android:layout_width="70dp"
-            android:layout_height="70dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:background="@android:drawable/ic_menu_camera"
             android:textColor="@color/white"
             android:text="-"
