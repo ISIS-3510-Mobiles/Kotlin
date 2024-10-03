@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.ecostyle.model.Product
 import com.example.ecostyle.R
 
@@ -28,7 +29,10 @@ class ProductAdapter(private var productList: List<Product>, private val onItemC
         val product = productList[position]
         holder.productName.text = product.name
         holder.productPrice.text = product.price
-        holder.productImage.setImageResource(product.imageResource)
+
+        Glide.with(holder.itemView.context)
+            .load(product.imageResource)
+            .into(holder.productImage)
 
         holder.itemView.setOnClickListener {
             onItemClicked(product)

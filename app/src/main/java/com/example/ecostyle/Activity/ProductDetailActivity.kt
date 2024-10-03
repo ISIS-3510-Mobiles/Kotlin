@@ -1,4 +1,4 @@
-package com.example.ecostyle.view
+package com.example.ecostyle.Activity
 
 import android.os.Bundle
 import android.util.Log
@@ -10,6 +10,8 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.ecostyle.R
 import com.example.ecostyle.viewmodel.ProductDetailViewModel
+import com.bumptech.glide.Glide
+
 
 class ProductDetailActivity : AppCompatActivity() {
 
@@ -34,10 +36,13 @@ class ProductDetailActivity : AppCompatActivity() {
             productName.text = product.name
             productPrice.text = product.price
             productDescription.text = product.description
-            productImage.setImageResource(product.imageResource)
+
+            Glide.with(this)
+                .load(product.imageResource)
+                .into(productImage)
 
             favoriteButton.setImageResource(
-                if (product.isFavorite) R.drawable.baseline_favorite_24
+                if (product.isFavorite == true) R.drawable.baseline_favorite_24
                 else R.drawable.baseline_favorite_border_24
             )
         }

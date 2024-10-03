@@ -104,4 +104,7 @@ dependencies {
     implementation ("androidx.compose.runtime:runtime-livedata:1.7.2")
     // Icons Material Design
     implementation ("com.google.android.material:material:1.9.0")
+
+    // Glide for image handling
+    implementation ("com.github.bumptech.glide:glide:4.12.0")
 }

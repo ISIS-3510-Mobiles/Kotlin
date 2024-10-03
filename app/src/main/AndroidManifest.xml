@@ -27,7 +27,7 @@
         <activity
             android:name=".Activity.RegisterActivity"
             android:exported="false" />
-        <activity android:name=".view.ProductDetailActivity"
+        <activity android:name=".Activity.ProductDetailActivity"
             android:exported="false" />
         <activity
             android:name=".Activity.AuthActivity"

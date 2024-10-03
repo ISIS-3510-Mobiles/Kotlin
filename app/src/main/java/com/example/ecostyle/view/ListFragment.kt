@@ -14,6 +14,7 @@ import com.example.ecostyle.Adapter.ProductAdapter
 import com.example.ecostyle.viewmodel.ProductViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.Observer
+import com.example.ecostyle.Activity.ProductDetailActivity
 
 
 class ListFragment : Fragment() {
