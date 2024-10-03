@@ -11,6 +11,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.ecostyle.R
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
 
@@ -31,6 +33,13 @@ class AuthActivity : AppCompatActivity() {
             setContentView(R.layout.activity_auth)
             setup()
         }
+        // Remote Config
+        val firebaseConfig = FirebaseRemoteConfig.getInstance()
+        val configSettings = FirebaseRemoteConfigSettings.Builder()
+            .setMinimumFetchIntervalInSeconds(60)
+            .build()
+        firebaseConfig.setConfigSettingsAsync(configSettings)
+
     }
 
     private fun setup() {

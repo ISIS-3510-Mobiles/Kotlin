@@ -10,7 +10,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.ecostyle.R
+import com.example.ecostyle.model.User
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class RegisterActivity : AppCompatActivity() {
 
@@ -19,33 +21,42 @@ class RegisterActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_register)
 
-        // Ajuste de los márgenes para la vista principal
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-
-        // Llamar a la configuración de la autenticación
         setup()
     }
 
-    // Método para configurar los botones de autenticación
     private fun setup() {
         title = "Autenticación"
         val registerButton = findViewById<Button>(R.id.loginButtonRegister)
         val emailEditTextRegister = findViewById<EditText>(R.id.emailEditTextRegister)
         val passwordEditTextRegister = findViewById<EditText>(R.id.passwordEditTextRegister)
+        val nameEditText = findViewById<EditText>(R.id.nameEditTextRegister) // New field for name
+        val addressEditText = findViewById<EditText>(R.id.addressEditTextRegister) // New field for address
+        val numberEditText = findViewById<EditText>(R.id.numberEditTextRegister) // New field for phone number
 
         registerButton.setOnClickListener {
-            if (emailEditTextRegister.text.isNotEmpty() && passwordEditTextRegister.text.isNotEmpty()) {
+            if (emailEditTextRegister.text.isNotEmpty()
+                && passwordEditTextRegister.text.isNotEmpty()
+                && nameEditText.text.isNotEmpty()
+                && addressEditText.text.isNotEmpty()
+                && numberEditText.text.isNotEmpty()) {
                 FirebaseAuth.getInstance()
                     .createUserWithEmailAndPassword(
                         emailEditTextRegister.text.toString(),
                         passwordEditTextRegister.text.toString()
                     ).addOnCompleteListener {
                         if (it.isSuccessful) {
-                            showHome(it.result?.user?.email ?: "", ProviderType.BASIC)
+                            // Add the user to Firestore
+                            val email = it.result?.user?.email ?: ""
+                            val user = User(
+                                id = emailEditTextRegister.text.toString(),
+                                imgUrl = "", // Empty by default
+                                name = nameEditText.text.toString(),
+                                adress = addressEditText.text.toString(),
+                                number = numberEditText.text.toString()
+                            )
+                            saveUserToFirestore(user)
+
+                            showHome(email, ProviderType.BASIC)
                         } else {
                             showAlert()
                         }
@@ -54,7 +65,21 @@ class RegisterActivity : AppCompatActivity() {
         }
     }
 
-    // Método para mostrar una alerta de error
+    private fun saveUserToFirestore(user: User) {
+        val db = FirebaseFirestore.getInstance()
+        db.collection("User")
+            .document(user.id ?: "")
+            .set(user)
+            .addOnSuccessListener {
+                // User saved successfully
+                println("Usuario guardado exitosamente en Firestore")
+            }
+            .addOnFailureListener {e ->
+                // Handle the error
+                println("Error al guardar el usuario en Firestore: ${e.message}")
+            }
+    }
+
     private fun showAlert() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Error")
@@ -64,7 +89,6 @@ class RegisterActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    // Método para ir a la pantalla de inicio
     private fun showHome(email: String, provider: ProviderType) {
         val homeIntent = Intent(this, HomeActivity::class.java).apply {
             putExtra("email", email)
