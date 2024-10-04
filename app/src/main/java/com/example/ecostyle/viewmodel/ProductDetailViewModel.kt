@@ -1,4 +1,3 @@
-// ProductDetailViewModel.kt
 package com.example.ecostyle.viewmodel
 
 import android.util.Log
@@ -18,14 +17,14 @@ class ProductDetailViewModel : ViewModel() {
         Log.d("ProductDetailViewModel", "loadProduct called with productId: $productId")
         repository.getProductById(productId) { product ->
             _product.value = product ?: Product(
-                id = -1, // Default or error ID
+                id = -1,
                 name = "Product Not Found",
                 price = "$0.00",
-                imageResource = "", // Default image URL or placeholder
+                imageResource = "",
                 description = "This product could not be found.",
                 isFavorite = false
             )
-            Log.d("ProductDetailViewModel", "Loaded product: ${_product.value}") // Check the loaded product
+            Log.d("ProductDetailViewModel", "Loaded product: ${_product.value}")
         }
     }
 

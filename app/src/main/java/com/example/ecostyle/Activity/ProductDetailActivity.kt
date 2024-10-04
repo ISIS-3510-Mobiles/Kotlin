@@ -24,7 +24,7 @@ import android.content.res.Configuration
 import android.content.Context
 
 
-class ProductDetailActivity : AppCompatActivity() {
+class ProductDetailActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelectedListener {
 
     private val viewModel: ProductDetailViewModel by viewModels()
     private lateinit var drawer: DrawerLayout
@@ -34,12 +34,10 @@ class ProductDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detail)
 
-/*
-        // Find toolbar and set it
+
         val toolbar: Toolbar = findViewById(R.id.toolbar_main)
         setSupportActionBar(toolbar)
 
-        // Set up drawer
         drawer = findViewById(R.id.drawer_layout)
         toggle = ActionBarDrawerToggle(
             this, drawer, toolbar,
@@ -52,11 +50,10 @@ class ProductDetailActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
 
-        // Set up navigation view
         val navigationView: NavigationView = findViewById(R.id.nav_view)
         navigationView.setNavigationItemSelectedListener(this)
 
-*/
+
         val productImage = findViewById<ImageView>(R.id.product_detail_image)
         val productName = findViewById<TextView>(R.id.product_detail_title)
         val productPrice = findViewById<TextView>(R.id.product_detail_price)
@@ -96,7 +93,7 @@ class ProductDetailActivity : AppCompatActivity() {
         addToCartButton.setOnClickListener {
         }
     }
-/*
+
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
         val email = prefs.getString("email", null)
@@ -154,5 +151,5 @@ class ProductDetailActivity : AppCompatActivity() {
         }
         return super.onOptionsItemSelected(item)
     }
-    */
+
 }
