@@ -18,6 +18,7 @@
 
         <include
             layout="@layout/app_bar_main"
+            android:id="@+id/toolbar_main"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
@@ -99,17 +100,6 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:layout_marginTop="16dp">
-
-                    <!-- Buy Button -->
-                    <Button
-                        android:id="@+id/btn_buy"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/buy"
-                        android:textColor="@android:color/white"
-                        android:background="@color/dark_green"
-                        android:layout_marginBottom="8dp" />
-
 
                     <Button
                         android:id="@+id/btn_add_to_cart"
