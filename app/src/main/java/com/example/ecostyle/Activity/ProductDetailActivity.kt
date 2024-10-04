@@ -24,7 +24,7 @@ import android.content.res.Configuration
 import android.content.Context
 
 
-class ProductDetailActivity : AppCompatActivity() { /* , NavigationView.OnNavigationItemSelectedListener */
+class ProductDetailActivity : AppCompatActivity() {
 
     private val viewModel: ProductDetailViewModel by viewModels()
     private lateinit var drawer: DrawerLayout

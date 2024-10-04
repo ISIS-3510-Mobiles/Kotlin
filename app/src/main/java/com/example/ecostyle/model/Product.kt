@@ -1,7 +1,7 @@
 package com.example.ecostyle.model
 
 data class Product(
-    val id: Int? = null,
+    val id: Int = -2,
     val name: String? = null,
     val price: String? = null,
     val imageResource: String? = null,
