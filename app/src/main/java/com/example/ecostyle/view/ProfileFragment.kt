@@ -1,8 +1,10 @@
 package com.example.ecostyle.view
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.provider.MediaStore
@@ -15,6 +17,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.example.ecostyle.Activity.AuthActivity
@@ -32,13 +35,27 @@ class ProfileFragment : Fragment() {
     private var storageReference = FirebaseStorage.getInstance().reference
     private lateinit var email: String
 
+    // Código para solicitar permisos
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // Permiso concedido, abrir la cámara
+            dispatchTakePictureIntent()
+        } else {
+            // Permiso denegado, mostrar un mensaje o manejar el caso
+            Toast.makeText(context, "Permiso de cámara denegado.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     // Código para manejar el resultado de la cámara
-    private val takePicturePreviewLauncher = registerForActivityResult(
-        ActivityResultContracts.TakePicturePreview()
-    ) { bitmap: Bitmap? ->
-        if (bitmap != null) {
-            profileImage.setImageBitmap(bitmap)
-            uploadImageToStorage(bitmap, email)
+    private val takePictureLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result: ActivityResult ->
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            val imageBitmap = result.data!!.extras?.get("data") as Bitmap
+            profileImage.setImageBitmap(imageBitmap)
+            uploadImageToStorage(imageBitmap, email)
         } else {
             Toast.makeText(context, "No se tomó ninguna foto.", Toast.LENGTH_SHORT).show()
         }
@@ -47,6 +64,7 @@ class ProfileFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
+
     ): View? {
         // Infla el diseño del fragmento
         val view = inflater.inflate(R.layout.activity_profile, container, false)
@@ -63,8 +81,8 @@ class ProfileFragment : Fragment() {
         val logOutButton = view.findViewById<Button>(R.id.logOutButton)
 
         btnCamara.setOnClickListener {
-            // Lanza la cámara para tomar una foto
-            dispatchTakePictureIntent()
+            // Verificar y solicitar el permiso de cámara
+            checkCameraPermissionAndOpenCamera()
         }
 
         if (email.isNotEmpty()) {
@@ -93,9 +111,36 @@ class ProfileFragment : Fragment() {
         return view
     }
 
+    private fun checkCameraPermissionAndOpenCamera() {
+        when {
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                // Permiso ya concedido, abrir la cámara
+                dispatchTakePictureIntent()
+            }
+            shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
+                // Mostrar una explicación al usuario
+                Toast.makeText(context, "La aplicación necesita acceso a la cámara para tomar fotos.", Toast.LENGTH_LONG).show()
+                // Solicitar el permiso
+                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+            else -> {
+                // Solicitar el permiso
+                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
+    }
+
     // Iniciar la cámara para tomar una foto
     private fun dispatchTakePictureIntent() {
-        takePicturePreviewLauncher.launch(null)
+        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
+            takePictureLauncher.launch(takePictureIntent)
+        } else {
+            Toast.makeText(context, "No hay aplicación de cámara disponible.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun loadUserProfile(email: String, nameTextView: TextView, emailTextView: TextView) {

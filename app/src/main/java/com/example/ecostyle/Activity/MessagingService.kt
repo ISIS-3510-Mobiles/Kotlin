@@ -43,7 +43,7 @@ class MessagingService : FirebaseMessagingService() {
         val defaultSoundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
 
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_eco)
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Cart Reminder")
             .setContentText(messageBody)
             .setAutoCancel(true)

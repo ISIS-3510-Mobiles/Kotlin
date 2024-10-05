@@ -1,65 +1,66 @@
 package com.example.ecostyle.view
 
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ecostyle.R
 import com.example.ecostyle.Adapter.ProductAdapter
 import com.example.ecostyle.viewmodel.ProductViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.Observer
-import com.example.ecostyle.Activity.ProductDetailActivity
-
 
 class ListFragment : Fragment() {
 
     private lateinit var productViewModel: ProductViewModel
     private lateinit var productAdapter: ProductAdapter
+    private lateinit var recyclerView: RecyclerView
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.activity_list, container, false) //listfragment
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        return inflater.inflate(R.layout.activity_list, container, false) // Asegúrate de tener este layout
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_view_products)
+        recyclerView = view.findViewById(R.id.recycler_view_products)
 
         val gridLayoutManager = GridLayoutManager(context, 2)
         recyclerView.layoutManager = gridLayoutManager
 
-        /*
-        // Initialize the adapter with an empty list
-        productAdapter = ProductAdapter(emptyList())
-        recyclerView.adapter = productAdapter
-
-        // Initialize the ViewModel
-        productViewModel = ViewModelProvider(this).get(ProductViewModel::class.java)
-
-        // Observe the LiveData from the ViewModel
-        productViewModel.getProductList().observe(viewLifecycleOwner, Observer { products ->
-            // Update the adapter's product list
-            productAdapter.setProductList(products)
-        })
-        */
-
-        productViewModel = ViewModelProvider(this).get(ProductViewModel::class.java)
-
-        productViewModel.getProductList().observe(viewLifecycleOwner, Observer { products ->
-            productAdapter = ProductAdapter(products) { product ->
-                val intent = Intent(requireContext(), ProductDetailActivity::class.java)
-                intent.putExtra("PRODUCT_ID", product.id)
-                Log.d("ListFragment", "Navigating to product details with ID: ${product.id}")
-                startActivity(intent)
+        // Inicializa el adaptador con una lista vacía y configura el listener
+        productAdapter = ProductAdapter(emptyList()) { product ->
+            // Navegar al ProductDetailFragment en lugar de iniciar una actividad
+            val productDetailFragment = ProductDetailFragment().apply {
+                arguments = Bundle().apply {
+                    putInt("PRODUCT_ID", product.id)
+                }
             }
 
-            recyclerView.adapter = productAdapter
-        })
+            // Reemplaza el fragmento actual por el ProductDetailFragment
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, productDetailFragment)
+                .addToBackStack(null) // Para poder volver atrás
+                .commit()
+
+            Log.d("ListFragment", "Navigating to product details with ID: ${product.id}")
+        }
+
+        recyclerView.adapter = productAdapter
+
+        // Inicializa el ViewModel
+        productViewModel = ViewModelProvider(this).get(ProductViewModel::class.java)
+
+        // Observa el LiveData del ViewModel
+        productViewModel.getProductList().observe(viewLifecycleOwner) { products ->
+            // Actualiza la lista de productos en el adaptador
+            productAdapter.setProductList(products)
+        }
     }
 }
