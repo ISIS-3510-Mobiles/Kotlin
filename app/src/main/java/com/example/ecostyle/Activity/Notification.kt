@@ -19,7 +19,7 @@ class Notification : Application() {
         registerActivityLifecycleCallbacks(AppLifecycleListener())
     }
 
-    public fun checkCartAndSendNotification() {
+    fun checkCartAndSendNotification() {
         val sharedPreferences = getSharedPreferences("CartPrefs", Context.MODE_PRIVATE)
         val hasItemsInCart = sharedPreferences.getBoolean("hasItemsInCart", false)
 
@@ -47,7 +47,7 @@ class Notification : Application() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "Recordatorio de Carrito",
+                "Cart reminder",
                 NotificationManager.IMPORTANCE_HIGH
             )
             notificationManager.createNotificationChannel(channel)

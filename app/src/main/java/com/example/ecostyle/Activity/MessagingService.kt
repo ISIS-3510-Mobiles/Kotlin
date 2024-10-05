@@ -43,7 +43,7 @@ class MessagingService : FirebaseMessagingService() {
         val defaultSoundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
 
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_cart)
+            .setSmallIcon(R.drawable.ic_eco)
             .setContentTitle("Cart Reminder")
             .setContentText(messageBody)
             .setAutoCancel(true)
@@ -53,7 +53,7 @@ class MessagingService : FirebaseMessagingService() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelName = "Cart Reminders"
+            val channelName = "EcoStyle"
             val channel = NotificationChannel(
                 channelId,
                 channelName,
@@ -65,10 +65,9 @@ class MessagingService : FirebaseMessagingService() {
         notificationManager.notify(0, notificationBuilder.build())
     }
 
-    // Este método se invoca si el token FCM cambia
     override fun onNewToken(token: String) {
         Log.d("FCM", "Refreshed token: $token")
-        // Aquí puedes enviar el nuevo token a tu servidor si es necesario
+
     }
 }
 

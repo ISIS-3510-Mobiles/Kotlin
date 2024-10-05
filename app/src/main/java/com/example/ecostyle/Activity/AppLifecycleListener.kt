@@ -3,7 +3,6 @@ package com.example.ecostyle.Activity
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
-import android.service.notification.NotificationListenerService
 
 class AppLifecycleListener : Application.ActivityLifecycleCallbacks {
 
@@ -23,7 +22,7 @@ class AppLifecycleListener : Application.ActivityLifecycleCallbacks {
         activityCount--
 
         if (activityCount == 0) {
-            // La aplicación se ha minimizado
+
             val app = activity.application as Notification
             app.checkCartAndSendNotification()
         }

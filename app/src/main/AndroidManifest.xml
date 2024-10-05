@@ -31,12 +31,6 @@
             android:name=".Activity.HomeActivity"
             android:exported="false" />
         <activity
-            android:name=".sustainability.SustainabilityActivity"
-            android:exported="true" />
-        <activity
-            android:name=".checkout.CheckoutActivity"
-            android:exported="true" />
-        <activity
             android:name=".Activity.RegisterActivity"
             android:exported="false" />
         <activity android:name=".Activity.ProductDetailActivity"

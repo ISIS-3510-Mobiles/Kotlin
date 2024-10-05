@@ -79,7 +79,7 @@ class ProductDetailActivity : AppCompatActivity() , NavigationView.OnNavigationI
                 .into(productImage)
 
             favoriteButton.setImageResource(
-                if (product.isFavorite == true) R.drawable.baseline_favorite_24
+                if (product.isFavorite == true) R.drawable.baseline_favorite_24_2
                 else R.drawable.baseline_favorite_border_24
             )
         }
