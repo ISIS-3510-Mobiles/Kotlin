@@ -1,4 +1,3 @@
-// ProductRepository.kt
 package com.example.ecostyle.Repository
 
 import android.util.Log
