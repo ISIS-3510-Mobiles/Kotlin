@@ -1,141 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/white"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:padding="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:gravity="center">
+        android:orientation="vertical">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
+        <!-- RecyclerView para mostrar los productos del carrito -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_view_cart_items"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/dark_green"
-            app:titleTextColor="@android:color/white"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            tools:listitem="@layout/activity_item_product_card_checkout" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
+        <!-- Contenedor para resumen de precio y métodos de pago -->
+        <LinearLayout
+            android:id="@+id/price_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:orientation="vertical">
+
+            <!-- Número total de ítems -->
+            <TextView
+                android:id="@+id/item_count_text_view"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:text="Total de ítems: 0"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp" />
 
-                <ImageView
-                    android:id="@+id/menu_icon"
-                    android:layout_width="48dp"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:contentDescription="@string/menu_icon_description"
-                    android:padding="10dp"
-                    android:src="@drawable/ic_menu" />
+            <!-- Subtotal (sin impuestos) -->
+            <TextView
+                android:id="@+id/subtotal_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Subtotal: $0.00"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp" />
 
-                <androidx.appcompat.widget.SearchView
-                    android:id="@+id/searchView"
-                    android:layout_width="0dp"
-                    android:layout_height="33dp"
-                    android:layout_gravity="center_vertical"
-                    android:layout_weight="1"
-                    android:background="@android:color/white"
-                    android:iconifiedByDefault="false"
-                    android:queryHint="@string/search_hint" />
+            <!-- Texto para los impuestos -->
+            <TextView
+                android:id="@+id/taxes_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Impuestos (7%): $0.00"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp" />
 
-                <ImageView
-                    android:id="@+id/cart_icon"
-                    android:layout_width="52dp"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:contentDescription="@string/cart_icon_description"
-                    android:padding="10dp"
-                    android:src="@drawable/ic_cart" />
-            </LinearLayout>
-        </androidx.appcompat.widget.Toolbar>
+            <!-- Texto para el total final -->
+            <TextView
+                android:id="@+id/total_price_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Total: $0.00"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp" />
 
-        <!-- EditText fields with input types and autofill -->
-        <EditText
-            android:id="@+id/editTextName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/name_hint"
-            android:layout_marginTop="16dp"
-            android:padding="16dp"
-            android:inputType="textPersonName"
-            android:importantForAutofill="yes"
-            android:background="@android:color/darker_gray"
-            android:textColor="@android:color/black"
-            android:textColorHint="@android:color/white" />
+            <!-- Spinner para seleccionar el método de pago -->
 
-        <EditText
-            android:id="@+id/editTextAddress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/address_hint"
-            android:layout_marginTop="8dp"
-            android:padding="16dp"
-            android:inputType="textPostalAddress"
-            android:importantForAutofill="yes"
-            android:background="@android:color/darker_gray"
-            android:textColor="@android:color/black"
-            android:textColorHint="@android:color/white" />
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/editTextPhone"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/phone_hint"
-            android:layout_marginTop="8dp"
-            android:padding="16dp"
-            android:inputType="phone"
-            android:importantForAutofill="yes"
-            android:background="@android:color/darker_gray"
-            android:textColor="@android:color/black"
-            android:textColorHint="@android:color/white" />
-
-        <TextView
-            android:id="@+id/payment_methods_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/payment_methods"
-            android:layout_marginTop="16dp" />
-
-        <Spinner
-            android:id="@+id/payment_methods_spinner"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="8dp"
-            android:padding="16dp"
-            android:background="@android:color/darker_gray" />
-
-        <TextView
-            android:id="@+id/product_quantity"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/product_quantity"
-            android:layout_marginTop="16dp" />
-
-        <TextView
-            android:id="@+id/total_price"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/total_price"
-            android:layout_marginTop="8dp" />
-
+        <!-- Botón para finalizar la compra -->
         <Button
-            android:id="@+id/complete_purchase_button"
-            android:layout_width="wrap_content"
+            android:id="@+id/checkout_button"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/complete_purchase"
-            android:layout_marginTop="16dp"
-            android:padding="16dp"
-            android:layout_gravity="center"
-            android:backgroundTint="#FF007451"
-            android:textColor="@android:color/white" />
-
+            android:text="Checkout"
+            android:backgroundTint="@android:color/darker_gray"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="16dp" />
     </LinearLayout>
-</ScrollView>
 
+</ScrollView>

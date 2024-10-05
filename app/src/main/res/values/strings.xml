@@ -5,9 +5,11 @@
     <string name="water_saved">Water Saved</string>
     <string name="waste_diverted">Waste Diverted from Landfill</string>
     <string name="co2_prevented">CO2 Emissions Prevented</string>
+    <string name="money_raised_bar">Money raised</string>
     <string name="cart_icon_description">cart</string>
     <string name="menu_icon_description">menu</string>
-    <string name="money_raised">Money Raised, Learn more about your impact</string>
+    <string name="money_raised">Learn more about your impact</string>
+    <string name="sustainability">Sustainability</string>
     <string name="name_hint">Enter your name</string>
     <string name="address_hint">Enter your address</string>
     <string name="phone_hint">Enter your phone number</string>
@@ -24,6 +26,11 @@
     <string name="price_sweater">$100.00</string>
     <string name="favorite_button_desc">Add to favorites</string>
     <string name="product_description">Uniandes Sweater. I changed to th "Nacho", so I don´t use it anymore.</string>
+    <string name="payment_title">Selecciona tu método de pago</string>
+    <string name="billing_address_hint">Dirección de facturación</string>
+    <string name="billing_city_hint">Ciudad</string>
+    <string name="billing_zipcode_hint">Código postal</string>
+    <string name="proceed_to_confirmation">Proceder a la confirmación</string>
     <string name="add_to_cart">Add to Cart</string>
     <string name="buy">Buy</string>
 

@@ -3,16 +3,20 @@ package com.example.ecostyle.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.ecostyle.R
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 
 class AuthActivity : AppCompatActivity() {
-
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +33,13 @@ class AuthActivity : AppCompatActivity() {
             setContentView(R.layout.activity_auth)
             setup()
         }
+        // Remote Config
+        val firebaseConfig = FirebaseRemoteConfig.getInstance()
+        val configSettings = FirebaseRemoteConfigSettings.Builder()
+            .setMinimumFetchIntervalInSeconds(60)
+            .build()
+        firebaseConfig.setConfigSettingsAsync(configSettings)
+
     }
 
     private fun setup() {
@@ -53,12 +64,14 @@ class AuthActivity : AppCompatActivity() {
                         if (it.isSuccessful) {
                             val email = it.result?.user?.email ?: ""
                             val provider = ProviderType.BASIC
+
                             // Guardar las credenciales en SharedPreferences
                             val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE).edit()
                             prefs.putString("email", email)
                             prefs.putString("provider", provider.name)
                             prefs.apply()
 
+                            // Redirigir a HomeActivity
                             showHome(email, provider)
                         } else {
                             showAlert()
@@ -86,3 +99,4 @@ class AuthActivity : AppCompatActivity() {
         finish() // Cierra la actividad de autenticación para que no regrese aquí
     }
 }
+

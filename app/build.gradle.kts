@@ -51,6 +51,17 @@ android {
 }
 
 dependencies {
+    // Firebase BoM - Administra las versiones de todas las librerías de Firebase
+    implementation(platform("com.google.firebase:firebase-bom:32.3.1"))
+
+    // Firebase dependencies
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // FirebaseUI for Firebase Auth
+    implementation("com.firebaseui:firebase-ui-auth:8.0.2")
 
     // AndroidX core libraries
     implementation(libs.androidx.core.ktx)
@@ -68,43 +79,35 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core:1.7.2")
     implementation("androidx.compose.material:material-icons-extended:1.7.2")
 
-    // Firebase dependencies
-    implementation(platform("com.google.firebase:firebase-bom:32.3.1"))
-    implementation("com.google.firebase:firebase-analytics-ktx")
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
+    // Otros
+    implementation("androidx.preference:preference-ktx:1.2.1")
 
-    // FirebaseUI for Firebase Auth
-    implementation("com.firebaseui:firebase-ui-auth:8.0.2")
+    // Ensure Firebase config and storage are included via BOM, not with specific versions
+    implementation("com.google.firebase:firebase-config-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+
     implementation(libs.play.services.location)
 
     // Testing dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.5.0")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.5.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.2")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.7.2")
 
+    // Camera and Glide dependencies
+    implementation ("com.github.bumptech.glide:glide:4.15.1")
+    annotationProcessor ("com.github.bumptech.glide:compiler:4.15.1")
 
-
-    // Jetpack Compose dependencies
-    implementation("androidx.activity:activity-compose:1.9.2")      // Compose activity integration
-    implementation("androidx.compose.material:material:1.7.2")     // Material Design components for Compose
-    implementation("androidx.compose.ui:ui-tooling-preview:1.7.2") // Previewing composables in Android Studio
-    implementation("androidx.compose.ui:ui:1.7.2") // Core Compose UI library (contains Modifier, etc.)
-    implementation("androidx.compose.runtime:runtime:1.7.2")
-    implementation("androidx.compose.material:material-icons-core:1.7.2")
-    implementation("androidx.compose.material:material-icons-extended:1.7.2")
-
+    // Activity and Fragment KTX for registerForActivityResult
+    implementation ("androidx.activity:activity-ktx:1.7.2")
     implementation ("androidx.fragment:fragment-ktx:1.8.3")
-    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.8.6")
 
-    // Compose Navigation
+    // Jetpack Compose Navigation
     implementation("androidx.navigation:navigation-compose:2.8.1")
-    implementation ("androidx.compose.runtime:runtime-livedata:1.7.2")
-    // Icons Material Design
-    implementation ("com.google.android.material:material:1.9.0")
+    implementation("androidx.compose.runtime:runtime-livedata:1.7.2")
 
-    // Glide for image handling
-    implementation ("com.github.bumptech.glide:glide:4.12.0")
+    // Icons Material Design
+    implementation("com.google.android.material:material:1.9.0")
+
 }
