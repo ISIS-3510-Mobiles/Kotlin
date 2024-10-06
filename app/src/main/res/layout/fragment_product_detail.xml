@@ -106,7 +106,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/add_to_cart"
                         android:textColor="@android:color/white"
-                        android:background="@color/dark_green" />
+                        android:background="@drawable/rounded_lima_green" />
                 </LinearLayout>
             </LinearLayout>
         </ScrollView>

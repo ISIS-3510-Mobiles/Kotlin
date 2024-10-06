@@ -112,6 +112,17 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.string.navegation_drawer_open,
             R.string.navegation_drawer_close
         )
+        toggle.drawerArrowDrawable.color = resources.getColor(R.color.white, theme)
+
+
+        // Escalar el icono del menú de hamburguesa
+        val arrowDrawable = toggle.drawerArrowDrawable
+
+        // Cambiar el tamaño del ícono de hamburguesa
+        arrowDrawable.barLength = 80f   // Aumentar la longitud de las barras
+        arrowDrawable.barThickness = 8f  // Ajustar el grosor de las barras
+
+
         drawer.addDrawerListener(toggle)
         toggle.syncState()
 

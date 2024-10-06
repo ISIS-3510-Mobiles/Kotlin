@@ -76,7 +76,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Checkout"
-            android:backgroundTint="@android:color/darker_gray"
+            android:background="@drawable/rounded_lima_green"
             android:textColor="@android:color/white"
             android:layout_marginTop="16dp" />
     </LinearLayout>
