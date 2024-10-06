@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ecostyle.R
-import com.example.ecostyle.Adapter.CartAdapter
+import com.example.ecostyle.adapter.CartAdapter
 import com.example.ecostyle.model.CartItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore

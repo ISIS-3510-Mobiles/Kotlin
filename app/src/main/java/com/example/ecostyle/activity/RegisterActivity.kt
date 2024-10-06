@@ -1,4 +1,4 @@
-package com.example.ecostyle.Activity
+package com.example.ecostyle.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,8 +6,6 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.ecostyle.R
 import com.example.ecostyle.model.User
 import com.google.firebase.auth.FirebaseAuth

@@ -1,4 +1,4 @@
-package com.example.ecostyle.Activity
+package com.example.ecostyle.activity
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

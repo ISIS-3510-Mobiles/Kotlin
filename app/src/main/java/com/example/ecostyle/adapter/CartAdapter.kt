@@ -1,4 +1,4 @@
-package com.example.ecostyle.Adapter
+package com.example.ecostyle.adapter
 
 import android.view.LayoutInflater
 import android.view.View

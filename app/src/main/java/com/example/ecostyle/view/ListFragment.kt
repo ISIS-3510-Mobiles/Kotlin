@@ -10,7 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ecostyle.R
-import com.example.ecostyle.Adapter.ProductAdapter
+import com.example.ecostyle.adapter.ProductAdapter
 import com.example.ecostyle.viewmodel.ProductViewModel
 
 class ListFragment : Fragment() {

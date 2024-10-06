@@ -1,4 +1,4 @@
-package com.example.ecostyle.Activity
+package com.example.ecostyle.activity
 
 import android.Manifest
 import android.content.Context
@@ -16,7 +16,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.ReportFragment.Companion.reportFragment
 import com.example.ecostyle.R
 import com.example.ecostyle.view.ListFragment
 import com.example.ecostyle.view.ProfileFragment
@@ -26,8 +25,6 @@ import com.google.android.material.navigation.NavigationView
 import com.google.firebase.FirebaseApp
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import java.util.Calendar
