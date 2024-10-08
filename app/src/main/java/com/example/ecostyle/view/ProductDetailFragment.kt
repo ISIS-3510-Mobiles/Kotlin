@@ -15,7 +15,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import com.example.ecostyle.R
 import com.example.ecostyle.model.Product
 import com.example.ecostyle.viewmodel.ProductDetailViewModel

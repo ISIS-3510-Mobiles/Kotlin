@@ -59,7 +59,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_list)
+        setContentView(R.layout.activity_home2)
 
         sessionStartTime = savedInstanceState?.getLong("SESSION_START_TIME") ?: System.currentTimeMillis()
 
@@ -106,9 +106,10 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val toolbar: Toolbar = findViewById(R.id.toolbar_main)
         setSupportActionBar(toolbar)
 
+
         drawer = findViewById(R.id.drawer_layout)
         toggle = ActionBarDrawerToggle(
-            this, drawer, toolbar,
+            this, drawer, toolbar,//toolbar
             R.string.navegation_drawer_open,
             R.string.navegation_drawer_close
         )
