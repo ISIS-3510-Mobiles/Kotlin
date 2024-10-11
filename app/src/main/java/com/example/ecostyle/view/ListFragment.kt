@@ -23,7 +23,8 @@ class ListFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.activity_list, container, false) // Asegúrate de tener este layout
+        // Asegúrate de que el layout corresponde al nuevo archivo sin la barra superior
+        return inflater.inflate(R.layout.fragment_list, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -36,7 +37,7 @@ class ListFragment : Fragment() {
 
         // Inicializa el adaptador con una lista vacía y configura el listener
         productAdapter = ProductAdapter(emptyList()) { product ->
-            // Navegar al ProductDetailFragment en lugar de iniciar una actividad
+            // Navegar al ProductDetailFragment
             val productDetailFragment = ProductDetailFragment().apply {
                 arguments = Bundle().apply {
                     putInt("PRODUCT_ID", product.id)
@@ -46,7 +47,7 @@ class ListFragment : Fragment() {
             // Reemplaza el fragmento actual por el ProductDetailFragment
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, productDetailFragment)
-                .addToBackStack(null) // Para poder volver atrás
+                .addToBackStack(null)
                 .commit()
 
             Log.d("ListFragment", "Navigating to product details with ID: ${product.id}")

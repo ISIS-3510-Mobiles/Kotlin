@@ -67,7 +67,7 @@ class ProfileFragment : Fragment() {
 
     ): View? {
         // Infla el diseño del fragmento
-        val view = inflater.inflate(R.layout.activity_profile, container, false)
+        val view = inflater.inflate(R.layout.fragment_profile, container, false)
         profileImage = view.findViewById(R.id.profileImage)
         btnCamara = view.findViewById(R.id.btnCamara)
 

@@ -9,26 +9,18 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.view.GravityCompat
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.appcompat.app.ActionBarDrawerToggle
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import com.example.ecostyle.R
 import com.example.ecostyle.model.Product
 import com.example.ecostyle.viewmodel.ProductDetailViewModel
 import com.bumptech.glide.Glide
-import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-class ProductDetailFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener {
+class ProductDetailFragment : Fragment() {
 
     private val viewModel: ProductDetailViewModel by viewModels()
-    private lateinit var drawer: DrawerLayout
-    private lateinit var toggle: ActionBarDrawerToggle
 
     private var productId: Int = -1
 
@@ -46,8 +38,6 @@ class ProductDetailFragment : Fragment(), NavigationView.OnNavigationItemSelecte
             Log.d("ProductDetailFragment", "Received productId: $productId")
         }
 
-        // Indicar que este fragmento tiene un menú de opciones
-        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(
@@ -57,30 +47,9 @@ class ProductDetailFragment : Fragment(), NavigationView.OnNavigationItemSelecte
         return inflater.inflate(R.layout.fragment_product_detail, container, false)
     }
 
-    // Reemplaza onCreateOptionsMenu para inflar el menú si es necesario
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        // Inflar el menú si tienes uno
-        super.onCreateOptionsMenu(menu, inflater)
-    }
-
-    // Manejar selección de opciones de menú
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (toggle.onOptionsItemSelected(item)) {
-            return true
-        }
-        return super.onOptionsItemSelected(item)
-    }
-
-    // Configurar la vista después de que se ha creado
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-
-
-
-
-        val navigationView: NavigationView = view.findViewById(R.id.nav_view)
-        navigationView.setNavigationItemSelectedListener(this)
 
         val productImage = view.findViewById<ImageView>(R.id.product_detail_image)
         val productName = view.findViewById<TextView>(R.id.product_detail_title)
@@ -117,47 +86,6 @@ class ProductDetailFragment : Fragment(), NavigationView.OnNavigationItemSelecte
                 Toast.makeText(requireContext(), "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
             }
         }
-    }
-
-    override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        val prefs = requireActivity().getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
-        val email = prefs.getString("email", null)
-        val provider = prefs.getString("provider", null)
-
-        when (item.itemId) {
-            R.id.nav_item_1 -> {
-                Toast.makeText(requireContext(), "Home", Toast.LENGTH_SHORT).show()
-                parentFragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, ListFragment())
-                    .commit()
-            }
-            R.id.nav_item_2 -> {
-                Toast.makeText(requireContext(), "Cart", Toast.LENGTH_SHORT).show()
-            }
-            R.id.nav_item_3 -> {
-                Toast.makeText(requireContext(), "Settings", Toast.LENGTH_SHORT).show()
-            }
-            R.id.nav_item_4 -> {
-                Toast.makeText(requireContext(), "Sustainability", Toast.LENGTH_SHORT).show()
-            }
-            R.id.nav_item_5 -> {
-                Toast.makeText(requireContext(), "Profile", Toast.LENGTH_SHORT).show()
-
-                val profileFragment = ProfileFragment()
-                val bundle = Bundle().apply {
-                    putString("email", email)
-                    putString("provider", provider)
-                }
-                profileFragment.arguments = bundle
-
-                parentFragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, profileFragment)
-                    .commit()
-            }
-        }
-
-        drawer.closeDrawer(GravityCompat.START)
-        return true
     }
 
     private fun addToCart(product: Product) {

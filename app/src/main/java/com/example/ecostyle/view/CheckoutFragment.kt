@@ -27,7 +27,7 @@ class CheckoutFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.activity_checkout, container, false)
+        val view = inflater.inflate(R.layout.fragment_checkout, container, false)
 
         totalPriceTextView = view.findViewById(R.id.total_price_text_view)
 

@@ -7,6 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".activity.HomeActivity">
 
+    <!-- AppBarLayout and Toolbar -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -28,8 +29,6 @@
                 android:paddingHorizontal="5dp"
                 android:paddingTop="20dp">
 
-
-
                 <!-- Search View -->
                 <SearchView
                     android:layout_width="0dp"
@@ -48,16 +47,24 @@
                 <ImageButton
                     android:id="@+id/button2"
                     android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:padding="5dp"
-                android:src="@drawable/ic_cart"
-                android:scaleType="centerInside"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Cart" />
+                    android:layout_height="48dp"
+                    android:padding="5dp"
+                    android:src="@drawable/ic_cart"
+                    android:scaleType="centerInside"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Cart" />
+
             </LinearLayout>
 
         </androidx.appcompat.widget.Toolbar>
 
     </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Fragment container inside CoordinatorLayout -->
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

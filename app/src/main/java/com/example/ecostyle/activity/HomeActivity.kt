@@ -32,7 +32,6 @@ import android.location.Location
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.LocationServices
 
-
 enum class ProviderType {
     BASIC,
     GOOGLE,
@@ -53,16 +52,44 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private lateinit var firebaseAnalytics: FirebaseAnalytics
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_list)
+        setContentView(R.layout.activity_home)
+
+        // Inicializa 'drawer' primero
+        drawer = findViewById(R.id.drawer_layout)
+
+        // Inicializa 'toolbar' después
+        val toolbar: Toolbar = findViewById(R.id.toolbar_main)
+        setSupportActionBar(toolbar)
+
+        // Inicializa 'toggle' después de 'drawer' y 'toolbar'
+        toggle = ActionBarDrawerToggle(
+            this, drawer, toolbar,
+            R.string.navegation_drawer_open,
+            R.string.navegation_drawer_close
+        )
+        toggle.drawerArrowDrawable.color = resources.getColor(R.color.white, theme)
+
+        // Escalar el icono del menú de hamburguesa
+        val arrowDrawable = toggle.drawerArrowDrawable
+        arrowDrawable.barLength = 80f   // Aumentar la longitud de las barras
+        arrowDrawable.barThickness = 8f  // Ajustar el grosor de las barras
+
+        drawer.addDrawerListener(toggle)
+        toggle.syncState()
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeButtonEnabled(false)
+
+        // Configura el NavigationView
+        val navigationView: NavigationView = findViewById(R.id.nav_view)
+        navigationView.setNavigationItemSelectedListener(this)
 
         sessionStartTime = savedInstanceState?.getLong("SESSION_START_TIME") ?: System.currentTimeMillis()
 
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         firebaseAnalytics.setAnalyticsCollectionEnabled(true)
-
 
         // Verifica si el Intent contiene el extra para abrir el CheckoutFragment
         val openFragment = intent.getStringExtra("openFragment")
@@ -71,7 +98,16 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, CheckoutFragment())
                 .commit()
+        } else {
+            // Si no, cargamos el ListFragment por defecto
+            if (savedInstanceState == null) {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, ListFragment())
+                    .commit()
+            }
         }
+
+        drawer.openDrawer(GravityCompat.START)
 
         FirebaseApp.initializeApp(this)
         val settings = FirebaseFirestoreSettings.Builder()
@@ -99,35 +135,6 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             finish()
             return
         }
-
-        val toolbar: Toolbar = findViewById(R.id.toolbar_main)
-        setSupportActionBar(toolbar)
-
-        drawer = findViewById(R.id.drawer_layout)
-        toggle = ActionBarDrawerToggle(
-            this, drawer, toolbar,
-            R.string.navegation_drawer_open,
-            R.string.navegation_drawer_close
-        )
-        toggle.drawerArrowDrawable.color = resources.getColor(R.color.white, theme)
-
-
-        // Escalar el icono del menú de hamburguesa
-        val arrowDrawable = toggle.drawerArrowDrawable
-
-        // Cambiar el tamaño del ícono de hamburguesa
-        arrowDrawable.barLength = 80f   // Aumentar la longitud de las barras
-        arrowDrawable.barThickness = 8f  // Ajustar el grosor de las barras
-
-
-        drawer.addDrawerListener(toggle)
-        toggle.syncState()
-
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setHomeButtonEnabled(true)
-
-        val navigationView: NavigationView = findViewById(R.id.nav_view)
-        navigationView.setNavigationItemSelectedListener(this)
 
         val btn_logout = findViewById<Button>(R.id.btn_logout)
         btn_logout.setOnClickListener {
@@ -157,13 +164,6 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 LOCATION_PERMISSION_REQUEST_CODE
             )
         }
-
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, ListFragment())
-                .commit()
-        }
-        drawer.openDrawer(GravityCompat.START)
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -285,6 +285,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             Log.e("HomeActivity", "Failed to get location: ${exception.message}")
         }
     }
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -295,7 +296,8 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 getLastLocation()
             } else {
-                Toast.makeText(this, "Location permission denied. Please enable it in settings for full functionality.", Toast.LENGTH_LONG).show()            }
+                Toast.makeText(this, "Location permission denied. Please enable it in settings for full functionality.", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -307,7 +309,6 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         val calendar = Calendar.getInstance()
         val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-
 
         val durationBundle = Bundle().apply {
             putLong("user_session_duration", sessionDuration)
