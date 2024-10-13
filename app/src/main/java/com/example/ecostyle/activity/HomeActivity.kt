@@ -69,18 +69,20 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.string.navegation_drawer_open,
             R.string.navegation_drawer_close
         )
-        toggle.drawerArrowDrawable.color = resources.getColor(R.color.white, theme)
 
         // Escalar el icono del menú de hamburguesa
         val arrowDrawable = toggle.drawerArrowDrawable
         arrowDrawable.barLength = 80f   // Aumentar la longitud de las barras
         arrowDrawable.barThickness = 8f  // Ajustar el grosor de las barras
+        arrowDrawable.gapSize = 10f
+
+        toggle.drawerArrowDrawable.color = resources.getColor(R.color.white, theme)
 
         drawer.addDrawerListener(toggle)
         toggle.syncState()
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setHomeButtonEnabled(false)
+        supportActionBar?.setHomeButtonEnabled(true)
 
         // Configura el NavigationView
         val navigationView: NavigationView = findViewById(R.id.nav_view)
@@ -107,7 +109,6 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
 
-        drawer.openDrawer(GravityCompat.START)
 
         FirebaseApp.initializeApp(this)
         val settings = FirebaseFirestoreSettings.Builder()

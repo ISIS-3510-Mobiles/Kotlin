@@ -39,12 +39,15 @@
             android:value="cart_reminder_channel" />
         <activity
             android:name=".activity.HomeActivity"
+            android:theme="@style/AppTheme"
             android:exported="false" />
         <activity
             android:name=".activity.RegisterActivity"
+            android:theme="@style/AppTheme"
             android:exported="false" />
         <activity
             android:name=".activity.AuthActivity"
+            android:theme="@style/AppTheme"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

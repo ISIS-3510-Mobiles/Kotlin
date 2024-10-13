@@ -1,21 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="MyActionBar" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
-
-
+    <style name="MyActionBar" parent="Widget.AppCompat.Toolbar">
+        <item name="background">@color/dark_green</item> <!-- Aplica el color verde lima -->
+        <item name="titleTextColor">@android:color/white</item> <!-- Texto blanco -->
     </style>
 
-    <style name="AppTheme.MyActivityTheme" parent="ThemeOverlay.AppCompat.Dark.ActionBar" >
-
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar" >
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
     </style>
-
+    
     <style name="CircleImageView" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
-
-
-
-
 
 </resources>

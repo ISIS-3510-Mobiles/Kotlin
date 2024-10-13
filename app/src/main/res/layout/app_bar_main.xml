@@ -26,8 +26,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
-                android:paddingHorizontal="5dp"
-                android:paddingTop="20dp">
+                android:paddingHorizontal="0dp"
+                android:paddingTop="0dp">
 
                 <!-- Search View -->
                 <SearchView
@@ -41,7 +41,7 @@
                 <View
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="0.1" />
+                    android:layout_weight="0.2" />
 
                 <!-- Cart Button -->
                 <ImageButton
