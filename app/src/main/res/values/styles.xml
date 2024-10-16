@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="MyActionBar" parent="Widget.AppCompat.Toolbar">
-        <item name="background">@color/dark_green</item> <!-- Aplica el color verde lima -->
-        <item name="titleTextColor">@android:color/white</item> <!-- Texto blanco -->
+        <item name="background">@color/dark_green</item>
+        <item name="titleTextColor">@android:color/white</item>
     </style>
 
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar" >
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="android:statusBarColor">@color/dark_green</item>
     </style>
-    
+
     <style name="CircleImageView" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>

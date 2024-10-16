@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +23,7 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.example.ecostyle.activity.AuthActivity
 import com.example.ecostyle.R
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -29,7 +31,7 @@ import java.io.ByteArrayOutputStream
 import java.util.*
 
 class ProfileFragment : Fragment() {
-
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
     private lateinit var profileImage: ImageView
     private lateinit var btnCamara: Button
     private var storageReference = FirebaseStorage.getInstance().reference
@@ -71,6 +73,9 @@ class ProfileFragment : Fragment() {
         profileImage = view.findViewById(R.id.profileImage)
         btnCamara = view.findViewById(R.id.btnCamara)
 
+        // Inicializar Firebase Analytics
+        firebaseAnalytics = FirebaseAnalytics.getInstance(requireContext())
+
         // Cargar datos de sesión de SharedPreferences
         val prefs = requireActivity().getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
         email = prefs.getString("email", null) ?: ""
@@ -83,6 +88,15 @@ class ProfileFragment : Fragment() {
         btnCamara.setOnClickListener {
             // Verificar y solicitar el permiso de cámara
             checkCameraPermissionAndOpenCamera()
+
+            // Registrar evento en Firebase Analytics
+            val calendar = Calendar.getInstance()
+            val photoTime = calendar.get(Calendar.DAY_OF_YEAR)
+            val dateCamera = Bundle().apply {
+                putInt("photo_time", photoTime)
+            }
+            firebaseAnalytics.logEvent("photo_time", dateCamera)
+            Log.d("FirebaseAnalytics", "Logging session_date event: day of year=$dateCamera")
         }
 
         if (email.isNotEmpty()) {
