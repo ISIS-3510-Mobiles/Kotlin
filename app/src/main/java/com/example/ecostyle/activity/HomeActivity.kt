@@ -29,6 +29,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import java.util.Calendar
 import android.location.Location
+import android.widget.ImageButton
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.LocationServices
 
@@ -110,6 +111,8 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
 
 
+
+
         FirebaseApp.initializeApp(this)
         val settings = FirebaseFirestoreSettings.Builder()
             .setPersistenceEnabled(true)
@@ -148,6 +151,16 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             startActivity(authIntent)
             finish()
         }
+
+        val button2 = findViewById<ImageButton>(R.id.button2)
+        button2.setOnClickListener {
+            Toast.makeText(this, "Cart", Toast.LENGTH_SHORT).show()
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, CheckoutFragment())
+                .commit()
+
+        }
+
 
         if (ActivityCompat.checkSelfPermission(
                 this,
