@@ -187,13 +187,12 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         when (item.itemId) {
             R.id.nav_item_1 -> {
-                Toast.makeText(this, "Home", Toast.LENGTH_SHORT).show()
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, ListFragment())
                     .commit()
             }
             R.id.nav_item_2 -> {
-                Toast.makeText(this, "Cart", Toast.LENGTH_SHORT).show()
+
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, CheckoutFragment())
                     .commit()
@@ -202,14 +201,12 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 Toast.makeText(this, "Settings", Toast.LENGTH_SHORT).show()
             }
             R.id.nav_item_4 -> {
-                Toast.makeText(this, "Sustainability", Toast.LENGTH_SHORT).show()
+
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, SustainabilityFragment())
                     .commit()
             }
             R.id.nav_item_5 -> {
-                Toast.makeText(this, "Profile", Toast.LENGTH_SHORT).show()
-
                 val profileFragment = ProfileFragment()
                 val bundle = Bundle().apply {
                     putString("email", email)

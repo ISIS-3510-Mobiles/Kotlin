@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.ecostyle.R
@@ -58,6 +59,10 @@ class RegisterActivity : AppCompatActivity() {
                             showAlert()
                         }
                     }
+            }
+            else {
+                // Mostrar mensaje de error si la información no es válida
+                Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show()
             }
         }
     }

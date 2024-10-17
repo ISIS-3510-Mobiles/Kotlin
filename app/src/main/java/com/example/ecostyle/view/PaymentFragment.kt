@@ -45,7 +45,7 @@ class PaymentFragment : Fragment() {
                 showPurchaseConfirmation()
             } else {
                 // Mostrar mensaje de error si la información no es válida
-                Toast.makeText(context, "Por favor completa todos los campos", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
             }
         }
 
