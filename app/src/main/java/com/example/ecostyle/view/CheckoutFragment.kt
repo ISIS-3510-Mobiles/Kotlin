@@ -56,7 +56,7 @@ class CheckoutFragment : Fragment() {
                         for (document in snapshot.documents) {
                             document.reference.delete() // Borrar cada producto en el carrito
                         }
-                        Toast.makeText(context, "Redirigiendo a la pantalla de pago", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Redirecting to the payment screen", Toast.LENGTH_SHORT).show()
                         updateCartStatus(false) // Vaciar el carrito
                         totalPrice = 0.0 // Reiniciar el total
                         updateTotalPrice()
@@ -104,13 +104,13 @@ class CheckoutFragment : Fragment() {
                         totalPrice = 0.0 // Reiniciar el total
                         updateTotalPrice() // Actualizar el total a $0.00
                         updateItemCount(0) // No hay ítems
-                        Toast.makeText(context, "Tu carrito está vacío", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "your cart is empty", Toast.LENGTH_SHORT).show()
                         checkoutButton.isEnabled = false
                         updateCartStatus(false) // Marcar que el carrito está vacío
                     }
                 }
                 .addOnFailureListener {
-                    Toast.makeText(context, "Error al cargar el carrito", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Error loading the cart", Toast.LENGTH_SHORT).show()
                 }
         }
 
@@ -126,7 +126,7 @@ class CheckoutFragment : Fragment() {
                 .document(cartItem.id) // Usar el ID del producto para eliminarlo
                 .delete()
                 .addOnSuccessListener {
-                    Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Product removed", Toast.LENGTH_SHORT).show()
 
                     // Eliminar el símbolo de dólar antes de convertir a Double
                     val cleanPrice = cartItem.productPrice.toString().replace("$", "").toDouble()
@@ -138,7 +138,7 @@ class CheckoutFragment : Fragment() {
                     loadCartItems()
                 }
                 .addOnFailureListener {
-                    Toast.makeText(context, "Error al eliminar el producto", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Error while removing product", Toast.LENGTH_SHORT).show()
                 }
         }
 }
@@ -157,14 +157,14 @@ class CheckoutFragment : Fragment() {
 
         // Mostrar los impuestos calculados
         val taxesTextView = view?.findViewById<TextView>(R.id.taxes_text_view)
-        taxesTextView?.text = "Impuestos (7%): $${String.format("%.2f", taxes)}"
+        taxesTextView?.text = "Taxes (7%): $${String.format("%.2f", taxes)}"
 
         // Mostrar el total con impuestos
         totalPriceTextView.text = "Total: $${String.format("%.2f", totalWithTaxes)}"
     }
     private fun updateItemCount(itemCount: Int) {
         val itemCountTextView = view?.findViewById<TextView>(R.id.item_count_text_view)
-        itemCountTextView?.text = "Total de ítems: $itemCount"
+        itemCountTextView?.text = "Total of otems: $itemCount"
     }
 
 

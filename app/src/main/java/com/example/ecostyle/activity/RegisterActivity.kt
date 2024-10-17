@@ -74,19 +74,19 @@ class RegisterActivity : AppCompatActivity() {
             .set(user)
             .addOnSuccessListener {
                 // User saved successfully
-                println("Usuario guardado exitosamente en Firestore")
+                println("User saved successfully on Firestore")
             }
             .addOnFailureListener {e ->
                 // Handle the error
-                println("Error al guardar el usuario en Firestore: ${e.message}")
+                println("Error saving user to Firestore: ${e.message}")
             }
     }
 
     private fun showAlert() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Error")
-        builder.setMessage("Se ha producido un error autenticando al usuario")
-        builder.setPositiveButton("Aceptar", null)
+        builder.setMessage("An error occurred authenticating the user")
+        builder.setPositiveButton("Accept", null)
         val dialog: AlertDialog = builder.create()
         dialog.show()
     }
