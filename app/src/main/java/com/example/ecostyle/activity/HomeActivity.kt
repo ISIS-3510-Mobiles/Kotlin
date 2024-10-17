@@ -152,9 +152,8 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             finish()
         }
 
-        val button2 = findViewById<ImageButton>(R.id.button2)
-        button2.setOnClickListener {
-            Toast.makeText(this, "Cart", Toast.LENGTH_SHORT).show()
+        val buttonCartNavbar = findViewById<ImageButton>(R.id.button2)
+        buttonCartNavbar.setOnClickListener {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, CheckoutFragment())
                 .commit()
