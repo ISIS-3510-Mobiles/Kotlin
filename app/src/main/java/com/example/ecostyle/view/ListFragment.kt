@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -20,6 +21,8 @@ class ListFragment : Fragment() {
     private lateinit var productAdapter: ProductAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var ecoFriendlyMessage: TextView
+    private lateinit var resetFilterButton: Button
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,6 +36,7 @@ class ListFragment : Fragment() {
 
         recyclerView = view.findViewById(R.id.recycler_view_products)
         ecoFriendlyMessage = view.findViewById(R.id.eco_friendly_message)
+        resetFilterButton = view.findViewById(R.id.reset_filter_button)
 
         val gridLayoutManager = GridLayoutManager(context, 2)
         recyclerView.layoutManager = gridLayoutManager
@@ -62,9 +66,14 @@ class ListFragment : Fragment() {
         productViewModel.isEcoFriendlyFilterApplied.observe(viewLifecycleOwner) { isEcoFriendly ->
             if (isEcoFriendly) {
                 showEcoFriendlyMessage()
+                resetFilterButton.visibility = View.VISIBLE
             } else {
                 hideEcoFriendlyMessage()
+                resetFilterButton.visibility = View.GONE
             }
+        }
+        resetFilterButton.setOnClickListener {
+            productViewModel.loadAllProducts()
         }
     }
     private fun showEcoFriendlyMessage() {
@@ -74,5 +83,7 @@ class ListFragment : Fragment() {
     private fun hideEcoFriendlyMessage() {
         ecoFriendlyMessage.visibility = View.GONE
     }
+
+
 
 }

@@ -33,15 +33,18 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             productList.value = filterProductsBasedOnBattery(products)
         }
     }
+    fun loadAllProducts() {
+        repository.getProducts { products ->
+            _isEcoFriendlyFilterApplied.value = false
+            productList.value = products
+        }
+    }
 
-    // Filter products based on battery level
     private fun filterProductsBasedOnBattery(products: List<Product>): List<Product> {
-        // Return all products if the product list is null
         if (products == null || products.isEmpty()) {
             return emptyList()
         }
 
-        // Handle potential exceptions when accessing battery information
         return try {
             val batteryManager = getApplication<Application>().getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
             val batteryLevel = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 100
