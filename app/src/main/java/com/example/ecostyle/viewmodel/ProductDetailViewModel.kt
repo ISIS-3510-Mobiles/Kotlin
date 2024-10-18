@@ -22,7 +22,8 @@ class ProductDetailViewModel : ViewModel() {
                 price = "$0.00",
                 imageResource = "",
                 description = "This product could not be found.",
-                isFavorite = false
+                isFavorite = false,
+                ecofriend= false
             )
             Log.d("ProductDetailViewModel", "Loaded product: ${_product.value}")
         }

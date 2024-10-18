@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
@@ -18,6 +19,7 @@ class ListFragment : Fragment() {
     private lateinit var productViewModel: ProductViewModel
     private lateinit var productAdapter: ProductAdapter
     private lateinit var recyclerView: RecyclerView
+    private lateinit var ecoFriendlyMessage: TextView
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -30,23 +32,21 @@ class ListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         recyclerView = view.findViewById(R.id.recycler_view_products)
+        ecoFriendlyMessage = view.findViewById(R.id.eco_friendly_message)
 
         val gridLayoutManager = GridLayoutManager(context, 2)
         recyclerView.layoutManager = gridLayoutManager
 
-        // Inicializa el adaptador con una lista vacía y configura el listener
         productAdapter = ProductAdapter(emptyList()) { product ->
-            // Navegar al ProductDetailFragment en lugar de iniciar una actividad
             val productDetailFragment = ProductDetailFragment().apply {
                 arguments = Bundle().apply {
                     putInt("PRODUCT_ID", product.id)
                 }
             }
 
-            // Reemplaza el fragmento actual por el ProductDetailFragment
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, productDetailFragment)
-                .addToBackStack(null) // Para poder volver atrás
+                .addToBackStack(null)
                 .commit()
 
             Log.d("ListFragment", "Navigating to product details with ID: ${product.id}")
@@ -54,13 +54,25 @@ class ListFragment : Fragment() {
 
         recyclerView.adapter = productAdapter
 
-        // Inicializa el ViewModel
         productViewModel = ViewModelProvider(this).get(ProductViewModel::class.java)
 
-        // Observa el LiveData del ViewModel
         productViewModel.getProductList().observe(viewLifecycleOwner) { products ->
-            // Actualiza la lista de productos en el adaptador
             productAdapter.setProductList(products)
         }
+        productViewModel.isEcoFriendlyFilterApplied.observe(viewLifecycleOwner) { isEcoFriendly ->
+            if (isEcoFriendly) {
+                showEcoFriendlyMessage()
+            } else {
+                hideEcoFriendlyMessage()
+            }
+        }
     }
+    private fun showEcoFriendlyMessage() {
+        ecoFriendlyMessage.visibility = View.VISIBLE
+    }
+
+    private fun hideEcoFriendlyMessage() {
+        ecoFriendlyMessage.visibility = View.GONE
+    }
+
 }
