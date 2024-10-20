@@ -1,6 +1,9 @@
 package com.example.ecostyle.activity
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
@@ -24,7 +27,7 @@ class RegisterActivity : AppCompatActivity() {
     }
 
     private fun setup() {
-        title = "Autenticación"
+
         val registerButton = findViewById<Button>(R.id.loginButtonRegister)
         val emailEditTextRegister = findViewById<EditText>(R.id.emailEditTextRegister)
         val passwordEditTextRegister = findViewById<EditText>(R.id.passwordEditTextRegister)
@@ -46,7 +49,13 @@ class RegisterActivity : AppCompatActivity() {
     private fun observeViewModel() {
         viewModel.registrationSuccess.observe(this, Observer { success ->
             if (success) {
-                showHome(viewModel.email)
+                val provider = ProviderType.BASIC
+                val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE).edit()
+                prefs.putString("email", viewModel.email)
+                prefs.putString("provider", provider.name)
+                prefs.apply()
+                showHome(viewModel.email, provider)
+
             } else {
                 showAlert()
             }
@@ -66,7 +75,13 @@ class RegisterActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun showHome(email: String) {
-        // Implementación de la navegación a HomeActivity
+    private fun showHome(email: String, provider: ProviderType) {
+        val homeIntent = Intent(this, HomeActivity::class.java).apply {
+            putExtra("email", email)
+            putExtra("provider", provider.name)
+        }
+        startActivity(homeIntent)
+        Log.d("RegisterActivity", "Registration successful, redirecting to HomeActivity")
+        finish()
     }
 }

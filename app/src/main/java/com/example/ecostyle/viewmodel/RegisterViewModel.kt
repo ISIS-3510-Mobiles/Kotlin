@@ -1,5 +1,6 @@
 package com.example.ecostyle.viewmodel
 
+import android.content.Intent
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -32,6 +33,7 @@ class RegisterViewModel : ViewModel() {
                             number = number
                         )
                         saveUserToFirestore(user)
+
                     } else {
                         _errorMessage.value = "Registration failed"
                         _registrationSuccess.value = false
@@ -56,4 +58,5 @@ class RegisterViewModel : ViewModel() {
                 _registrationSuccess.value = false
             }
     }
+
 }
