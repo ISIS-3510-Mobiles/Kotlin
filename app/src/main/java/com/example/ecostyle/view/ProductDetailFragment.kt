@@ -56,13 +56,10 @@ class ProductDetailFragment : Fragment(), NavigationView.OnNavigationItemSelecte
         return inflater.inflate(R.layout.fragment_product_detail, container, false)
     }
 
-    // Reemplaza onCreateOptionsMenu para inflar el menú si es necesario
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        // Inflar el menú si tienes uno
         super.onCreateOptionsMenu(menu, inflater)
     }
 
-    // Manejar selección de opciones de menú
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (toggle.onOptionsItemSelected(item)) {
             return true
@@ -70,7 +67,6 @@ class ProductDetailFragment : Fragment(), NavigationView.OnNavigationItemSelecte
         return super.onOptionsItemSelected(item)
     }
 
-    // Configurar la vista después de que se ha creado
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -173,10 +169,8 @@ class ProductDetailFragment : Fragment(), NavigationView.OnNavigationItemSelecte
 
             db.collection("carts").document(userId).collection("items").add(cartItem)
                 .addOnSuccessListener {
-                    // Producto añadido exitosamente
                 }
                 .addOnFailureListener {
-                    // Error al añadir el producto
                 }
         }
     }
