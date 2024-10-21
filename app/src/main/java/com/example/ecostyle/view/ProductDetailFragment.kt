@@ -11,6 +11,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AppCompatActivity
 import com.example.ecostyle.R
 import com.example.ecostyle.model.Product
 import com.example.ecostyle.viewmodel.ProductDetailViewModel
@@ -102,10 +104,8 @@ class ProductDetailFragment : Fragment() {
 
             db.collection("carts").document(userId).collection("items").add(cartItem)
                 .addOnSuccessListener {
-                    // Producto añadido exitosamente
                 }
                 .addOnFailureListener {
-                    // Error al añadir el producto
                 }
         }
     }
