@@ -8,6 +8,35 @@
     tools:context=".activity.HomeActivity"
     android:orientation="vertical"
     >
+    <TextView
+        android:id="@+id/eco_friendly_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Battery is low. Showing eco-friendly products."
+        android:textSize="16sp"
+        android:textColor="@android:color/holo_green_dark"
+        android:visibility="gone" />
+
+    <Switch
+        android:id="@+id/reset_filter_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:padding="10dp"
+        android:text="Show products within 5 km"
+        android:textColor="@android:color/black" />
+
+    <Button
+        android:id="@+id/proximity_filter_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Show All"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:textColor="@android:color/white"
+        android:background="@drawable/rounded_lima_green" />
+
+
 
     <FrameLayout
         android:id="@+id/fragment_container"
@@ -22,4 +51,6 @@
             tools:listitem="@layout/activity_item_product_card"
             tools:itemCount="4" />
     </FrameLayout>
+
 </LinearLayout>
+
