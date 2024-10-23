@@ -87,21 +87,21 @@ class ListFragment : Fragment() {
                 resetFilterButton.visibility = View.VISIBLE
             } else {
                 hideEcoFriendlyMessage()
-                resetFilterButton.visibility = View.GONE
+//                resetFilterButton.visibility = View.GONE
             }
         }
 
         checkLocationPermission()
 
         resetFilterButton.setOnClickListener {
-            productViewModel.loadAllProducts()
+            productViewModel.toggleProximityFilter(userLatitude, userLongitude)
         }
 
         productViewModel.isProximityFilterApplied.observe(viewLifecycleOwner) { isFiltered ->
             if (isFiltered) {
                 resetFilterButton.visibility = View.VISIBLE
             } else {
-                resetFilterButton.visibility = View.GONE
+//                resetFilterButton.visibility = View.GONE
             }
         }
     }

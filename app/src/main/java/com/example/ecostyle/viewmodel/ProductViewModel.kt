@@ -92,4 +92,15 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
         return earthRadius * c
     }
+
+    fun toggleProximityFilter(userLatitude: Double, userLongitude: Double) {
+        if (_isProximityFilterApplied.value == true) {
+            // Si el filtro de proximidad ya está aplicado, cargar todos los productos
+            loadAllProducts()
+        } else {
+            // Si no está aplicado, cargar productos dentro de los 10 km
+            loadProductsByProximity(userLatitude, userLongitude)
+        }
+    }
+
 }
