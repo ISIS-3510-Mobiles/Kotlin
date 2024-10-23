@@ -164,7 +164,7 @@ class CheckoutFragment : Fragment() {
     }
     private fun updateItemCount(itemCount: Int) {
         val itemCountTextView = view?.findViewById<TextView>(R.id.item_count_text_view)
-        itemCountTextView?.text = "Total of otems: $itemCount"
+        itemCountTextView?.text = "Total of items: $itemCount"
     }
 
 
