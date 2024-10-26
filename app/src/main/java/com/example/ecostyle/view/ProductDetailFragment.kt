@@ -16,6 +16,7 @@ import com.example.ecostyle.viewmodel.ProductDetailViewModel
 import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.example.ecostyle.model.CartItem
 
 class ProductDetailFragment : Fragment() {
 
@@ -91,27 +92,30 @@ class ProductDetailFragment : Fragment() {
             val cartRef = db.collection("carts").document(userId).collection("items")
 
             // Verificar si el producto ya está en el carrito
-            cartRef.whereEqualTo("productName", product.name).get()
+            cartRef.whereEqualTo("firebaseId", product.firebaseId).get()
                 .addOnSuccessListener { documents ->
                     if (!documents.isEmpty) {
                         for (document in documents) {
-                            val cartItem = document.data
-                            val currentQuantity = (cartItem["quantity"] as? Long ?: 1).toInt()
+                            val cartItem = document.toObject(CartItem::class.java)
+                            val currentQuantity = cartItem.quantity
 
-                            // Actualizar la cantidad si ya está en el carrito
                             cartRef.document(document.id)
                                 .update("quantity", currentQuantity + 1)
                                 .addOnSuccessListener {
                                     Toast.makeText(requireContext(), "Cantidad actualizada en el carrito", Toast.LENGTH_SHORT).show()
                                 }
+                                .addOnFailureListener {
+                                    Toast.makeText(requireContext(), "Error al actualizar la cantidad", Toast.LENGTH_SHORT).show()
+                                }
                         }
                     } else {
-                        // Agregar nuevo producto al carrito
+                        // Añadir el producto con su firebaseId
                         val cartItem = hashMapOf(
+                            "firebaseId" to product.firebaseId,  // Guardar el ID de producto
                             "productName" to product.name,
                             "productPrice" to product.price,
                             "productImage" to product.imageResource,
-                            "quantity" to 1, // Cantidad inicial 1
+                            "quantity" to 1,
                             "timestamp" to System.currentTimeMillis()
                         )
 
@@ -119,8 +123,13 @@ class ProductDetailFragment : Fragment() {
                             .addOnSuccessListener {
                                 Toast.makeText(requireContext(), "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
                             }
+                            .addOnFailureListener {
+                                Toast.makeText(requireContext(), "Error al añadir el producto al carrito", Toast.LENGTH_SHORT).show()
+                            }
                     }
                 }
         }
     }
+
+
 }

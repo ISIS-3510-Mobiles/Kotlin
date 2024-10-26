@@ -65,31 +65,32 @@ class ProductAdapter(private var productList: List<Product>, private val onItemC
 
                     if (availableQuantity > 0) {
                         val cartRef = db.collection("carts").document(userId).collection("items")
-                        cartRef.whereEqualTo("productName", product.name).get()
+                        cartRef.whereEqualTo("firebaseId", product.firebaseId).get()
                             .addOnSuccessListener { documents ->
                                 if (!documents.isEmpty) {
+                                    // Incrementar la cantidad si ya existe en el carrito
                                     for (document in documents) {
                                         val cartItem = document.toObject(CartItem::class.java)
                                         val newQuantity = cartItem.quantity + 1
 
                                         if (newQuantity <= availableQuantity) {
                                             cartRef.document(document.id).update("quantity", newQuantity)
-                                            Toast.makeText(holder.itemView.context, "${product.name} cantidad aumentada", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(holder.itemView.context, "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
                                         } else {
                                             Toast.makeText(holder.itemView.context, "No hay más stock disponible", Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 } else {
-                                    if (availableQuantity > 0) {
-                                        val cartItem = hashMapOf(
-                                            "productName" to product.name,
-                                            "productPrice" to product.price,
-                                            "productImage" to product.imageResource,
-                                            "quantity" to 1
-                                        )
-                                        cartRef.add(cartItem)
-                                        Toast.makeText(holder.itemView.context, "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
-                                    }
+                                    // Añadir producto por primera vez al carrito con su firebaseId
+                                    val cartItem = hashMapOf(
+                                        "firebaseId" to product.firebaseId,  // Guardar el ID de producto
+                                        "productName" to product.name,
+                                        "productPrice" to product.price,
+                                        "productImage" to product.imageResource,
+                                        "quantity" to 1
+                                    )
+                                    cartRef.add(cartItem)
+                                    Toast.makeText(holder.itemView.context, "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
                                 }
                             }
                     } else {
@@ -99,6 +100,8 @@ class ProductAdapter(private var productList: List<Product>, private val onItemC
             }
         }
     }
+
+
 
     fun setProductList(newList: List<Product>) {
         productList = newList

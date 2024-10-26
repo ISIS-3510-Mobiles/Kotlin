@@ -145,16 +145,14 @@ class CheckoutFragment : Fragment() {
             cartRef.get().addOnSuccessListener { snapshot ->
                 var allAvailable = true
 
-                // Iteramos sobre cada ítem en el carrito
                 for (document in snapshot.documents) {
                     val cartItem = document.toObject(CartItem::class.java)
 
                     cartItem?.let {
-                        // Verificamos si el ID del producto es válido antes de usarlo
-                        if (cartItem.id.isNotEmpty()) {
-                            val productRef = db.collection("Products").document(cartItem.id)
+                        // Utiliza 'firebaseId' para acceder al producto en la colección 'Products'
+                        if (cartItem.firebaseId.isNotEmpty()) {
+                            val productRef = db.collection("Products").document(cartItem.firebaseId)
 
-                            // Verificamos el stock en la colección de productos
                             productRef.get().addOnSuccessListener { productDoc ->
                                 if (productDoc.exists()) {
                                     val availableQuantity = productDoc.getLong("quantity")?.toInt() ?: 0
@@ -168,7 +166,6 @@ class CheckoutFragment : Fragment() {
                                     Toast.makeText(context, "Producto ${cartItem.productName} no encontrado en el inventario.", Toast.LENGTH_LONG).show()
                                 }
 
-                                // Si todos los productos tienen stock suficiente
                                 if (allAvailable) {
                                     proceedToPayment() // Navegamos al fragmento de pago
                                 }
@@ -181,6 +178,7 @@ class CheckoutFragment : Fragment() {
             }
         }
     }
+
 
     // Actualizar el precio total
     private fun updateTotalPrice() {
