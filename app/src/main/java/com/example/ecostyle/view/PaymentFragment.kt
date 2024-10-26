@@ -62,6 +62,7 @@ class PaymentFragment : Fragment() {
     }
 
     // Cancelar la compra y restaurar el inventario en Firebase
+    // Función para cancelar la compra y restaurar el inventario en Firebase
     private fun cancelPurchase() {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -72,8 +73,10 @@ class PaymentFragment : Fragment() {
             cartRef.get().addOnSuccessListener { snapshot ->
                 for (document in snapshot.documents) {
                     val cartItem = document.toObject(CartItem::class.java)
+
                     cartItem?.let {
-                        val productRef = db.collection("Products").document(cartItem.id)
+                        // Asegurarse de usar firebaseId del producto en la colección de Products
+                        val productRef = db.collection("Products").document(cartItem.firebaseId)
 
                         productRef.get().addOnSuccessListener { productDoc ->
                             val currentStock = productDoc.getLong("quantity")?.toInt() ?: 0
@@ -89,6 +92,7 @@ class PaymentFragment : Fragment() {
             }
         }
     }
+
 
     private fun showPurchaseConfirmation() {
         val transaction = parentFragmentManager.beginTransaction()

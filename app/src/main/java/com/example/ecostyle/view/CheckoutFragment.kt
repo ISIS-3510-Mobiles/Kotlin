@@ -149,7 +149,6 @@ class CheckoutFragment : Fragment() {
                     val cartItem = document.toObject(CartItem::class.java)
 
                     cartItem?.let {
-                        // Utiliza 'firebaseId' para acceder al producto en la colección 'Products'
                         if (cartItem.firebaseId.isNotEmpty()) {
                             val productRef = db.collection("Products").document(cartItem.firebaseId)
 
@@ -160,6 +159,9 @@ class CheckoutFragment : Fragment() {
                                     if (cartItem.quantity > availableQuantity) {
                                         allAvailable = false
                                         Toast.makeText(context, "La cantidad disponible de ${cartItem.productName} es solo $availableQuantity.", Toast.LENGTH_LONG).show()
+                                    } else {
+                                        // Si todo está bien, restamos la cantidad del producto en Firebase
+                                        productRef.update("quantity", availableQuantity - cartItem.quantity)
                                     }
                                 } else {
                                     allAvailable = false
@@ -178,6 +180,7 @@ class CheckoutFragment : Fragment() {
             }
         }
     }
+
 
 
     // Actualizar el precio total
