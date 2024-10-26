@@ -32,6 +32,7 @@
     <string name="billing_zipcode_hint">Postal code</string>
     <string name="proceed_to_confirmation">Proceed to confirmation</string>
     <string name="add_to_cart">Add to Cart</string>
+    <string name="cancel_purchase">Cancel</string>
     <string name="buy">Buy</string>
 
 

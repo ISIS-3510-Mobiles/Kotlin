@@ -1,6 +1,5 @@
 package com.example.ecostyle.adapter
 
-
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -10,8 +9,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.example.ecostyle.model.Product
 import com.example.ecostyle.R
+import com.example.ecostyle.model.CartItem
+import com.example.ecostyle.model.Product
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -21,7 +21,7 @@ class ProductAdapter(private var productList: List<Product>, private val onItemC
         val productImage: ImageView = itemView.findViewById(R.id.product_image)
         val productName: TextView = itemView.findViewById(R.id.product_name)
         val productPrice: TextView = itemView.findViewById(R.id.product_price)
-        val addToCartButton: TextView = itemView.findViewById(R.id.add_to_cart_button) // Botón para añadir al carrito
+        val addToCartButton: TextView = itemView.findViewById(R.id.add_to_cart_button)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductViewHolder {
@@ -40,13 +40,11 @@ class ProductAdapter(private var productList: List<Product>, private val onItemC
             .into(holder.productImage)
 
         holder.itemView.setOnClickListener {
-            Log.d("ProductAdapter", "Product ID: ${product.id}")
             onItemClicked(product)
         }
 
         holder.addToCartButton.setOnClickListener {
-            addToCart(product)
-            Toast.makeText(it.context, "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
+            addToCart(holder, product)
         }
     }
 
@@ -54,25 +52,51 @@ class ProductAdapter(private var productList: List<Product>, private val onItemC
         return productList.size
     }
 
-    private fun addToCart(product: Product) {
+    private fun addToCart(holder: ProductViewHolder, product: Product) {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
         if (userId != null) {
-            val cartItem = hashMapOf(
-                "productName" to product.name,
-                "productPrice" to product.price,
-                "productImage" to product.imageResource,
-                "timestamp" to System.currentTimeMillis()
-            )
+            val productRef = db.collection("Products").document(product.firebaseId)
 
-            db.collection("carts").document(userId).collection("items").add(cartItem)
-                .addOnSuccessListener {
-                    // Producto añadido exitosamente
+            productRef.get().addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val availableQuantity = document.getLong("quantity")?.toInt() ?: 0
+
+                    if (availableQuantity > 0) {
+                        val cartRef = db.collection("carts").document(userId).collection("items")
+                        cartRef.whereEqualTo("productName", product.name).get()
+                            .addOnSuccessListener { documents ->
+                                if (!documents.isEmpty) {
+                                    for (document in documents) {
+                                        val cartItem = document.toObject(CartItem::class.java)
+                                        val newQuantity = cartItem.quantity + 1
+
+                                        if (newQuantity <= availableQuantity) {
+                                            cartRef.document(document.id).update("quantity", newQuantity)
+                                            Toast.makeText(holder.itemView.context, "${product.name} cantidad aumentada", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(holder.itemView.context, "No hay más stock disponible", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                } else {
+                                    if (availableQuantity > 0) {
+                                        val cartItem = hashMapOf(
+                                            "productName" to product.name,
+                                            "productPrice" to product.price,
+                                            "productImage" to product.imageResource,
+                                            "quantity" to 1
+                                        )
+                                        cartRef.add(cartItem)
+                                        Toast.makeText(holder.itemView.context, "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                    } else {
+                        Toast.makeText(holder.itemView.context, "No hay stock disponible", Toast.LENGTH_SHORT).show()
+                    }
                 }
-                .addOnFailureListener {
-                    // Error al añadir el producto
-                }
+            }
         }
     }
 

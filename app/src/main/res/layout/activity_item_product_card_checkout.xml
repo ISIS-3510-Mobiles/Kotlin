@@ -31,6 +31,15 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
+        <!-- Cantidad del producto -->
+        <TextView
+            android:id="@+id/product_quantity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cantidad: 1"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp" />
+
         <!-- Precio del producto -->
         <TextView
             android:id="@+id/product_price"
@@ -49,3 +58,4 @@
         android:textColor="@android:color/white"
         android:background="@drawable/rounded_red" />
 </LinearLayout>
+

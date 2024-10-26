@@ -1,4 +1,3 @@
-// ProductRepository.kt
 package com.example.ecostyle.Repository
 
 import android.util.Log
@@ -9,7 +8,7 @@ class ProductRepository {
 
     private val db = FirebaseFirestore.getInstance()
 
-
+    // Obtener un producto por su ID y asignar firebaseId
     fun getProductById(productId: Int, callback: (Product?) -> Unit) {
         Log.d("ProductRepository", "Fetching product with ID field: $productId")
 
@@ -19,6 +18,7 @@ class ProductRepository {
             .addOnSuccessListener { documents ->
                 if (!documents.isEmpty) {
                     val product = documents.documents[0].toObject(Product::class.java)
+                    product?.firebaseId = documents.documents[0].id  // Asigna el firebaseId
                     callback(product)
                     Log.d("ProductRepository", "Fetched product: $product")
                 } else {
@@ -31,12 +31,16 @@ class ProductRepository {
                 callback(null)
             }
     }
+
+    // Obtener todos los productos y asignar firebaseId a cada uno
     fun getProducts(callback: (List<Product>) -> Unit) {
         db.collection("Products")
             .get()
             .addOnSuccessListener { result ->
                 val productList = result.mapNotNull { document ->
-                    document.toObject(Product::class.java)
+                    val product = document.toObject(Product::class.java)
+                    product.firebaseId = document.id  // Asigna el firebaseId a cada producto
+                    product
                 }
                 callback(productList)
             }
@@ -46,3 +50,4 @@ class ProductRepository {
             }
     }
 }
+

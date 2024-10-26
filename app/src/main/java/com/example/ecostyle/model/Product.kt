@@ -10,5 +10,6 @@ data class Product(
     val ecofriend: Boolean = false,
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val quantity: Int = 0
+    val quantity: Int = 0,
+    var firebaseId: String = ""
 )

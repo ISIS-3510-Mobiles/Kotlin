@@ -1,6 +1,5 @@
 package com.example.ecostyle.view
 
-import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.*
@@ -11,8 +10,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.appcompat.app.ActionBarDrawerToggle
-import androidx.appcompat.app.AppCompatActivity
 import com.example.ecostyle.R
 import com.example.ecostyle.model.Product
 import com.example.ecostyle.viewmodel.ProductDetailViewModel
@@ -29,7 +26,6 @@ class ProductDetailFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Obtener argumentos si se pasaron
         arguments?.let {
             productId = it.getInt("PRODUCT_ID", -1)
         }
@@ -39,7 +35,6 @@ class ProductDetailFragment : Fragment() {
         } else {
             Log.d("ProductDetailFragment", "Received productId: $productId")
         }
-
     }
 
     override fun onCreateView(
@@ -52,7 +47,6 @@ class ProductDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-
         val productImage = view.findViewById<ImageView>(R.id.product_detail_image)
         val productName = view.findViewById<TextView>(R.id.product_detail_title)
         val productPrice = view.findViewById<TextView>(R.id.product_detail_price)
@@ -61,7 +55,6 @@ class ProductDetailFragment : Fragment() {
         val addToCartButton = view.findViewById<Button>(R.id.btn_add_to_cart)
 
         viewModel.product.observe(viewLifecycleOwner) { product ->
-            Log.d("ProductDetailFragment", "Observed product: $product")
             productName.text = product.name
             productPrice.text = product.price
             productDescription.text = product.description
@@ -85,27 +78,48 @@ class ProductDetailFragment : Fragment() {
         addToCartButton.setOnClickListener {
             viewModel.product.value?.let { product ->
                 addToCart(product)
-                Toast.makeText(requireContext(), "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    // Añadir productos al carrito
     private fun addToCart(product: Product) {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
         if (userId != null) {
-            val cartItem = hashMapOf(
-                "productName" to product.name,
-                "productPrice" to product.price,
-                "productImage" to product.imageResource,
-                "timestamp" to System.currentTimeMillis()
-            )
+            val cartRef = db.collection("carts").document(userId).collection("items")
 
-            db.collection("carts").document(userId).collection("items").add(cartItem)
-                .addOnSuccessListener {
-                }
-                .addOnFailureListener {
+            // Verificar si el producto ya está en el carrito
+            cartRef.whereEqualTo("productName", product.name).get()
+                .addOnSuccessListener { documents ->
+                    if (!documents.isEmpty) {
+                        for (document in documents) {
+                            val cartItem = document.data
+                            val currentQuantity = (cartItem["quantity"] as? Long ?: 1).toInt()
+
+                            // Actualizar la cantidad si ya está en el carrito
+                            cartRef.document(document.id)
+                                .update("quantity", currentQuantity + 1)
+                                .addOnSuccessListener {
+                                    Toast.makeText(requireContext(), "Cantidad actualizada en el carrito", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                    } else {
+                        // Agregar nuevo producto al carrito
+                        val cartItem = hashMapOf(
+                            "productName" to product.name,
+                            "productPrice" to product.price,
+                            "productImage" to product.imageResource,
+                            "quantity" to 1, // Cantidad inicial 1
+                            "timestamp" to System.currentTimeMillis()
+                        )
+
+                        cartRef.add(cartItem)
+                            .addOnSuccessListener {
+                                Toast.makeText(requireContext(), "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
+                            }
+                    }
                 }
         }
     }
