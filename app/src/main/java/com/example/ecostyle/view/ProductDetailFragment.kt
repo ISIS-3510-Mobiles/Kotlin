@@ -102,10 +102,11 @@ class ProductDetailFragment : Fragment() {
                             cartRef.document(document.id)
                                 .update("quantity", currentQuantity + 1)
                                 .addOnSuccessListener {
-                                    Toast.makeText(requireContext(), "Cantidad actualizada en el carrito", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(requireContext(), "Updated quantity in cart", Toast.LENGTH_SHORT).show()
                                 }
                                 .addOnFailureListener {
-                                    Toast.makeText(requireContext(), "Error al actualizar la cantidad", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(requireContext(), "\n" +
+                                            "Error updating quantity", Toast.LENGTH_SHORT).show()
                                 }
                         }
                     } else {
@@ -121,10 +122,11 @@ class ProductDetailFragment : Fragment() {
 
                         cartRef.add(cartItem)
                             .addOnSuccessListener {
-                                Toast.makeText(requireContext(), "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(requireContext(), "${product.name} added to cart", Toast.LENGTH_SHORT).show()
                             }
                             .addOnFailureListener {
-                                Toast.makeText(requireContext(), "Error al añadir el producto al carrito", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(requireContext(), "\n" +
+                                        "Error when adding product to cart", Toast.LENGTH_SHORT).show()
                             }
                     }
                 }

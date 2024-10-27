@@ -75,9 +75,10 @@ class ProductAdapter(private var productList: List<Product>, private val onItemC
 
                                         if (newQuantity <= availableQuantity) {
                                             cartRef.document(document.id).update("quantity", newQuantity)
-                                            Toast.makeText(holder.itemView.context, "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(holder.itemView.context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
                                         } else {
-                                            Toast.makeText(holder.itemView.context, "No hay más stock disponible", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(holder.itemView.context, "\n" +
+                                                    "There is no more stock available", Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 } else {
@@ -90,11 +91,11 @@ class ProductAdapter(private var productList: List<Product>, private val onItemC
                                         "quantity" to 1
                                     )
                                     cartRef.add(cartItem)
-                                    Toast.makeText(holder.itemView.context, "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(holder.itemView.context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
                                 }
                             }
                     } else {
-                        Toast.makeText(holder.itemView.context, "No hay stock disponible", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(holder.itemView.context, "There is no more stock available", Toast.LENGTH_SHORT).show()
                     }
                 }
             }

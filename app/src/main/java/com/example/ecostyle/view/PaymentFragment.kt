@@ -27,7 +27,7 @@ class PaymentFragment : Fragment() {
 
         // Configurar el Spinner de métodos de pago
         val paymentMethodsSpinner: Spinner = view.findViewById(R.id.payment_methods_spinner)
-        val paymentMethods = arrayOf("Nequi", "Tarjeta de Crédito", "Tarjeta de Débito", "PSE", "Efectivo")
+        val paymentMethods = arrayOf("Nequi", "Daviplata",  "Credit card", "Debit card", "PSE", "Efectivo")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, paymentMethods)
         paymentMethodsSpinner.adapter = adapter
 

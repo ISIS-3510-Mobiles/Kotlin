@@ -119,7 +119,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             .build()
 
         db.firestoreSettings = settings
-        Log.d("FirestoreInit", "Firestore inicializado correctamente")
+        Log.d("FirestoreInit", "Firestore initialized successfully")
 
         FirebaseFirestore.setLoggingEnabled(true)
 

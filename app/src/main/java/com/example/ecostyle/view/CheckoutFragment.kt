@@ -158,14 +158,14 @@ class CheckoutFragment : Fragment() {
 
                                     if (cartItem.quantity > availableQuantity) {
                                         allAvailable = false
-                                        Toast.makeText(context, "La cantidad disponible de ${cartItem.productName} es solo $availableQuantity.", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "The available quantity of  ${cartItem.productName} is just  $availableQuantity.", Toast.LENGTH_LONG).show()
                                     } else {
                                         // Si todo está bien, restamos la cantidad del producto en Firebase
                                         productRef.update("quantity", availableQuantity - cartItem.quantity)
                                     }
                                 } else {
                                     allAvailable = false
-                                    Toast.makeText(context, "Producto ${cartItem.productName} no encontrado en el inventario.", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "Product ${cartItem.productName} not found in inventory.", Toast.LENGTH_LONG).show()
                                 }
 
                                 if (allAvailable) {
@@ -173,7 +173,7 @@ class CheckoutFragment : Fragment() {
                                 }
                             }
                         } else {
-                            Toast.makeText(context, "Error: ID del producto inválido.", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "Error: Invalid product ID.", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -185,12 +185,25 @@ class CheckoutFragment : Fragment() {
 
     // Actualizar el precio total
     private fun updateTotalPrice() {
-        totalPrice = cartAdapter.cartItemList.sumOf { cartItem ->
+        // Calcula el subtotal sin impuestos
+        val subtotal = cartAdapter.cartItemList.sumOf { cartItem ->
             val cleanPrice = cartItem.productPrice.replace("$", "").toDoubleOrNull() ?: 0.0
             cleanPrice * cartItem.quantity
         }
-        val taxes = totalPrice * 0.07
-        val totalWithTaxes = totalPrice + taxes
+
+        // Calcula los impuestos (7%)
+        val taxes = subtotal * 0.07
+
+        // Calcula el total con impuestos
+        val totalWithTaxes = subtotal + taxes
+
+        // Actualiza los TextViews correspondientes en la interfaz
+        val subtotalTextView = view?.findViewById<TextView>(R.id.subtotal_text_view)
+        subtotalTextView?.text = "Subtotal: $${String.format("%.2f", subtotal)}"
+
+        val taxesTextView = view?.findViewById<TextView>(R.id.taxes_text_view)
+        taxesTextView?.text = "Taxes (7%): $${String.format("%.2f", taxes)}"
+
         totalPriceTextView.text = "Total: $${String.format("%.2f", totalWithTaxes)}"
     }
 

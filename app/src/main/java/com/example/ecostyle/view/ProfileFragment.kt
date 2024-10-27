@@ -46,7 +46,7 @@ class ProfileFragment : Fragment() {
             dispatchTakePictureIntent()
         } else {
             // Permiso denegado, mostrar un mensaje o manejar el caso
-            Toast.makeText(context, "Permiso de cámara denegado.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Camera permission denied.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -59,7 +59,7 @@ class ProfileFragment : Fragment() {
             profileImage.setImageBitmap(imageBitmap)
             uploadImageToStorage(imageBitmap, email)
         } else {
-            Toast.makeText(context, "No se tomó ninguna foto.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No photo was taken.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -136,7 +136,8 @@ class ProfileFragment : Fragment() {
             }
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
                 // Mostrar una explicación al usuario
-                Toast.makeText(context, "La aplicación necesita acceso a la cámara para tomar fotos.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "\n" +
+                        "The app needs access to the camera to take photos.", Toast.LENGTH_LONG).show()
                 // Solicitar el permiso
                 requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
@@ -153,7 +154,7 @@ class ProfileFragment : Fragment() {
         if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
             takePictureLauncher.launch(takePictureIntent)
         } else {
-            Toast.makeText(context, "No hay aplicación de cámara disponible.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "There is no camera app available.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -181,10 +182,11 @@ class ProfileFragment : Fragment() {
                 emailTextView.text = email
             } else {
                 // El documento no existe
-                println("El documento no existe.")
+                println("The document does not exist.")
             }
         }.addOnFailureListener { exception ->
-            println("Error al obtener el documento: $exception")
+            println("\n" +
+                    "Error getting document: $exception")
         }
     }
 
@@ -208,8 +210,9 @@ class ProfileFragment : Fragment() {
             }
         }.addOnFailureListener {
             // Manejar errores en la subida
-            println("Error al subir la imagen: ${it.message}")
-            Toast.makeText(context, "Error al subir la imagen.", Toast.LENGTH_SHORT).show()
+            println("\n" +
+                    "Error uploading image: ${it.message}")
+            Toast.makeText(context, "Error uploading image.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -220,10 +223,11 @@ class ProfileFragment : Fragment() {
         db.collection("User").document(email)
             .update("imgUrl", imageUrl)
             .addOnSuccessListener {
-                println("Imagen de perfil actualizada correctamente en Firestore")
+                println("Profile image successfully updated in Firestore")
             }
             .addOnFailureListener {
-                println("Error al actualizar la imagen en Firestore: ${it.message}")
+                println("\n" +
+                        "Error updating image in Firestore: ${it.message}")
             }
     }
 }
