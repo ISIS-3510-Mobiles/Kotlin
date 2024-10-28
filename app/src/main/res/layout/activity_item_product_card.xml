@@ -69,7 +69,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Add to cart"
-            android:backgroundTint="@color/dark_green"
+            android:background="@drawable/rounded_lima_green"
             android:textColor="@android:color/white"
             android:layout_marginTop="8dp" />
 

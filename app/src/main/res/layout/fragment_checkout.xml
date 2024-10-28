@@ -18,7 +18,7 @@
             android:id="@+id/recycler_view_cart_items"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="10dp"
             tools:listitem="@layout/activity_item_product_card_checkout" />
 
         <!-- Contenedor para resumen de precio y métodos de pago -->
@@ -76,7 +76,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Checkout"
-            android:backgroundTint="@android:color/darker_gray"
+            android:background="@drawable/rounded_lima_green"
             android:textColor="@android:color/white"
             android:layout_marginTop="16dp" />
     </LinearLayout>

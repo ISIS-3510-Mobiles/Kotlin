@@ -4,8 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/white"
     android:padding="16dp"
-    tools:context=".Activity.AuthActivity">
+    tools:context=".activity.AuthActivity">
 
     <LinearLayout
         android:id="@+id/registration_form"
@@ -69,6 +70,7 @@
                 android:layout_height="50dp"
                 android:layout_margin="5dp"
                 android:background="@drawable/rounded_lima_green"
+                android:backgroundTint="@color/lima_green"
                 android:text="Log in"
                 android:textColor="@color/white" />
 
@@ -78,6 +80,7 @@
                 android:layout_height="50dp"
                 android:layout_margin="5dp"
                 android:background="@drawable/rounded_lima_green"
+                android:backgroundTint="@color/lima_green"
                 android:text="Sign Up"
                 android:textColor="@color/white" />
 

@@ -1,11 +1,15 @@
 package com.example.ecostyle.model
 
-class Product
-    (
-    val id: Int,
-    val name: String,
-    val price: String,
-    val imageResource: Int,
-    val description: String,
-    var isFavorite: Boolean = false
+data class Product(
+    val id: Int = -2,
+    val name: String? = null,
+    val price: String? = null,
+    val imageResource: String? = null,
+    val description: String? = null,
+    var isFavorite: Boolean = false,
+    val ecofriend: Boolean = false,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val quantity: Int = 0,
+    var firebaseId: String = ""
 )

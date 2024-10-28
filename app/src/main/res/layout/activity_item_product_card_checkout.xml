@@ -27,16 +27,25 @@
             android:id="@+id/product_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Nombre del producto"
+            android:text="Product"
             android:textSize="16sp"
             android:textStyle="bold" />
+
+        <!-- Cantidad del producto -->
+        <TextView
+            android:id="@+id/product_quantity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cantidad: 1"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp" />
 
         <!-- Precio del producto -->
         <TextView
             android:id="@+id/product_price"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Precio del producto"
+            android:text="Price"
             android:textSize="14sp" />
     </LinearLayout>
 
@@ -45,7 +54,8 @@
         android:id="@+id/remove_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Eliminar"
+        android:text="Delete"
         android:textColor="@android:color/white"
-        android:backgroundTint="#B71C1C" />
+        android:background="@drawable/rounded_red" />
 </LinearLayout>
+

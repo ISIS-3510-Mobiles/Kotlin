@@ -1,20 +1,17 @@
-package com.example.ecostyle.Activity
+package com.example.ecostyle.activity
 
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.ecostyle.R
-import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.messaging.FirebaseMessaging
 
 class AuthActivity : AppCompatActivity() {
 
@@ -43,7 +40,6 @@ class AuthActivity : AppCompatActivity() {
     }
 
     private fun setup() {
-        title = "Authentication"
         val loginButton = findViewById<Button>(R.id.loginButton)
         val signUpButton = findViewById<Button>(R.id.signUpButton)
         val emailEditText = findViewById<EditText>(R.id.emailEditText)
@@ -77,6 +73,10 @@ class AuthActivity : AppCompatActivity() {
                             showAlert()
                         }
                     }
+            }
+            else {
+                // Mostrar mensaje de error si la información no es válida
+                Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show()
             }
         }
     }

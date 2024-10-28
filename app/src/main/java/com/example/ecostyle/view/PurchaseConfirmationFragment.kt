@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import androidx.fragment.app.Fragment
 import com.example.ecostyle.R
-import com.example.ecostyle.Activity.HomeActivity
+import com.example.ecostyle.activity.HomeActivity
 
 class PurchaseConfirmationFragment : Fragment() {
 
