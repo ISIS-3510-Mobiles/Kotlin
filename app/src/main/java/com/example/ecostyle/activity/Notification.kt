@@ -24,8 +24,6 @@ class Notification : Application() {
         val sharedPreferences = getSharedPreferences("CartPrefs", Context.MODE_PRIVATE)
         val hasItemsInCart = sharedPreferences.getBoolean("hasItemsInCart", false)
 
-        Log.d("Notification", "Has items in cart: $hasItemsInCart")
-
         if (hasItemsInCart) {
             sendAbandonedCartNotification()
         }
