@@ -13,6 +13,8 @@ import com.example.ecostyle.adapter.CartAdapter
 import com.example.ecostyle.model.CartItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import android.content.Context
+
 
 class CheckoutFragment : Fragment() {
 
@@ -22,7 +24,6 @@ class CheckoutFragment : Fragment() {
     private lateinit var totalPriceTextView: TextView
     private var totalPrice: Double = 0.0
 
-    // Variable para almacenar las cantidades de stock localmente
     private val productStockMap = mutableMapOf<String, Int>()
 
     override fun onCreateView(
@@ -47,7 +48,6 @@ class CheckoutFragment : Fragment() {
 
         loadCartItems()
 
-        // Verificar stock y proceder al pago
         checkoutButton.setOnClickListener {
             verifyStockBeforeCheckout()
         }
@@ -72,8 +72,8 @@ class CheckoutFragment : Fragment() {
                         val cartItem = document.toObject(CartItem::class.java)
 
                         cartItem?.let {
-                            // Asegúrate de que 'id' sea el firebaseId del producto correcto
-                            cartItem.id = document.id // ID del documento de Firestore (firebaseId)
+
+                            cartItem.id = document.id
                             cartItems.add(cartItem)
 
                             // Actualizar precio y cantidad
@@ -87,7 +87,13 @@ class CheckoutFragment : Fragment() {
                     updateTotalPrice()
                     updateItemCount(itemCount)
 
-                    checkoutButton.isEnabled = cartItems.isNotEmpty()
+                    if (cartItems.isNotEmpty()) {
+                        checkoutButton.isEnabled = true
+                        updateCartStatus(true)
+                    } else {
+                        checkoutButton.isEnabled = false
+                        updateCartStatus(false)
+                    }
                 }
                 .addOnFailureListener {
                     Toast.makeText(context, "Error loading the cart", Toast.LENGTH_SHORT).show()
@@ -119,6 +125,15 @@ class CheckoutFragment : Fragment() {
             }
         }
     }
+    private fun updateCartStatus(hasItems: Boolean) {
+        if (isAdded) {
+            val sharedPreferences = requireContext().getSharedPreferences("CartPrefs", Context.MODE_PRIVATE)
+            val editor = sharedPreferences.edit()
+            editor.putBoolean("hasItemsInCart", hasItems)
+            editor.apply()
+        }
+    }
+
 
     private fun updateCartItemQuantity(cartItem: CartItem) {
         val db = FirebaseFirestore.getInstance()

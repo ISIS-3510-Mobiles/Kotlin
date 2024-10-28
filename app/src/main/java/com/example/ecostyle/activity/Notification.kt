@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.ecostyle.R
 
@@ -22,6 +23,8 @@ class Notification : Application() {
     fun checkCartAndSendNotification() {
         val sharedPreferences = getSharedPreferences("CartPrefs", Context.MODE_PRIVATE)
         val hasItemsInCart = sharedPreferences.getBoolean("hasItemsInCart", false)
+
+        Log.d("Notification", "Has items in cart: $hasItemsInCart")
 
         if (hasItemsInCart) {
             sendAbandonedCartNotification()
