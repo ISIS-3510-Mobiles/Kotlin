@@ -13,7 +13,7 @@ class PublishItemViewModel : ViewModel() {
     private val _publishStatus = MutableLiveData<Boolean>()
     val publishStatus: LiveData<Boolean> get() = _publishStatus
 
-    fun publishProduct(name: String, price: String, description: String, ecoFriendly: Boolean, imageUri: Uri, quantity: Int) {
+    fun publishProduct(name: String, price: Int, description: String, ecoFriendly: Boolean, imageUri: Uri, quantity: Int) {
         repository.publishProductToFirestore(name, price, description, ecoFriendly, imageUri, quantity) { success ->
             _publishStatus.postValue(success)
         }

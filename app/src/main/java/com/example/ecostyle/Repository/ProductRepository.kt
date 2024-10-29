@@ -56,7 +56,7 @@ class ProductRepository {
 
     fun publishProductToFirestore(
         name: String,
-        price: String,
+        price: Int,
         description: String,
         ecoFriendly: Boolean,
         imageUri: Uri,

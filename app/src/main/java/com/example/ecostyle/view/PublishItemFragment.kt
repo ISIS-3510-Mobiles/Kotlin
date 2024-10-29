@@ -97,7 +97,7 @@ class PublishItemFragment : Fragment() {
         // Validar y publicar producto
         publishButton.setOnClickListener {
             val productName = nameEditText.text.toString()
-            val productPrice = priceEditText.text.toString()
+            val productPriceText = priceEditText.text.toString()
             val productDescription = descriptionEditText.text.toString()
             val ecoFriendly = ecoFriendlyCheckbox.isChecked
             val quantityText = quantityEditText.text.toString()
@@ -110,6 +110,7 @@ class PublishItemFragment : Fragment() {
             // Verificar que todos los campos estén completos y sean válidos
             if (nameValid && priceValid && descriptionValid && quantityValid && this::productImageUri.isInitialized) {
                 val quantity = quantityText.toInt()
+                val productPrice = productPriceText.toInt()
 
                 // Llamar al ViewModel para publicar el artículo
                 viewModel.publishProduct(
