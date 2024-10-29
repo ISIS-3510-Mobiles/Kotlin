@@ -26,7 +26,14 @@
         android:layout_height="55dp"
         android:layout_marginBottom="16dp"
         android:background="@color/gray_light"
-        android:padding="16dp" />
+        android:padding="16dp"
+        android:spinnerMode="dropdown"
+        android:popupBackground="@color/white"
+        android:drawableRight="@drawable/ic_arrow_down"
+        android:gravity="center_vertical"
+        android:paddingRight="16dp"
+        android:dropDownVerticalOffset="5dp" />
+
 
     <!-- Información de facturación -->
     <EditText

@@ -34,6 +34,17 @@
     <string name="add_to_cart">Add to Cart</string>
     <string name="cancel_purchase">Cancel</string>
     <string name="buy">Buy</string>
+    <string name="content_desc_product_image">no se que es esto</string>
+    <string name="hint_product_quantity">Quantity of the product</string>
+    <string name="upload_image_button_text">Upload image</string>
+    <string name="publish_button_text">Publish item</string>
+    <string name="hint_product_name">Product name</string>
+    <string name="hint_product_price">Product price</string>
+    <string name="hint_product_description">Product description </string>
+    <string name="text_ecofriendly">It is ecofriendly?</string>
+    <string name="take_photo_button_text">Take photo</string>
+
+
 
 
 </resources>
