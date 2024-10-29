@@ -57,7 +57,7 @@ class ProductDetailFragment : Fragment() {
 
         viewModel.product.observe(viewLifecycleOwner) { product ->
             productName.text = product.name
-            productPrice.text = product.price
+            productPrice.text = product.price.toString()
             productDescription.text = product.description
 
             Glide.with(this)

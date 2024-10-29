@@ -110,7 +110,7 @@ class PublishItemFragment : Fragment() {
             // Verificar que todos los campos estén completos y sean válidos
             if (nameValid && priceValid && descriptionValid && quantityValid && this::productImageUri.isInitialized) {
                 val quantity = quantityText.toInt()
-                val productPrice = productPriceText.toInt()
+                val productPrice = productPriceText
 
                 // Llamar al ViewModel para publicar el artículo
                 viewModel.publishProduct(

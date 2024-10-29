@@ -33,7 +33,8 @@ class ProductAdapter(private var productList: List<Product>, private val onItemC
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
         val product = productList[position]
         holder.productName.text = product.name
-        holder.productPrice.text = product.price
+        holder.productPrice.text = product.price.toString()
+
 
         Glide.with(holder.itemView.context)
             .load(product.imageResource)

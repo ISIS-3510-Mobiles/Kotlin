@@ -5,6 +5,7 @@ import android.util.Log
 import com.example.ecostyle.model.Product
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.tasks.await
 import java.util.*
 
 class ProductRepository {
@@ -12,94 +13,102 @@ class ProductRepository {
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    // Obtener un producto por su ID y asignar firebaseId
-    fun getProductById(productId: Int, callback: (Product?) -> Unit) {
-        Log.d("ProductRepository", "Fetching product with ID field: $productId")
+    suspend fun getProductById(productId: Int): Product? {
+        return try {
+            val documents = db.collection("Products")
+                .whereEqualTo("id", productId)
+                .get()
+                .await() // Convertir a una llamada suspendida
 
-        db.collection("Products")
-            .whereEqualTo("id", productId)
-            .get()
-            .addOnSuccessListener { documents ->
-                if (!documents.isEmpty) {
-                    val product = documents.documents[0].toObject(Product::class.java)
-                    product?.firebaseId = documents.documents[0].id  // Asigna el firebaseId
-                    callback(product)
-                    Log.d("ProductRepository", "Fetched product: $product")
-                } else {
-                    Log.d("ProductRepository", "Product not found with id: $productId")
-                    callback(null)
-                }
+            if (!documents.isEmpty) {
+                val product = documents.documents[0].toObject(Product::class.java)
+                product?.firebaseId = documents.documents[0].id  // Asigna el firebaseId
+                product
+            } else {
+                Log.d("ProductRepository", "Product not found with id: $productId")
+                null
             }
-            .addOnFailureListener { exception ->
-                Log.e("ProductRepository", "Error fetching product", exception)
-                callback(null)
-            }
+        } catch (e: Exception) {
+            Log.e("ProductRepository", "Error fetching product", e)
+            null
+        }
     }
 
-    // Obtener todos los productos y asignar firebaseId a cada uno
-    fun getProducts(callback: (List<Product>) -> Unit) {
-        db.collection("Products")
-            .get()
-            .addOnSuccessListener { result ->
-                val productList = result.mapNotNull { document ->
-                    val product = document.toObject(Product::class.java)
-                    product.firebaseId = document.id  // Asigna el firebaseId a cada producto
-                    product
-                }
-                callback(productList)
+    // Nueva función suspendida que devuelve la lista de productos
+    suspend fun getProducts(): List<Product> {
+        return try {
+            val result = db.collection("Products")
+                .get()
+                .await()
+
+            result.mapNotNull { document ->
+                val product = document.toObject(Product::class.java)
+                product.firebaseId = document.id
+                product
             }
-            .addOnFailureListener { e ->
-                Log.e("ProductRepository", "Error getting products", e)
-                callback(emptyList())
-            }
+        } catch (e: Exception) {
+            Log.e("ProductRepository", "Error getting products", e)
+            emptyList() // En caso de error, devolver lista vacía
+        }
     }
 
-    fun publishProductToFirestore(
+    // Publicar producto en Firestore
+    suspend fun publishProductToFirestore(
         name: String,
-        price: Int,
+        price: String,
         description: String,
         ecoFriendly: Boolean,
         imageUri: Uri,
-        quantity: Int,
-        callback: (Boolean) -> Unit,
+        quantity: Int
+    ): Boolean {
+        return try {
+            // Obtener el ID máximo actual de la base de datos
+            val querySnapshot = db.collection("Products")
+                .orderBy("id", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .await() // Convertir a una llamada suspendida
 
-    ) {
-        // Generar un ID único para la imagen
-        val imageId = UUID.randomUUID().toString()
-        val storageRef = storage.reference.child("product_images/$imageId.jpg")
-
-        // Subir la imagen a Firebase Storage
-        storageRef.putFile(imageUri)
-            .addOnSuccessListener {
-                // Obtener la URL de descarga de la imagen
-                storageRef.downloadUrl.addOnSuccessListener { uri ->
-                    // Crear un mapa de datos para el producto
-                    val productData = hashMapOf(
-                        "name" to name,
-                        "price" to price,
-                        "description" to description,
-                        "ecofriend" to ecoFriendly,
-                        "imageResource" to uri.toString(),
-                        "isFavorite" to false,
-                        "latitude" to 0.0,
-                        "longitude" to 0.0,
-                        "quantity" to quantity
-                    )
-
-                    // Guardar los detalles del producto en Firestore
-                    db.collection("Products")
-                        .add(productData)
-                        .addOnSuccessListener {
-                            callback(true)  // Publicación exitosa
-                        }
-                        .addOnFailureListener {
-                            callback(false)  // Error al guardar en Firestore
-                        }
-                }
+            val newId = if (querySnapshot != null && querySnapshot.documents.isNotEmpty()) {
+                val lastId = querySnapshot.documents[0].getLong("id") ?: 0L
+                lastId + 1
+            } else {
+                1L // Si no hay productos, empieza desde 1
             }
-            .addOnFailureListener {
-                callback(false)  // Error al subir la imagen
-            }
+
+            // Generar un ID único para la imagen
+            val imageId = UUID.randomUUID().toString()
+            val storageRef = storage.reference.child("product_images/$imageId.jpg")
+
+            // Subir la imagen a Firebase Storage
+            storageRef.putFile(imageUri).await()
+
+            // Obtener la URL de descarga de la imagen
+            val downloadUrl = storageRef.downloadUrl.await()
+
+            // Crear un mapa de datos para el producto
+            val productData = hashMapOf(
+                "id" to newId,  // Agregar el nuevo id
+                "name" to name,
+                "price" to price,
+                "description" to description,
+                "ecofriend" to ecoFriendly,
+                "imageResource" to downloadUrl.toString(),
+                "isFavorite" to false,
+                "latitude" to 0.0,
+                "longitude" to 0.0,
+                "quantity" to quantity
+            )
+
+            // Guardar los detalles del producto en Firestore
+            db.collection("Products").add(productData).await()
+
+            true  // Publicación exitosa
+        } catch (e: Exception) {
+            Log.e("ProductRepository", "Error publishing product", e)
+            false  // Error al guardar en Firestore
+        }
     }
 }
+
 
