@@ -1,11 +1,15 @@
 package com.example.ecostyle.view
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.location.Location
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
@@ -13,14 +17,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import com.example.ecostyle.R
 import com.example.ecostyle.viewmodel.PublishItemViewModel
-import java.io.FileOutputStream
-import android.os.Environment
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.launch
 import java.io.File
+import java.io.FileOutputStream
 
 class PublishItemFragment : Fragment() {
 
@@ -28,12 +36,16 @@ class PublishItemFragment : Fragment() {
     private lateinit var imageView: ImageView
     private lateinit var productImageUri: Uri
     private var imageSource = false // False if from gallery, true if from camera
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_publish_item, container, false)
+
+        // Inicializar el cliente de ubicación
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
 
         val nameEditText = view.findViewById<EditText>(R.id.product_name_edittext)
         val priceEditText = view.findViewById<EditText>(R.id.product_price_edittext)
@@ -115,17 +127,10 @@ class PublishItemFragment : Fragment() {
             if (nameValid && priceValid && descriptionValid && quantityValid && this::productImageUri.isInitialized) {
                 val quantity = quantityText.toInt()
 
-
-                // Llamar al ViewModel para publicar el artículo
-                viewModel.publishProduct(
-                    productName,
-                    productPrice,
-                    productDescription,
-                    ecoFriendly,
-                    productImageUri,
-                    quantity
+                // Obtener la ubicación del usuario y publicar el producto
+                getLocationAndPublishProduct(
+                    productName, productPrice, productDescription, ecoFriendly, productImageUri, quantity
                 )
-
             } else {
                 Toast.makeText(requireContext(), "Please fill all fields and correct errors", Toast.LENGTH_SHORT).show()
             }
@@ -157,17 +162,14 @@ class PublishItemFragment : Fragment() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         startActivityForResult(intent, CAMERA_CAPTURE_CODE)
     }
+
+    // Guardar el Bitmap en un archivo y devolver la Uri del archivo creado
     private fun saveBitmapToFile(bitmap: Bitmap): Uri? {
-        // Crear un archivo temporal en el almacenamiento externo
         val file = File(requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "temp_image.jpg")
         val fos = FileOutputStream(file)
-
-        // Comprimir el Bitmap en formato JPEG y escribirlo en el archivo
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
         fos.flush()
         fos.close()
-
-        // Devolver la Uri del archivo creado
         return Uri.fromFile(file)
     }
 
@@ -178,7 +180,7 @@ class PublishItemFragment : Fragment() {
             if (requestCode == IMAGE_PICK_CODE) {
                 // Imagen seleccionada de la galería
                 productImageUri = data?.data!!
-                imageView.setImageURI(productImageUri)
+                imageView.setImageURI(productImageUri)  // Mostrar la imagen seleccionada
             } else if (requestCode == CAMERA_CAPTURE_CODE) {
                 // Imagen capturada con la cámara
                 val bitmap = data?.extras?.get("data") as? Bitmap
@@ -191,13 +193,38 @@ class PublishItemFragment : Fragment() {
                     // Actualizar productImageUri para que apunte al archivo temporal
                     if (tempImageUri != null) {
                         productImageUri = tempImageUri
+                        imageView.setImageURI(productImageUri)  // Mostrar la imagen capturada
                     }
                 }
             }
         }
     }
 
+    // Obtener la ubicación del usuario y publicar el producto
+    private fun getLocationAndPublishProduct(
+        name: String, price: String, description: String, ecoFriendly: Boolean,
+        imageUri: Uri, quantity: Int
+    ) {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
+            return
+        }
 
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location: Location? ->
+                if (location != null) {
+                    // Llamar al ViewModel para publicar el artículo con latitud y longitud
+                    viewModel.publishProduct(
+                        name, price, description, ecoFriendly, imageUri, quantity, location.latitude, location.longitude
+                    )
+                } else {
+                    Toast.makeText(requireContext(), "Unable to get location", Toast.LENGTH_SHORT).show()
+                }
+            }
+    }
 
     // Funciones de validación para cada campo
     private fun validateName(nameEditText: EditText, errorTextView: TextView): Boolean {
@@ -270,5 +297,7 @@ class PublishItemFragment : Fragment() {
         const val CAMERA_CAPTURE_CODE = 1002
     }
 }
+
+
 
 

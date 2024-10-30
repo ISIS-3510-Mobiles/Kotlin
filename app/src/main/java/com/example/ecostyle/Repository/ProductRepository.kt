@@ -59,7 +59,9 @@ class ProductRepository {
         description: String,
         ecoFriendly: Boolean,
         imageUri: Uri,
-        quantity: Int
+        quantity: Int,
+        latitude: Double,
+        longitude: Double
     ): Boolean {
         return try {
             // Obtener el ID máximo actual de la base de datos
@@ -67,13 +69,13 @@ class ProductRepository {
                 .orderBy("id", com.google.firebase.firestore.Query.Direction.DESCENDING)
                 .limit(1)
                 .get()
-                .await() // Convertir a una llamada suspendida
+                .await()
 
             val newId = if (querySnapshot != null && querySnapshot.documents.isNotEmpty()) {
                 val lastId = querySnapshot.documents[0].getLong("id") ?: 0L
                 lastId + 1
             } else {
-                1L // Si no hay productos, empieza desde 1
+                1L
             }
 
             // Generar un ID único para la imagen
@@ -88,15 +90,15 @@ class ProductRepository {
 
             // Crear un mapa de datos para el producto
             val productData = hashMapOf(
-                "id" to newId,  // Agregar el nuevo id
+                "id" to newId,
                 "name" to name,
                 "price" to price,
                 "description" to description,
-                "ecofriend" to ecoFriendly,
+                "ecofriendly" to ecoFriendly,
                 "imageResource" to downloadUrl.toString(),
                 "isFavorite" to false,
-                "latitude" to 0.0,
-                "longitude" to 0.0,
+                "latitude" to latitude,  // Guardar la latitud
+                "longitude" to longitude,  // Guardar la longitud
                 "quantity" to quantity
             )
 
@@ -109,6 +111,7 @@ class ProductRepository {
             false  // Error al guardar en Firestore
         }
     }
+
 }
 
 
