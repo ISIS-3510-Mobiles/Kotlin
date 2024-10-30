@@ -29,6 +29,10 @@ import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.text.NumberFormat
+import java.util.Locale
 
 class PublishItemFragment : Fragment() {
 
@@ -74,12 +78,37 @@ class PublishItemFragment : Fragment() {
         })
 
         priceEditText.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                validatePrice(priceEditText, priceErrorTextView)
+            private var currentText = ""
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                // No se necesita implementar
             }
 
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                // No se necesita implementar
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+                if (s.toString() != currentText) {
+                    priceEditText.removeTextChangedListener(this)
+
+                    // Remover puntos y convertir a número
+                    val cleanText = s.toString().replace(".", "")
+                    if (cleanText.isNotEmpty()) {
+                        val formatted = formatToThousandSeparator(cleanText.toDouble())
+                        currentText = formatted
+
+                        // Establecer el texto formateado
+                        priceEditText.setText(formatted)
+                        priceEditText.setSelection(formatted.length)
+
+                        // Validar el precio
+                        validatePrice(priceEditText, priceErrorTextView)
+                    }
+
+                    priceEditText.addTextChangedListener(this)
+                }
+            }
         })
 
         descriptionEditText.addTextChangedListener(object : TextWatcher {
@@ -242,7 +271,8 @@ class PublishItemFragment : Fragment() {
     }
 
     private fun validatePrice(priceEditText: EditText, errorTextView: TextView): Boolean {
-        val productPrice = priceEditText.text.toString().toDoubleOrNull() ?: 0.0
+        val priceText = priceEditText.text.toString().replace(".", "")
+        val productPrice = priceText.toDoubleOrNull() ?: 0.0
         return if (productPrice < 50) {
             priceEditText.setTextColor(Color.RED)
             errorTextView.text = "Price must be greater than 50"
@@ -290,6 +320,12 @@ class PublishItemFragment : Fragment() {
         transaction.replace(R.id.fragment_container, PublishConfirmationFragment())
         transaction.addToBackStack(null)
         transaction.commit()
+    }
+
+    // Función para formatear números con separador de miles "."
+    private fun formatToThousandSeparator(value: Double): String {
+        val formatter: NumberFormat = DecimalFormat("#,###", DecimalFormatSymbols(Locale.GERMANY))
+        return formatter.format(value)
     }
 
     companion object {
