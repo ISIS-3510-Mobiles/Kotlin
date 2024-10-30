@@ -2,11 +2,13 @@ package com.example.ecostyle.view
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.location.Location
+import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -39,8 +41,14 @@ class PublishItemFragment : Fragment() {
     private val viewModel: PublishItemViewModel by viewModels()
     private lateinit var imageView: ImageView
     private lateinit var productImageUri: Uri
-    private var imageSource = false // False if from gallery, true if from camera
+    private var imageSource = false // False si es desde galería, true si es desde la cámara
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var nameEditText: EditText
+    private lateinit var priceEditText: EditText
+    private lateinit var descriptionEditText: EditText
+    private lateinit var ecoFriendlyCheckbox: CheckBox
+    private lateinit var quantityEditText: EditText
+    private lateinit var publishButton: Button
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -51,15 +59,16 @@ class PublishItemFragment : Fragment() {
         // Inicializar el cliente de ubicación
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
 
-        val nameEditText = view.findViewById<EditText>(R.id.product_name_edittext)
-        val priceEditText = view.findViewById<EditText>(R.id.product_price_edittext)
-        val descriptionEditText = view.findViewById<EditText>(R.id.product_description_edittext)
-        val ecoFriendlyCheckbox = view.findViewById<CheckBox>(R.id.ecofriendly_checkbox)
+        // Inicializar las vistas
+        nameEditText = view.findViewById(R.id.product_name_edittext)
+        priceEditText = view.findViewById(R.id.product_price_edittext)
+        descriptionEditText = view.findViewById(R.id.product_description_edittext)
+        ecoFriendlyCheckbox = view.findViewById(R.id.ecofriendly_checkbox)
         imageView = view.findViewById(R.id.product_image_view)
         val uploadImageButton = view.findViewById<Button>(R.id.upload_image_button)
         val takePhotoButton = view.findViewById<Button>(R.id.take_photo_button)
-        val publishButton = view.findViewById<Button>(R.id.publish_button)
-        val quantityEditText = view.findViewById<EditText>(R.id.product_quantity_edittext)
+        publishButton = view.findViewById(R.id.publish_button)
+        quantityEditText = view.findViewById(R.id.product_quantity_edittext)
 
         // Mensajes de error debajo de cada campo
         val nameErrorTextView = view.findViewById<TextView>(R.id.name_error_text_view)
@@ -67,79 +76,23 @@ class PublishItemFragment : Fragment() {
         val descriptionErrorTextView = view.findViewById<TextView>(R.id.description_error_text_view)
         val quantityErrorTextView = view.findViewById<TextView>(R.id.quantity_error_text_view)
 
-        // Añadir listeners para cambios de texto
-        nameEditText.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                validateName(nameEditText, nameErrorTextView)
-            }
+        // Cargar datos guardados en SharedPreferences al iniciar el fragmento
+        loadFormData()
 
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
+        // Validación de campos y otros componentes
+        setupFieldValidation(nameEditText, nameErrorTextView, priceEditText, priceErrorTextView, descriptionEditText, descriptionErrorTextView, quantityEditText, quantityErrorTextView)
 
-        priceEditText.addTextChangedListener(object : TextWatcher {
-            private var currentText = ""
+        // Detectar cambios en los campos para guardarlos
+        setupAutoSaveFields()
 
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-                // No se necesita implementar
-            }
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                // No se necesita implementar
-            }
-
-            override fun afterTextChanged(s: Editable?) {
-                if (s.toString() != currentText) {
-                    priceEditText.removeTextChangedListener(this)
-
-                    // Remover puntos y convertir a número
-                    val cleanText = s.toString().replace(".", "")
-                    if (cleanText.isNotEmpty()) {
-                        val formatted = formatToThousandSeparator(cleanText.toDouble())
-                        currentText = formatted
-
-                        // Establecer el texto formateado
-                        priceEditText.setText(formatted)
-                        priceEditText.setSelection(formatted.length)
-
-                        // Validar el precio
-                        validatePrice(priceEditText, priceErrorTextView)
-                    }
-
-                    priceEditText.addTextChangedListener(this)
-                }
-            }
-        })
-
-        descriptionEditText.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                validateDescription(descriptionEditText, descriptionErrorTextView)
-            }
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        quantityEditText.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                validateQuantity(quantityEditText, quantityErrorTextView)
-            }
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        // Permitir subir imagen desde la galería
         uploadImageButton.setOnClickListener {
             openGalleryForImage()
         }
 
-        // Permitir tomar foto con la cámara
         takePhotoButton.setOnClickListener {
             openCameraForImage()
         }
 
-        // Validar y publicar producto
         publishButton.setOnClickListener {
             val productName = nameEditText.text.toString()
             val productPrice = priceEditText.text.toString()
@@ -152,26 +105,24 @@ class PublishItemFragment : Fragment() {
             val descriptionValid = validateDescription(descriptionEditText, descriptionErrorTextView)
             val quantityValid = validateQuantity(quantityEditText, quantityErrorTextView)
 
-            // Verificar que todos los campos estén completos y sean válidos
             if (nameValid && priceValid && descriptionValid && quantityValid && this::productImageUri.isInitialized) {
-                val quantity = quantityText.toInt()
+                if (isNetworkAvailable(requireContext())) {
+                    // Obtener la ubicación del usuario y publicar el producto
+                    val quantity = quantityText.toInt()
+                    getLocationAndPublishProduct(
+                        productName, productPrice, productDescription, ecoFriendly, productImageUri, quantity
+                    )
 
-                // Obtener la ubicación del usuario y publicar el producto
-                getLocationAndPublishProduct(
-                    productName, productPrice, productDescription, ecoFriendly, productImageUri, quantity
-                )
+                    // Redirigir a la página de confirmación después de la publicación
+                    navigateToConfirmation()
+                    clearFormData()
+                } else {
+                    // Guardar localmente si no hay conexión
+                    saveDataLocally(productName, productPrice, productDescription, ecoFriendly, quantityText)
+                    Toast.makeText(requireContext(), "Sin conexión. Datos guardados localmente", Toast.LENGTH_LONG).show()
+                }
             } else {
                 Toast.makeText(requireContext(), "Please fill all fields and correct errors", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        // Observa el estado de la publicación
-        viewModel.publishStatus.observe(viewLifecycleOwner) { status ->
-            if (status) {
-                Toast.makeText(requireContext(), "Product published successfully", Toast.LENGTH_SHORT).show()
-                navigateToConfirmation() // Navegar a la pantalla de confirmación
-            } else {
-                Toast.makeText(requireContext(), "Failed to publish product", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -245,7 +196,6 @@ class PublishItemFragment : Fragment() {
         fusedLocationClient.lastLocation
             .addOnSuccessListener { location: Location? ->
                 if (location != null) {
-                    // Llamar al ViewModel para publicar el artículo con latitud y longitud
                     viewModel.publishProduct(
                         name, price, description, ecoFriendly, imageUri, quantity, location.latitude, location.longitude
                     )
@@ -253,6 +203,68 @@ class PublishItemFragment : Fragment() {
                     Toast.makeText(requireContext(), "Unable to get location", Toast.LENGTH_SHORT).show()
                 }
             }
+    }
+
+    // Validar los campos de entrada
+    private fun setupFieldValidation(
+        nameEditText: EditText, nameErrorTextView: TextView,
+        priceEditText: EditText, priceErrorTextView: TextView,
+        descriptionEditText: EditText, descriptionErrorTextView: TextView,
+        quantityEditText: EditText, quantityErrorTextView: TextView
+    ) {
+        nameEditText.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                validateName(nameEditText, nameErrorTextView)
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        priceEditText.addTextChangedListener(object : TextWatcher {
+            private var currentText = ""
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(s: Editable?) {
+                if (s.toString() != currentText) {
+                    priceEditText.removeTextChangedListener(this)
+
+                    val cleanText = s.toString().replace(".", "")
+                    if (cleanText.isNotEmpty()) {
+                        val formatted = formatToThousandSeparator(cleanText.toDouble())
+                        currentText = formatted
+
+                        priceEditText.setText(formatted)
+                        priceEditText.setSelection(formatted.length)
+
+                        validatePrice(priceEditText, priceErrorTextView)
+                    }
+
+                    priceEditText.addTextChangedListener(this)
+                }
+            }
+        })
+
+        descriptionEditText.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                validateDescription(descriptionEditText, descriptionErrorTextView)
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        quantityEditText.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                validateQuantity(quantityEditText, quantityErrorTextView)
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
     }
 
     // Funciones de validación para cada campo
@@ -314,12 +326,94 @@ class PublishItemFragment : Fragment() {
         }
     }
 
-    // Función para navegar a la pantalla de confirmación
-    private fun navigateToConfirmation() {
-        val transaction = parentFragmentManager.beginTransaction()
-        transaction.replace(R.id.fragment_container, PublishConfirmationFragment())
-        transaction.addToBackStack(null)
-        transaction.commit()
+    // Guardar los datos localmente
+    private fun saveDataLocally(name: String, price: String, description: String, ecoFriendly: Boolean, quantity: String) {
+        val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putString("name", name)
+        editor.putString("price", price)
+        editor.putString("description", description)
+        editor.putBoolean("ecoFriendly", ecoFriendly)
+        editor.putString("quantity", quantity)
+        editor.apply()
+    }
+
+    // Guardar los datos del formulario automáticamente
+    private fun setupAutoSaveFields() {
+        val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
+
+        nameEditText.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                sharedPreferences.edit().putString("name", s.toString()).apply()
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        priceEditText.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                sharedPreferences.edit().putString("price", s.toString()).apply()
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        descriptionEditText.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                sharedPreferences.edit().putString("description", s.toString()).apply()
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        quantityEditText.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                sharedPreferences.edit().putString("quantity", s.toString()).apply()
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        ecoFriendlyCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            sharedPreferences.edit().putBoolean("ecoFriendly", isChecked).apply()
+        }
+    }
+
+    // Cargar los datos guardados en el formulario desde SharedPreferences
+    private fun loadFormData() {
+        val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
+        val name = sharedPreferences.getString("name", "")
+        val price = sharedPreferences.getString("price", "")
+        val description = sharedPreferences.getString("description", "")
+        val quantity = sharedPreferences.getString("quantity", "")
+        val ecoFriendly = sharedPreferences.getBoolean("ecoFriendly", false)
+
+        nameEditText.setText(name)
+        priceEditText.setText(price)
+        descriptionEditText.setText(description)
+        quantityEditText.setText(quantity)
+        ecoFriendlyCheckbox.isChecked = ecoFriendly
+    }
+
+    // Limpiar el formulario y los datos almacenados en SharedPreferences
+    private fun clearFormData() {
+        nameEditText.text.clear()
+        priceEditText.text.clear()
+        descriptionEditText.text.clear()
+        quantityEditText.text.clear()
+        ecoFriendlyCheckbox.isChecked = false
+        imageView.setImageResource(0) // Limpiar la imagen
+
+        // Limpiar los datos de SharedPreferences
+        val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
+        sharedPreferences.edit().clear().apply()
+    }
+
+    // Verificar si hay conexión a Internet
+    private fun isNetworkAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetwork = connectivityManager.activeNetworkInfo
+        return activeNetwork != null && activeNetwork.isConnected
     }
 
     // Función para formatear números con separador de miles "."
@@ -328,11 +422,21 @@ class PublishItemFragment : Fragment() {
         return formatter.format(value)
     }
 
+    // Redirigir a la página de confirmación
+    private fun navigateToConfirmation() {
+        val confirmationFragment = PublishConfirmationFragment() // Fragmento de confirmación
+        requireActivity().supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, confirmationFragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
     companion object {
         const val IMAGE_PICK_CODE = 1001
         const val CAMERA_CAPTURE_CODE = 1002
     }
 }
+
 
 
 
