@@ -15,8 +15,11 @@ import com.example.ecostyle.model.Product
 import com.example.ecostyle.viewmodel.ProductDetailViewModel
 import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.example.ecostyle.model.CartItem
+import kotlinx.coroutines.*
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.tasks.await
 
 class ProductDetailFragment : Fragment() {
 
@@ -85,34 +88,35 @@ class ProductDetailFragment : Fragment() {
 
     // Añadir productos al carrito
     private fun addToCart(product: Product) {
-        val db = FirebaseFirestore.getInstance()
+        val db = Firebase.firestore
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
         if (userId != null) {
             val cartRef = db.collection("carts").document(userId).collection("items")
 
-            // Verificar si el producto ya está en el carrito
-            cartRef.whereEqualTo("firebaseId", product.firebaseId).get()
-                .addOnSuccessListener { documents ->
+            GlobalScope.launch(Dispatchers.IO) {
+                try {
+                    // Verificar si el producto ya está en el carrito
+                    val documents = cartRef.whereEqualTo("firebaseId", product.firebaseId).get().await()
+
                     if (!documents.isEmpty) {
                         for (document in documents) {
                             val cartItem = document.toObject(CartItem::class.java)
                             val currentQuantity = cartItem.quantity
 
+                            // Actualizar la cantidad
                             cartRef.document(document.id)
                                 .update("quantity", currentQuantity + 1)
-                                .addOnSuccessListener {
-                                    Toast.makeText(requireContext(), "Updated quantity in cart", Toast.LENGTH_SHORT).show()
-                                }
-                                .addOnFailureListener {
-                                    Toast.makeText(requireContext(), "\n" +
-                                            "Error updating quantity", Toast.LENGTH_SHORT).show()
-                                }
+                                .await()
+
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(requireContext(), "Updated quantity in cart", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     } else {
                         // Añadir el producto con su firebaseId
                         val cartItem = hashMapOf(
-                            "firebaseId" to product.firebaseId,  // Guardar el ID de producto
+                            "firebaseId" to product.firebaseId,
                             "productName" to product.name,
                             "productPrice" to product.price,
                             "productImage" to product.imageResource,
@@ -120,16 +124,18 @@ class ProductDetailFragment : Fragment() {
                             "timestamp" to System.currentTimeMillis()
                         )
 
-                        cartRef.add(cartItem)
-                            .addOnSuccessListener {
-                                Toast.makeText(requireContext(), "${product.name} added to cart", Toast.LENGTH_SHORT).show()
-                            }
-                            .addOnFailureListener {
-                                Toast.makeText(requireContext(), "\n" +
-                                        "Error when adding product to cart", Toast.LENGTH_SHORT).show()
-                            }
+                        cartRef.add(cartItem).await()
+
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(requireContext(), "${product.name} added to cart", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
+            }
         }
     }
 

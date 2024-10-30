@@ -14,6 +14,8 @@ import com.example.ecostyle.model.CartItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import android.content.Context
+import kotlinx.coroutines.*
+import kotlinx.coroutines.tasks.await
 
 
 class CheckoutFragment : Fragment() {
@@ -55,15 +57,15 @@ class CheckoutFragment : Fragment() {
         return view
     }
 
-    // Cargar productos del carrito y almacenar las cantidades de stock localmente
     private fun loadCartItems() {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
         if (userId != null) {
-            db.collection("carts").document(userId).collection("items")
-                .get()
-                .addOnSuccessListener { documents ->
+            GlobalScope.launch(Dispatchers.IO) {
+                try {
+                    val documents = db.collection("carts").document(userId).collection("items").get().await()
+
                     val cartItems = mutableListOf<CartItem>()
                     totalPrice = 0.0
                     var itemCount = 0
@@ -72,34 +74,32 @@ class CheckoutFragment : Fragment() {
                         val cartItem = document.toObject(CartItem::class.java)
 
                         cartItem?.let {
-
                             cartItem.id = document.id
                             cartItems.add(cartItem)
 
-                            // Actualizar precio y cantidad
                             val cleanPrice = cartItem.productPrice.replace("$", "").toDoubleOrNull() ?: 0.0
                             totalPrice += cleanPrice * cartItem.quantity
                             itemCount += cartItem.quantity
                         }
                     }
 
-                    cartAdapter.setCartItems(cartItems)
-                    updateTotalPrice()
-                    updateItemCount(itemCount)
+                    withContext(Dispatchers.Main) {
+                        cartAdapter.setCartItems(cartItems)
+                        updateTotalPrice()
+                        updateItemCount(itemCount)
 
-                    if (cartItems.isNotEmpty()) {
-                        checkoutButton.isEnabled = true
-                        updateCartStatus(true)
-                    } else {
-                        checkoutButton.isEnabled = false
-                        updateCartStatus(false)
+                        checkoutButton.isEnabled = cartItems.isNotEmpty()
+                        updateCartStatus(cartItems.isNotEmpty())
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error loading the cart", Toast.LENGTH_SHORT).show()
                     }
                 }
-                .addOnFailureListener {
-                    Toast.makeText(context, "Error loading the cart", Toast.LENGTH_SHORT).show()
-                }
+            }
         }
     }
+
 
     // Agregar y eliminar productos de forma local
     private fun decreaseCartItemQuantity(cartItem: CartItem) {
@@ -157,39 +157,42 @@ class CheckoutFragment : Fragment() {
         if (userId != null) {
             val cartRef = db.collection("carts").document(userId).collection("items")
 
-            cartRef.get().addOnSuccessListener { snapshot ->
+            GlobalScope.launch(Dispatchers.IO) {
+                val snapshot = cartRef.get().await() // Esperar a que la operación termine sin bloquear el hilo principal
                 var allAvailable = true
 
-                for (document in snapshot.documents) {
+                snapshot.documents.forEach { document ->
                     val cartItem = document.toObject(CartItem::class.java)
-
                     cartItem?.let {
                         if (cartItem.firebaseId.isNotEmpty()) {
                             val productRef = db.collection("Products").document(cartItem.firebaseId)
 
-                            productRef.get().addOnSuccessListener { productDoc ->
-                                if (productDoc.exists()) {
-                                    val availableQuantity = productDoc.getLong("quantity")?.toInt() ?: 0
+                            val productDoc = productRef.get().await()
+                            if (productDoc.exists()) {
+                                val availableQuantity = productDoc.getLong("quantity")?.toInt() ?: 0
 
-                                    if (cartItem.quantity > availableQuantity) {
-                                        allAvailable = false
+                                if (cartItem.quantity > availableQuantity) {
+                                    allAvailable = false
+                                    withContext(Dispatchers.Main) {
                                         Toast.makeText(context, "The available quantity of  ${cartItem.productName} is just  $availableQuantity.", Toast.LENGTH_LONG).show()
-                                    } else {
-                                        // Si todo está bien, restamos la cantidad del producto en Firebase
-                                        productRef.update("quantity", availableQuantity - cartItem.quantity)
                                     }
                                 } else {
-                                    allAvailable = false
+                                    // Si todo está bien, restamos la cantidad del producto en Firebase
+                                    productRef.update("quantity", availableQuantity - cartItem.quantity).await()
+                                }
+                            } else {
+                                allAvailable = false
+                                withContext(Dispatchers.Main) {
                                     Toast.makeText(context, "Product ${cartItem.productName} not found in inventory.", Toast.LENGTH_LONG).show()
                                 }
-
-                                if (allAvailable) {
-                                    proceedToPayment() // Navegamos al fragmento de pago
-                                }
                             }
-                        } else {
-                            Toast.makeText(context, "Error: Invalid product ID.", Toast.LENGTH_LONG).show()
                         }
+                    }
+                }
+
+                if (allAvailable) {
+                    withContext(Dispatchers.Main) {
+                        proceedToPayment() // Navegamos al fragmento de pago
                     }
                 }
             }
