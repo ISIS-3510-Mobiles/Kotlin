@@ -2,6 +2,7 @@ package com.example.ecostyle.view
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -17,6 +18,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.example.ecostyle.R
 import com.example.ecostyle.viewmodel.PublishItemViewModel
+import java.io.FileOutputStream
+import android.os.Environment
+import java.io.File
 
 class PublishItemFragment : Fragment() {
 
@@ -97,7 +101,7 @@ class PublishItemFragment : Fragment() {
         // Validar y publicar producto
         publishButton.setOnClickListener {
             val productName = nameEditText.text.toString()
-            val productPriceText = priceEditText.text.toString()
+            val productPrice = priceEditText.text.toString()
             val productDescription = descriptionEditText.text.toString()
             val ecoFriendly = ecoFriendlyCheckbox.isChecked
             val quantityText = quantityEditText.text.toString()
@@ -110,7 +114,7 @@ class PublishItemFragment : Fragment() {
             // Verificar que todos los campos estén completos y sean válidos
             if (nameValid && priceValid && descriptionValid && quantityValid && this::productImageUri.isInitialized) {
                 val quantity = quantityText.toInt()
-                val productPrice = productPriceText
+
 
                 // Llamar al ViewModel para publicar el artículo
                 viewModel.publishProduct(
@@ -153,6 +157,19 @@ class PublishItemFragment : Fragment() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         startActivityForResult(intent, CAMERA_CAPTURE_CODE)
     }
+    private fun saveBitmapToFile(bitmap: Bitmap): Uri? {
+        // Crear un archivo temporal en el almacenamiento externo
+        val file = File(requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "temp_image.jpg")
+        val fos = FileOutputStream(file)
+
+        // Comprimir el Bitmap en formato JPEG y escribirlo en el archivo
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+        fos.flush()
+        fos.close()
+
+        // Devolver la Uri del archivo creado
+        return Uri.fromFile(file)
+    }
 
     // Manejar el resultado de la selección de la imagen o la foto tomada
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -164,12 +181,23 @@ class PublishItemFragment : Fragment() {
                 imageView.setImageURI(productImageUri)
             } else if (requestCode == CAMERA_CAPTURE_CODE) {
                 // Imagen capturada con la cámara
-                val bitmap = data?.extras?.get("data") as? Uri
-                productImageUri = bitmap ?: Uri.EMPTY
-                imageView.setImageURI(productImageUri)
+                val bitmap = data?.extras?.get("data") as? Bitmap
+                if (bitmap != null) {
+                    imageView.setImageBitmap(bitmap)
+
+                    // Guardar el Bitmap como un archivo y obtener su Uri
+                    val tempImageUri = saveBitmapToFile(bitmap)
+
+                    // Actualizar productImageUri para que apunte al archivo temporal
+                    if (tempImageUri != null) {
+                        productImageUri = tempImageUri
+                    }
+                }
             }
         }
     }
+
+
 
     // Funciones de validación para cada campo
     private fun validateName(nameEditText: EditText, errorTextView: TextView): Boolean {
