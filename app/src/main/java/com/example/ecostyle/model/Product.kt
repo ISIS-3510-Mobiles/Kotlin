@@ -11,5 +11,8 @@ data class Product(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val quantity: Int = 0,
+    val initialPrice: String? = null,
+    val brand: String? = null,
+    val prodType: String? = null,
     var firebaseId: String = ""
 )
