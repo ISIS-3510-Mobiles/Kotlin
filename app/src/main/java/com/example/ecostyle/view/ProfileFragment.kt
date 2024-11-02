@@ -2,6 +2,7 @@ package com.example.ecostyle.view
 
 import android.Manifest
 import android.app.Activity
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -207,6 +208,9 @@ class ProfileFragment : Fragment() {
                 val imageUrl = uri.toString()
                 // Actualizar el campo imgUrl en Firestore
                 updateUserProfileImageUrl(email, imageUrl)
+                // Guardar la imagen en la galería
+                saveImageToGallery(requireContext(), imageBitmap)
+
             }
         }.addOnFailureListener {
             // Manejar errores en la subida
@@ -230,4 +234,24 @@ class ProfileFragment : Fragment() {
                         "Error updating image in Firestore: ${it.message}")
             }
     }
+
+    private fun saveImageToGallery(context: Context, imageBitmap: Bitmap) {
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, "profile_${System.currentTimeMillis()}.jpg")
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/EcoStyle")
+        }
+
+        val uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        uri?.let {
+            context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+            }
+            Toast.makeText(context, "Image saved to gallery!", Toast.LENGTH_SHORT).show()
+        } ?: run {
+            Toast.makeText(context, "Error saving image to gallery", Toast.LENGTH_SHORT).show()
+        }
+    }
+
 }
+
