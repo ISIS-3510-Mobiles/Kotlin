@@ -59,7 +59,7 @@ class ListFragment : Fragment() {
         val gridLayoutManager = GridLayoutManager(context, 2)
         recyclerView.layoutManager = gridLayoutManager
 
-        productAdapter = ProductAdapter(emptyList()) { product ->
+        productAdapter = ProductAdapter(emptyList(), { product ->
             val productDetailFragment = ProductDetailFragment().apply {
                 arguments = Bundle().apply {
                     putInt("PRODUCT_ID", product.id)
@@ -72,7 +72,7 @@ class ListFragment : Fragment() {
                 .commit()
 
             Log.d("ListFragment", "Navigating to product details with ID: ${product.id}")
-        }
+        })
 
         recyclerView.adapter = productAdapter
 
