@@ -2,6 +2,9 @@ package com.example.ecostyle.activity
 
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -18,25 +21,25 @@ class AuthActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Verificar si hay una sesión activa
+        // Check if there is an active session
         val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE)
         val email = prefs.getString("email", null)
         val provider = prefs.getString("provider", null)
 
         if (email != null && provider != null) {
-            // Si ya hay una sesión guardada, ir directamente a HomeActivity
+            // If there's a saved session, go directly to HomeActivity
             showHome(email, ProviderType.valueOf(provider))
         } else {
             setContentView(R.layout.activity_auth)
             setup()
         }
+
         // Remote Config
         val firebaseConfig = FirebaseRemoteConfig.getInstance()
         val configSettings = FirebaseRemoteConfigSettings.Builder()
             .setMinimumFetchIntervalInSeconds(60)
             .build()
         firebaseConfig.setConfigSettingsAsync(configSettings)
-
     }
 
     private fun setup() {
@@ -52,40 +55,46 @@ class AuthActivity : AppCompatActivity() {
 
         loginButton.setOnClickListener {
             if (emailEditText.text.isNotEmpty() && passwordEditText.text.isNotEmpty()) {
-                FirebaseAuth.getInstance()
-                    .signInWithEmailAndPassword(
-                        emailEditText.text.toString(),
-                        passwordEditText.text.toString()
-                    ).addOnCompleteListener {
-                        if (it.isSuccessful) {
-                            val email = it.result?.user?.email ?: ""
-                            val provider = ProviderType.BASIC
 
-                            // Guardar las credenciales en SharedPreferences
-                            val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE).edit()
-                            prefs.putString("email", email)
-                            prefs.putString("provider", provider.name)
-                            prefs.apply()
+                // Check internet connectivity
+                if (isNetworkAvailable()) {
+                    FirebaseAuth.getInstance()
+                        .signInWithEmailAndPassword(
+                            emailEditText.text.toString(),
+                            passwordEditText.text.toString()
+                        ).addOnCompleteListener {
+                            if (it.isSuccessful) {
+                                val email = it.result?.user?.email ?: ""
+                                val provider = ProviderType.BASIC
 
-                            // Redirigir a HomeActivity
-                            showHome(email, provider)
-                        } else {
-                            showAlert()
+                                // Save credentials in SharedPreferences
+                                val prefs = getSharedPreferences(getString(R.string.prefs_file), Context.MODE_PRIVATE).edit()
+                                prefs.putString("email", email)
+                                prefs.putString("provider", provider.name)
+                                prefs.apply()
+
+                                // Redirect to HomeActivity
+                                showHome(email, provider)
+                            } else {
+                                showAlert("An error occurred while authenticating the user")
+                            }
                         }
-                    }
-            }
-            else {
-                // Mostrar mensaje de error si la información no es válida
-                Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show()
+                } else {
+                    // Show message if no internet connection
+                    showAlert("No internet connection. Please check your network settings.")
+                }
+            } else {
+                // Show error message if information is not valid
+                showAlert("Please fill in all fields")
             }
         }
     }
 
-    private fun showAlert() {
+    private fun showAlert(message: String) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Error")
-        builder.setMessage("An error occurred while authenticating the user")
-        builder.setPositiveButton("Aceptar", null)
+        builder.setMessage(message)
+        builder.setPositiveButton("Accept", null)
         val dialog: AlertDialog = builder.create()
         dialog.show()
     }
@@ -96,7 +105,30 @@ class AuthActivity : AppCompatActivity() {
             putExtra("provider", provider.name)
         }
         startActivity(homeIntent)
-        finish() // Cierra la actividad de autenticación para que no regrese aquí
+        finish() // Close the authentication activity so it doesn't return here
+    }
+
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        // For API level 23 and above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork ?: return false
+            val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+
+            return when {
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                // For devices able to connect with Ethernet
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+                // For checking internet over Bluetooth
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> true
+                else -> false
+            }
+        } else {
+            // For API level below 23
+            val activeNetworkInfo = connectivityManager.activeNetworkInfo
+            return activeNetworkInfo != null && activeNetworkInfo.isConnected
+        }
     }
 }
-

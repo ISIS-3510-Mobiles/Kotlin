@@ -2,6 +2,9 @@ package com.example.ecostyle.activity
 
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -36,13 +39,19 @@ class RegisterActivity : AppCompatActivity() {
         val numberEditText = findViewById<EditText>(R.id.numberEditTextRegister)
 
         registerButton.setOnClickListener {
-            viewModel.registerUser(
-                emailEditTextRegister.text.toString(),
-                passwordEditTextRegister.text.toString(),
-                nameEditText.text.toString(),
-                addressEditText.text.toString(),
-                numberEditText.text.toString()
-            )
+            // Check internet connectivity
+            if (isNetworkAvailable()) {
+                viewModel.registerUser(
+                    emailEditTextRegister.text.toString(),
+                    passwordEditTextRegister.text.toString(),
+                    nameEditText.text.toString(),
+                    addressEditText.text.toString(),
+                    numberEditText.text.toString()
+                )
+            } else {
+                // Show message if no internet connection
+                showAlert("No internet connection. Please check your network settings.")
+            }
         }
     }
 
@@ -57,7 +66,7 @@ class RegisterActivity : AppCompatActivity() {
                 showHome(viewModel.email, provider)
 
             } else {
-                showAlert()
+                showAlert("An error occurred during registration")
             }
         })
 
@@ -66,10 +75,10 @@ class RegisterActivity : AppCompatActivity() {
         })
     }
 
-    private fun showAlert() {
+    private fun showAlert(message: String) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Error")
-        builder.setMessage("An error occurred authenticating the user")
+        builder.setMessage(message)
         builder.setPositiveButton("Accept", null)
         val dialog: AlertDialog = builder.create()
         dialog.show()
@@ -83,5 +92,29 @@ class RegisterActivity : AppCompatActivity() {
         startActivity(homeIntent)
         Log.d("RegisterActivity", "Registration successful, redirecting to HomeActivity")
         finish()
+    }
+
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        // For API level 23 and above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork ?: return false
+            val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+
+            return when {
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                // For devices able to connect with Ethernet
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+                // For checking internet over Bluetooth
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> true
+                else -> false
+            }
+        } else {
+            // For API level below 23
+            val activeNetworkInfo = connectivityManager.activeNetworkInfo
+            return activeNetworkInfo != null && activeNetworkInfo.isConnected
+        }
     }
 }
