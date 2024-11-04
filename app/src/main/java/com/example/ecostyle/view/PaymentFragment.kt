@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
+import android.text.InputFilter
+import android.text.Spanned
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
@@ -37,6 +39,7 @@ class PaymentFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.activity_payment, container, false)
 
+        // Inicialización de vistas
         paymentMethodsSpinner = view.findViewById(R.id.payment_methods_spinner)
         billingAddress = view.findViewById(R.id.billing_address)
         billingCity = view.findViewById(R.id.billing_city)
@@ -47,6 +50,9 @@ class PaymentFragment : Fragment() {
         billingAddressError = view.findViewById(R.id.billing_address_error)
         billingCityError = view.findViewById(R.id.billing_city_error)
         billingZipcodeError = view.findViewById(R.id.billing_zipcode_error)
+
+        // Filtros para limitar a 6 dígitos y solo números en billingZipcode
+        billingZipcode.filters = arrayOf(InputFilter.LengthFilter(6), NumericInputFilter())
 
         val paymentMethods = arrayOf("Nequi", "Daviplata", "Credit card", "Debit card", "PSE", "Efectivo")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, paymentMethods)
@@ -126,34 +132,38 @@ class PaymentFragment : Fragment() {
         }
     }
 
-
     private fun isValidForm(): Boolean {
         return validateBillingAddress() && validateBillingCity() && validateBillingZipcode()
     }
 
     private fun validateBillingAddress(): Boolean {
-        return if (billingAddress.text.length > 6) {
+        val addressText = billingAddress.text.toString()
+
+
+        return if (addressText.length > 6 && addressText.isNotBlank() && addressText.matches(Regex("^(?=.*[A-Za-z])(?=.*\\d).+$"))) {
             billingAddress.setTextColor(Color.BLACK)
             billingAddressError.isVisible = false
             true
         } else {
             billingAddress.setTextColor(Color.RED)
             billingAddressError.isVisible = true
-            billingAddressError.text = "Address must be more than 6 characters"
+            billingAddressError.text = "Address must be more than 6 characters and contain both letters and numbers"
             false
         }
     }
 
+
     private fun validateBillingCity(): Boolean {
-        val city = billingCity.text.toString()
-        return if (city.length > 4 && city.matches(Regex("^[a-zA-Z]+\$"))) {
+        val city = billingCity.text.toString().trim()
+
+        return if (city.length > 4 && city.matches(Regex("^[a-zA-Z]+(\\s[a-zA-Z]+)*\$"))) {
             billingCity.setTextColor(Color.BLACK)
             billingCityError.isVisible = false
             true
         } else {
             billingCity.setTextColor(Color.RED)
             billingCityError.isVisible = true
-            billingCityError.text = "The city must be more than 4 characters and cannot contain numbers"
+            billingCityError.text = "City must be more than 4 characters and can only contain letters and spaces"
             false
         }
     }
@@ -217,4 +227,24 @@ class PaymentFragment : Fragment() {
         val activeNetwork = connectivityManager.activeNetworkInfo
         return activeNetwork != null && activeNetwork.isConnected
     }
+
+    // Filtro personalizado para permitir solo dígitos en billingZipcode
+    private class NumericInputFilter : InputFilter {
+        override fun filter(
+            source: CharSequence,
+            start: Int,
+            end: Int,
+            dest: Spanned,
+            dstart: Int,
+            dend: Int
+        ): CharSequence? {
+            for (i in start until end) {
+                if (!Character.isDigit(source[i])) {
+                    return ""
+                }
+            }
+            return null
+        }
+    }
 }
+

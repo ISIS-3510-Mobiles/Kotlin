@@ -72,6 +72,7 @@ class PublishItemFragment : Fragment() {
         publishButton = view.findViewById(R.id.publish_button)
         quantityEditText = view.findViewById(R.id.product_quantity_edittext)
 
+
         // Mensajes de error debajo de cada campo
         val nameErrorTextView = view.findViewById<TextView>(R.id.name_error_text_view)
         val priceErrorTextView = view.findViewById<TextView>(R.id.price_error_text_view)
@@ -79,6 +80,7 @@ class PublishItemFragment : Fragment() {
         val brandErrorTextView = view.findViewById<TextView>(R.id.brand_error_text_view)
         val initialPriceErrorTextView = view.findViewById<TextView>(R.id.initialPrice_error_text_view)
         val quantityErrorTextView = view.findViewById<TextView>(R.id.quantity_error_text_view)
+        val imageErrorTextView = view.findViewById<TextView>(R.id.image_error_text_view)
 
         loadFormData()
         setupFieldValidation(
@@ -110,7 +112,16 @@ class PublishItemFragment : Fragment() {
             val initialPriceValid = validatePrice(initialPriceEditText, initialPriceErrorTextView)
             val brandValid = validateBrand(brandEditText, brandErrorTextView)
 
-            if (nameValid && priceValid && descriptionValid && quantityValid && initialPriceValid && brandValid && this::productImageUri.isInitialized) {
+            // Validar si se ha seleccionado una imagen
+            val imageValid = if (this::productImageUri.isInitialized) {
+                imageErrorTextView.visibility = View.GONE
+                true
+            } else {
+                imageErrorTextView.visibility = View.VISIBLE
+                false
+            }
+
+            if (nameValid && priceValid && descriptionValid && quantityValid && initialPriceValid && brandValid && imageValid) {
                 if (isNetworkAvailable(requireContext())) {
                     val quantity = quantityText.toInt()
                     getLocationAndPublishProduct(
@@ -287,12 +298,11 @@ class PublishItemFragment : Fragment() {
         })
     }
 
-    // Funciones de validación para cada campo
     private fun validateName(nameEditText: EditText, errorTextView: TextView): Boolean {
-        val productName = nameEditText.text.toString()
-        return if (productName.length < 3) {
+        val productName = nameEditText.text.toString().trim()
+        return if (productName.length < 3 || productName.isBlank()) {
             nameEditText.setTextColor(Color.RED)
-            errorTextView.text = "Product name must have at least 3 characters"
+            errorTextView.text = "Product name must have at least 3 characters and cannot be blank"
             errorTextView.visibility = View.VISIBLE
             false
         } else {
@@ -303,11 +313,11 @@ class PublishItemFragment : Fragment() {
     }
 
     private fun validatePrice(priceEditText: EditText, errorTextView: TextView): Boolean {
-        val priceText = priceEditText.text.toString().replace(".", "")
+        val priceText = priceEditText.text.toString().replace(".", "").trim()
         val productPrice = priceText.toDoubleOrNull() ?: 0.0
-        return if (productPrice < 50) {
+        return if (productPrice < 50 || productPrice > 1000000) {
             priceEditText.setTextColor(Color.RED)
-            errorTextView.text = "Price must be greater than 50"
+            errorTextView.text = "Price must be between 50 and 1,000,000"
             errorTextView.visibility = View.VISIBLE
             false
         } else {
@@ -316,11 +326,14 @@ class PublishItemFragment : Fragment() {
             true
         }
     }
+
     private fun validateBrand(brandEditText: EditText, errorTextView: TextView): Boolean {
-        val brandName = brandEditText.text.toString()
-        return if (brandName.length < 3) {
+        val brandName = brandEditText.text.toString().trim()
+        val containsLetter = brandName.any { it.isLetter() }
+
+        return if (brandName.length < 3 || !containsLetter || brandName.isBlank()) {
             brandEditText.setTextColor(Color.RED)
-            errorTextView.text = "Brand must have at least 3 characters"
+            errorTextView.text = "Brand must have at least 3 characters and contain at least one letter"
             errorTextView.visibility = View.VISIBLE
             false
         } else {
@@ -330,12 +343,13 @@ class PublishItemFragment : Fragment() {
         }
     }
 
+
     private fun validateDescription(descriptionEditText: EditText, errorTextView: TextView): Boolean {
-        val productDescription = descriptionEditText.text.toString()
-        val containsLetters = productDescription.any { it.isLetter() }
-        return if (productDescription.length < 10 || !containsLetters) {
+        val productDescription = descriptionEditText.text.toString().trim()
+        val containsLettersOrSpecialCharacters = productDescription.any { it.isLetterOrDigit() || !it.isWhitespace() }
+        return if (productDescription.length < 10 || !containsLettersOrSpecialCharacters) {
             descriptionEditText.setTextColor(Color.RED)
-            errorTextView.text = "Description must have at least 10 characters and contain letters"
+            errorTextView.text = "Description must have at least 10 characters and contain letters, numbers, or special characters"
             errorTextView.visibility = View.VISIBLE
             false
         } else {
@@ -344,6 +358,8 @@ class PublishItemFragment : Fragment() {
             true
         }
     }
+
+
 
     private fun validateQuantity(quantityEditText: EditText, errorTextView: TextView): Boolean {
         val quantity = quantityEditText.text.toString().toIntOrNull() ?: 0
@@ -359,8 +375,7 @@ class PublishItemFragment : Fragment() {
         }
     }
 
-    // Guardar los datos localmente
-    // Guardar los datos localmente, incluyendo la imagen
+
     private fun saveDataLocally(
         name: String, price: String, description: String, ecoFriendly: Boolean,
         quantity: String, brand: String, initialPrice: String

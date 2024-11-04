@@ -135,6 +135,14 @@
         android:scaleType="fitCenter"
         android:src="@drawable/ic_no_image"
         android:layout_gravity="center" />
+    <TextView
+        android:id="@+id/image_error_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_red_dark"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:text="Upload a photo"/>
 
     <EditText
         android:id="@+id/product_quantity_edittext"
