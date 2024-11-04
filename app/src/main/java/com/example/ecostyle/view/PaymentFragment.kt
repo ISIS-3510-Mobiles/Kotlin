@@ -75,45 +75,57 @@ class PaymentFragment : Fragment() {
 
     private fun updateStockAndConfirmPurchase(cartItems: List<CartItem>?) {
         val db = FirebaseFirestore.getInstance()
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
 
-        GlobalScope.launch(Dispatchers.IO) {
-            var allAvailable = true
+        if (userId != null) {
+            GlobalScope.launch(Dispatchers.IO) {
+                var allAvailable = true
 
-            cartItems?.forEach { cartItem ->
-                val productRef = db.collection("Products").document(cartItem.firebaseId)
+                cartItems?.forEach { cartItem ->
+                    val productRef = db.collection("Products").document(cartItem.firebaseId)
 
-                val productDoc = productRef.get().await()
-                val availableQuantity = productDoc.getLong("quantity")?.toInt() ?: 0
+                    val productDoc = productRef.get().await()
+                    val availableQuantity = productDoc.getLong("quantity")?.toInt() ?: 0
 
-                if (cartItem.quantity <= availableQuantity) {
-                    productRef.update("quantity", availableQuantity - cartItem.quantity).await()
+                    if (cartItem.quantity <= availableQuantity) {
+                        productRef.update("quantity", availableQuantity - cartItem.quantity).await()
+                    } else {
+                        allAvailable = false
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                requireContext(),
+                                "Insufficient stock for ${cartItem.productName}. Available: $availableQuantity.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                }
+
+                if (allAvailable) {
+                    // Borrar el carrito del usuario al confirmar la compra
+                    val cartRef = db.collection("carts").document(userId).collection("items")
+                    cartRef.get().await().forEach { document ->
+                        cartRef.document(document.id).delete().await()
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        showPurchaseConfirmation()
+                    }
                 } else {
-                    allAvailable = false
                     withContext(Dispatchers.Main) {
                         Toast.makeText(
                             requireContext(),
-                            "Insufficient stock for ${cartItem.productName}. Available: $availableQuantity.",
+                            "Some items in your cart do not have enough stock. Please review your cart.",
                             Toast.LENGTH_LONG
                         ).show()
                     }
                 }
             }
-
-            if (allAvailable) {
-                withContext(Dispatchers.Main) {
-                    showPurchaseConfirmation()
-                }
-            } else {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Some items in your cart do not have enough stock. Please review your cart.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
+        } else {
+            Toast.makeText(context, "User not logged in. Please log in to proceed.", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     private fun isValidForm(): Boolean {
         return validateBillingAddress() && validateBillingCity() && validateBillingZipcode()
@@ -147,44 +159,21 @@ class PaymentFragment : Fragment() {
     }
 
     private fun validateBillingZipcode(): Boolean {
-        return if (billingZipcode.text.length >= 6 && billingZipcode.text.matches(Regex("^[0-9]+\$"))) {
+        return if (billingZipcode.text.length == 6 && billingZipcode.text.matches(Regex("^[0-9]+\$"))) {
             billingZipcode.setTextColor(Color.BLACK)
             billingZipcodeError.isVisible = false
             true
         } else {
             billingZipcode.setTextColor(Color.RED)
             billingZipcodeError.isVisible = true
-            billingZipcodeError.text = "Zip code must be at least 6 digits"
+            billingZipcodeError.text = "Zip code must be exactly 6 digits"
             false
         }
     }
 
     private fun cancelPurchase() {
-        val db = FirebaseFirestore.getInstance()
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
-
-        if (userId != null) {
-            val cartRef = db.collection("carts").document(userId).collection("items")
-
-            cartRef.get().addOnSuccessListener { snapshot ->
-                for (document in snapshot.documents) {
-                    val cartItem = document.toObject(CartItem::class.java)
-
-                    cartItem?.let {
-                        val productRef = db.collection("Products").document(cartItem.firebaseId)
-
-                        productRef.get().addOnSuccessListener { productDoc ->
-                            val currentStock = productDoc.getLong("quantity")?.toInt() ?: 0
-                            productRef.update("quantity", currentStock + cartItem.quantity)
-                        }
-
-                        cartRef.document(document.id).delete()
-                    }
-                }
-                Toast.makeText(context, "Purchase canceled, cart empty.", Toast.LENGTH_SHORT).show()
-                activity?.supportFragmentManager?.popBackStack()
-            }
-        }
+        Toast.makeText(context, "Purchase canceled.", Toast.LENGTH_SHORT).show()
+        activity?.supportFragmentManager?.popBackStack()
     }
 
     private fun showPurchaseConfirmation() {
@@ -229,4 +218,3 @@ class PaymentFragment : Fragment() {
         return activeNetwork != null && activeNetwork.isConnected
     }
 }
-

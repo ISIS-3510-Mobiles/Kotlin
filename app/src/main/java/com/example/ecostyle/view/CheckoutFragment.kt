@@ -17,6 +17,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
+import java.text.NumberFormat
+import java.util.Locale
 
 class CheckoutFragment : Fragment() {
 
@@ -197,8 +199,11 @@ class CheckoutFragment : Fragment() {
     }
 
     private fun updateTotalPrice() {
+        val numberFormat = NumberFormat.getCurrencyInstance(Locale("es", "CO")) // Para formato en pesos colombianos (COP)
+        numberFormat.maximumFractionDigits = 0 // Sin decimales
+
         val subtotal = cartAdapter.cartItemList.sumOf { cartItem ->
-            val cleanPrice = cartItem.productPrice.replace("$", "").toDoubleOrNull() ?: 0.0
+            val cleanPrice = cartItem.productPrice.replace(".", "").toDoubleOrNull() ?: 0.0
             cleanPrice * cartItem.quantity
         }
 
@@ -206,12 +211,12 @@ class CheckoutFragment : Fragment() {
         val totalWithTaxes = subtotal + taxes
 
         val subtotalTextView = view?.findViewById<TextView>(R.id.subtotal_text_view)
-        subtotalTextView?.text = "Subtotal: $${String.format("%.2f", subtotal)}"
+        subtotalTextView?.text = "Subtotal: ${numberFormat.format(subtotal)}"
 
         val taxesTextView = view?.findViewById<TextView>(R.id.taxes_text_view)
-        taxesTextView?.text = "Impuestos (7%): $${String.format("%.2f", taxes)}"
+        taxesTextView?.text = "Impuestos (7%): ${numberFormat.format(taxes)}"
 
-        totalPriceTextView.text = "Total: $${String.format("%.2f", totalWithTaxes)}"
+        totalPriceTextView.text = "Total: ${numberFormat.format(totalWithTaxes)}"
     }
 
     private fun updateItemCount(itemCount: Int) {
