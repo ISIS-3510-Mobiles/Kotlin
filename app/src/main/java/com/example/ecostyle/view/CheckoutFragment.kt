@@ -17,6 +17,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
+import java.text.NumberFormat
+import java.util.Locale
 
 class CheckoutFragment : Fragment() {
 
@@ -26,15 +28,12 @@ class CheckoutFragment : Fragment() {
     private lateinit var totalPriceTextView: TextView
     private var totalPrice: Double = 0.0
 
-    private val productStockMap = mutableMapOf<String, Int>()
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_checkout, container, false)
 
-        // Inicializar las vistas
         totalPriceTextView = view.findViewById(R.id.total_price_text_view)
         recyclerView = view.findViewById(R.id.recycler_view_cart_items)
         checkoutButton = view.findViewById(R.id.checkout_button)
@@ -48,13 +47,13 @@ class CheckoutFragment : Fragment() {
         })
         recyclerView.adapter = cartAdapter
 
-        // Comportamiento del botón de checkout
         checkoutButton.setOnClickListener {
             if (isNetworkAvailable(requireContext())) {
                 verifyStockBeforeCheckout()
             } else {
-                Toast.makeText(context, "\n" +
-                        "Payment cannot be made offline. Please try again later.", Toast.LENGTH_SHORT).show()
+
+                Toast.makeText(context, "Payment cannot be made offline. Please try again later.", Toast.LENGTH_LONG).show()
+
             }
         }
 
@@ -71,7 +70,6 @@ class CheckoutFragment : Fragment() {
             GlobalScope.launch(Dispatchers.IO) {
                 try {
                     val documents = db.collection("carts").document(userId).collection("items").get().await()
-
                     val cartItems = mutableListOf<CartItem>()
                     totalPrice = 0.0
                     var itemCount = 0
@@ -93,20 +91,17 @@ class CheckoutFragment : Fragment() {
                         cartAdapter.setCartItems(cartItems)
                         updateTotalPrice()
                         updateItemCount(itemCount)
-
                         updateCartStatus(cartItems.isNotEmpty())
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "\n" +
-                                "Error loading cart.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Error loading cart.", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         }
     }
 
-    // No permitir disminuir la cantidad de productos si no hay conexión
     private fun decreaseCartItemQuantity(cartItem: CartItem) {
         if (!isNetworkAvailable(requireContext())) {
             Toast.makeText(context, "You cannot modify the cart offline. Please try again later.", Toast.LENGTH_LONG).show()
@@ -134,7 +129,6 @@ class CheckoutFragment : Fragment() {
         }
     }
 
-    // No permitir aumentar la cantidad de productos si no hay conexión
     private fun updateCartItemQuantity(cartItem: CartItem) {
         if (!isNetworkAvailable(requireContext())) {
             Toast.makeText(context, "You cannot modify the cart offline. Please try again later.", Toast.LENGTH_LONG).show()
@@ -170,28 +164,13 @@ class CheckoutFragment : Fragment() {
                     cartItem?.let {
                         if (cartItem.firebaseId.isNotEmpty()) {
                             val productRef = db.collection("Products").document(cartItem.firebaseId)
-
                             val productDoc = productRef.get().await()
-                            if (productDoc.exists()) {
-                                val availableQuantity = productDoc.getLong("quantity")?.toInt() ?: 0
+                            val availableQuantity = productDoc.getLong("quantity")?.toInt() ?: 0
 
-                                if (cartItem.quantity > availableQuantity) {
-                                    allAvailable = false
-                                    withContext(Dispatchers.Main) {
-                                        if (isAdded) {
-                                            Toast.makeText(requireContext(), "\n" +
-                                                    "The available quantity of ${cartItem.productName} is just $availableQuantity.", Toast.LENGTH_LONG).show()
-                                        }
-                                    }
-                                } else {
-                                    productRef.update("quantity", availableQuantity - cartItem.quantity).await()
-                                }
-                            } else {
+                            if (cartItem.quantity > availableQuantity) {
                                 allAvailable = false
                                 withContext(Dispatchers.Main) {
-                                    if (isAdded) {
-                                        Toast.makeText(requireContext(), "Product ${cartItem.productName} not found in inventory.", Toast.LENGTH_LONG).show()
-                                    }
+                                    Toast.makeText(requireContext(), "The available quantity of ${cartItem.productName} is $availableQuantity.", Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
@@ -200,18 +179,33 @@ class CheckoutFragment : Fragment() {
 
                 if (allAvailable) {
                     withContext(Dispatchers.Main) {
-                        if (isAdded) {
-                            proceedToPayment()
-                        }
+                        proceedToPayment(snapshot.documents.mapNotNull { it.toObject(CartItem::class.java) })
                     }
                 }
             }
         }
     }
 
+    private fun proceedToPayment(cartItems: List<CartItem>) {
+        if (isAdded) {
+            val paymentFragment = PaymentFragment()
+            val bundle = Bundle()
+            bundle.putParcelableArrayList("cartItems", ArrayList(cartItems))
+            paymentFragment.arguments = bundle
+
+            val transaction = parentFragmentManager.beginTransaction()
+            transaction.replace(R.id.fragment_container, paymentFragment)
+            transaction.addToBackStack(null)
+            transaction.commit()
+        }
+    }
+
     private fun updateTotalPrice() {
+        val numberFormat = NumberFormat.getCurrencyInstance(Locale("es", "CO")) // Para formato en pesos colombianos (COP)
+        numberFormat.maximumFractionDigits = 0 // Sin decimales
+
         val subtotal = cartAdapter.cartItemList.sumOf { cartItem ->
-            val cleanPrice = cartItem.productPrice.replace("$", "").toDoubleOrNull() ?: 0.0
+            val cleanPrice = cartItem.productPrice.replace(".", "").toDoubleOrNull() ?: 0.0
             cleanPrice * cartItem.quantity
         }
 
@@ -219,12 +213,12 @@ class CheckoutFragment : Fragment() {
         val totalWithTaxes = subtotal + taxes
 
         val subtotalTextView = view?.findViewById<TextView>(R.id.subtotal_text_view)
-        subtotalTextView?.text = "Subtotal: $${String.format("%.2f", subtotal)}"
+        subtotalTextView?.text = "Subtotal: ${numberFormat.format(subtotal)}"
 
         val taxesTextView = view?.findViewById<TextView>(R.id.taxes_text_view)
-        taxesTextView?.text = "Impuestos (7%): $${String.format("%.2f", taxes)}"
+        taxesTextView?.text = "Impuestos (7%): ${numberFormat.format(taxes)}"
 
-        totalPriceTextView.text = "Total: $${String.format("%.2f", totalWithTaxes)}"
+        totalPriceTextView.text = "Total: ${numberFormat.format(totalWithTaxes)}"
     }
 
     private fun updateItemCount(itemCount: Int) {
@@ -241,56 +235,10 @@ class CheckoutFragment : Fragment() {
         }
     }
 
-    private fun proceedToPayment() {
-        if (isAdded) {
-            val transaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, PaymentFragment())
-            transaction.addToBackStack(null)
-            transaction.commit()
-        }
-    }
-
     private fun isNetworkAvailable(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val activeNetwork = connectivityManager.activeNetworkInfo
         return activeNetwork != null && activeNetwork.isConnected
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (isNetworkAvailable(requireContext())) {
-            syncCartWithFirebase()
-        }
-    }
-
-    private fun syncCartWithFirebase() {
-        val db = FirebaseFirestore.getInstance()
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
-
-        if (userId != null) {
-            val sharedPreferences = requireContext().getSharedPreferences("CartData", Context.MODE_PRIVATE)
-            val allEntries = sharedPreferences.all
-
-            if (allEntries.isNotEmpty()) {
-                val cartRef = db.collection("carts").document(userId).collection("items")
-
-                GlobalScope.launch(Dispatchers.IO) {
-                    for ((key, value) in allEntries) {
-                        val cartItemId = key
-                        val quantity = value as Int
-
-                        cartRef.document(cartItemId).update("quantity", quantity).await()
-                    }
-
-                    sharedPreferences.edit().clear().apply()
-
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "\n" +
-                                "Cart synced successfully.", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        }
     }
 }
 
