@@ -51,7 +51,9 @@ class CheckoutFragment : Fragment() {
             if (isNetworkAvailable(requireContext())) {
                 verifyStockBeforeCheckout()
             } else {
+
                 Toast.makeText(context, "Payment cannot be made offline. Please try again later.", Toast.LENGTH_LONG).show()
+
             }
         }
 
