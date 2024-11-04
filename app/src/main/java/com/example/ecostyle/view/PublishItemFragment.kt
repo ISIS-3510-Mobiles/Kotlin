@@ -72,7 +72,6 @@ class PublishItemFragment : Fragment() {
         publishButton = view.findViewById(R.id.publish_button)
         quantityEditText = view.findViewById(R.id.product_quantity_edittext)
 
-
         // Mensajes de error debajo de cada campo
         val nameErrorTextView = view.findViewById<TextView>(R.id.name_error_text_view)
         val priceErrorTextView = view.findViewById<TextView>(R.id.price_error_text_view)
@@ -107,9 +106,9 @@ class PublishItemFragment : Fragment() {
 
             val nameValid = validateName(nameEditText, nameErrorTextView)
             val priceValid = validatePrice(priceEditText, priceErrorTextView)
+            val initialPriceValid = validatePrice(initialPriceEditText, initialPriceErrorTextView)
             val descriptionValid = validateDescription(descriptionEditText, descriptionErrorTextView)
             val quantityValid = validateQuantity(quantityEditText, quantityErrorTextView)
-            val initialPriceValid = validatePrice(initialPriceEditText, initialPriceErrorTextView)
             val brandValid = validateBrand(brandEditText, brandErrorTextView)
 
             // Validar si se ha seleccionado una imagen
@@ -121,7 +120,7 @@ class PublishItemFragment : Fragment() {
                 false
             }
 
-            if (nameValid && priceValid && descriptionValid && quantityValid && initialPriceValid && brandValid && imageValid) {
+            if (nameValid && priceValid && initialPriceValid && descriptionValid && quantityValid && brandValid && imageValid) {
                 if (isNetworkAvailable(requireContext())) {
                     val quantity = quantityText.toInt()
                     getLocationAndPublishProduct(
@@ -131,14 +130,53 @@ class PublishItemFragment : Fragment() {
                     clearFormData()
                 } else {
                     saveDataLocally(productName, productPrice, productDescription, ecoFriendly, quantityText, productBrand, productInitialPrice)
-                    Toast.makeText(requireContext(), "Sin conexión. Datos guardados localmente", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), "\n" +
+                            "Off-line. Data saved locally", Toast.LENGTH_LONG).show()
                 }
             } else {
                 Toast.makeText(requireContext(), "Please fill all fields and correct errors", Toast.LENGTH_SHORT).show()
             }
         }
 
+        priceEditText.addTextChangedListener(createThousandSeparatorTextWatcher(priceEditText, priceErrorTextView))
+        initialPriceEditText.addTextChangedListener(createThousandSeparatorTextWatcher(initialPriceEditText, initialPriceErrorTextView))
+
         return view
+    }
+
+    private fun createThousandSeparatorTextWatcher(editText: EditText, errorTextView: TextView): TextWatcher {
+        return object : TextWatcher {
+            private var currentText = ""
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(s: Editable?) {
+                if (s.toString() != currentText) {
+                    editText.removeTextChangedListener(this)
+
+                    val cleanText = s.toString().replace(".", "")
+                    if (cleanText.isNotEmpty()) {
+                        val formatted = formatToThousandSeparator(cleanText.toDouble())
+                        currentText = formatted
+
+                        editText.setText(formatted)
+                        editText.setSelection(formatted.length)
+
+                        validatePrice(editText, errorTextView)
+                    }
+
+                    editText.addTextChangedListener(this)
+                }
+            }
+        }
+    }
+
+    // Función para formatear números con separador de miles "."
+    private fun formatToThousandSeparator(value: Double): String {
+        val formatter: NumberFormat = DecimalFormat("#,###", DecimalFormatSymbols(Locale.GERMANY))
+        return formatter.format(value)
     }
 
     // Función para abrir la galería para seleccionar la imagen del producto
@@ -151,8 +189,16 @@ class PublishItemFragment : Fragment() {
     // Función para abrir la cámara para tomar la imagen del producto
     private fun openCameraForImage() {
         imageSource = true // Imagen desde la cámara
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        startActivityForResult(intent, CAMERA_CAPTURE_CODE)
+
+        // Verificar el permiso de la cámara
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            // Permiso otorgado, abrir la cámara
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            startActivityForResult(intent, CAMERA_CAPTURE_CODE)
+        } else {
+            // Solicitar el permiso de la cámara
+            ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST_CODE)
+        }
     }
 
     // Guardar el Bitmap en un archivo y devolver la Uri del archivo creado
@@ -163,6 +209,18 @@ class PublishItemFragment : Fragment() {
         fos.flush()
         fos.close()
         return Uri.fromFile(file)
+    }
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permiso otorgado, abrir la cámara
+                openCameraForImage()
+            } else {
+                // Permiso denegado, mostrar un mensaje al usuario
+                Toast.makeText(requireContext(), "Camera permission is required to take a photo", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // Manejar el resultado de la selección de la imagen o la foto tomada
@@ -193,6 +251,7 @@ class PublishItemFragment : Fragment() {
     }
 
     // Obtener la ubicación del usuario y publicar el producto
+    // Obtener la ubicación del usuario y publicar el producto
     private fun getLocationAndPublishProduct(
         name: String, price: String, description: String, ecoFriendly: Boolean,
         imageUri: Uri, quantity: Int, brand: String, initialPrice: String
@@ -205,17 +264,25 @@ class PublishItemFragment : Fragment() {
             return
         }
 
+        // Intentar obtener la última ubicación conocida
         fusedLocationClient.lastLocation
             .addOnSuccessListener { location: Location? ->
                 if (location != null) {
+                    // La ubicación es válida, procede con la publicación del producto
                     viewModel.publishProduct(
                         name, price, description, ecoFriendly, imageUri, quantity, location.latitude, location.longitude, brand, initialPrice
                     )
                 } else {
-                    Toast.makeText(requireContext(), "Unable to get location", Toast.LENGTH_SHORT).show()
+                    // La ubicación es null, mostrar un mensaje al usuario
+                    Toast.makeText(requireContext(), "Location is not available. Verify that GPS is activated and try again.", Toast.LENGTH_SHORT).show()
                 }
             }
+            .addOnFailureListener { exception ->
+                // Maneja errores en la obtención de la ubicación
+                Toast.makeText(requireContext(), "Error getting location: ${exception.message}", Toast.LENGTH_SHORT).show()
+            }
     }
+
 
     // Validar los campos de entrada
     private fun setupFieldValidation(
@@ -224,49 +291,20 @@ class PublishItemFragment : Fragment() {
         descriptionEditText: EditText, descriptionErrorTextView: TextView,
         quantityEditText: EditText, quantityErrorTextView: TextView,
         brandEditText: EditText, brandErrorTextView: TextView,
-        initialPriceEditText: EditText, initialPriceErrorTextView: TextView)
-    {
+        initialPriceEditText: EditText, initialPriceErrorTextView: TextView
+    ) {
         nameEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 validateName(nameEditText, nameErrorTextView)
             }
-
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        priceEditText.addTextChangedListener(object : TextWatcher {
-            private var currentText = ""
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-
-            override fun afterTextChanged(s: Editable?) {
-                if (s.toString() != currentText) {
-                    priceEditText.removeTextChangedListener(this)
-
-                    val cleanText = s.toString().replace(".", "")
-                    if (cleanText.isNotEmpty()) {
-                        val formatted = formatToThousandSeparator(cleanText.toDouble())
-                        currentText = formatted
-
-                        priceEditText.setText(formatted)
-                        priceEditText.setSelection(formatted.length)
-
-                        validatePrice(priceEditText, priceErrorTextView)
-                    }
-
-                    priceEditText.addTextChangedListener(this)
-                }
-            }
         })
 
         descriptionEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 validateDescription(descriptionEditText, descriptionErrorTextView)
             }
-
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
@@ -275,24 +313,14 @@ class PublishItemFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 validateQuantity(quantityEditText, quantityErrorTextView)
             }
-
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
+
         brandEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 validateBrand(brandEditText, brandErrorTextView)
             }
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        initialPriceEditText.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                validatePrice(initialPriceEditText, initialPriceErrorTextView)
-            }
-
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
@@ -343,7 +371,6 @@ class PublishItemFragment : Fragment() {
         }
     }
 
-
     private fun validateDescription(descriptionEditText: EditText, errorTextView: TextView): Boolean {
         val productDescription = descriptionEditText.text.toString().trim()
         val containsLettersOrSpecialCharacters = productDescription.any { it.isLetterOrDigit() || !it.isWhitespace() }
@@ -359,8 +386,6 @@ class PublishItemFragment : Fragment() {
         }
     }
 
-
-
     private fun validateQuantity(quantityEditText: EditText, errorTextView: TextView): Boolean {
         val quantity = quantityEditText.text.toString().toIntOrNull() ?: 0
         return if (quantity <= 0) {
@@ -374,7 +399,6 @@ class PublishItemFragment : Fragment() {
             true
         }
     }
-
 
     private fun saveDataLocally(
         name: String, price: String, description: String, ecoFriendly: Boolean,
@@ -510,12 +534,6 @@ class PublishItemFragment : Fragment() {
         return activeNetwork != null && activeNetwork.isConnected
     }
 
-    // Función para formatear números con separador de miles "."
-    private fun formatToThousandSeparator(value: Double): String {
-        val formatter: NumberFormat = DecimalFormat("#,###", DecimalFormatSymbols(Locale.GERMANY))
-        return formatter.format(value)
-    }
-
     // Redirigir a la página de confirmación
     private fun navigateToConfirmation() {
         val confirmationFragment = PublishConfirmationFragment() // Fragmento de confirmación
@@ -528,10 +546,7 @@ class PublishItemFragment : Fragment() {
     companion object {
         const val IMAGE_PICK_CODE = 1001
         const val CAMERA_CAPTURE_CODE = 1002
+        const val CAMERA_PERMISSION_REQUEST_CODE = 1003 // Código de solicitud de permiso para la cámara
     }
 }
-
-
-
-
 
