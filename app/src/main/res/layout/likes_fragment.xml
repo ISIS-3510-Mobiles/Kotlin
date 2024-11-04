@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- likes_fragment.xml -->
+
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -9,8 +10,22 @@
     android:layout_height="match_parent"
     tools:context=".view.LikesFragment">
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:padding="20dp"
+        android:text="Favorite products"
+        android:textColor="@color/dark_green"
+        android:textSize="42dp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
     <!-- RecyclerView para mostrar los productos favoritos -->
     <androidx.recyclerview.widget.RecyclerView
+        android:layout_marginTop="100dp"
         android:id="@+id/recycler_view_liked_products"
         android:layout_width="0dp"
         android:layout_height="0dp"

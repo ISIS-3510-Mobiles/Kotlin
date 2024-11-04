@@ -162,4 +162,6 @@ class ListFragment : Fragment() {
                 Toast.makeText(requireContext(), "Unable to get location. Please try again.", Toast.LENGTH_SHORT).show()
             }
     }
+
+
 }
