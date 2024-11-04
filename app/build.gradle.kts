@@ -45,6 +45,10 @@ android {
 }
 
 dependencies {
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0")
+
     // Firebase BoM - Administra las versiones de todas las librerías de Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.1")) // Actualiza a la versión más reciente si es necesario
 
@@ -55,6 +59,9 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
+
+    //Firebase corutines
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.0")
 
     // FirebaseUI for Firebase Auth
     implementation("com.firebaseui:firebase-ui-auth:8.0.2")

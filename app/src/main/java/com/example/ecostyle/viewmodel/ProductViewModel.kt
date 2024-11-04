@@ -1,4 +1,3 @@
-// ProductViewModel.kt
 package com.example.ecostyle.viewmodel
 
 import android.app.Application
@@ -8,14 +7,14 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.ecostyle.model.Product
 import com.example.ecostyle.Repository.ProductRepository
+import kotlinx.coroutines.launch
 
 class ProductViewModel(application: Application) : AndroidViewModel(application) {
     private val productList: MutableLiveData<List<Product>> = MutableLiveData()
     private val repository = ProductRepository()
-
 
     private val _isEcoFriendlyFilterApplied = MutableLiveData<Boolean>()
     val isEcoFriendlyFilterApplied: LiveData<Boolean> get() = _isEcoFriendlyFilterApplied
@@ -32,35 +31,54 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun loadProducts() {
-        repository.getProducts { products ->
-            productList.value = filterProductsBasedOnBattery(products)
+        viewModelScope.launch {
+            try {
+                val products = repository.getProducts() // Llamada suspendida
+                productList.value = filterProductsBasedOnBattery(products)
+            } catch (e: Exception) {
+                Log.e("ProductViewModel", "Error loading products", e)
+                productList.value = emptyList() // En caso de error, devolver lista vacía
+            }
         }
     }
+
     fun loadAllProducts() {
-        repository.getProducts { products ->
-            _isEcoFriendlyFilterApplied.value = false
-            _isProximityFilterApplied.value = false
-            productList.value = products
+        viewModelScope.launch {
+            try {
+                val products = repository.getProducts() // Llamada suspendida
+                _isEcoFriendlyFilterApplied.value = false
+                _isProximityFilterApplied.value = false
+                productList.value = products
+            } catch (e: Exception) {
+                Log.e("ProductViewModel", "Error loading all products", e)
+                productList.value = emptyList() // En caso de error, devolver lista vacía
+            }
         }
     }
 
     fun loadProductsByProximity(userLatitude: Double, userLongitude: Double) {
-        repository.getProducts { products ->
-            val filteredProducts = products.filter { product ->
-                if (product.latitude != null && product.longitude != null) {
-                    calculateDistance(userLatitude, userLongitude, product.latitude!!, product.longitude!!) <= 10.0
-                } else {
-                    Log.d("Product", "Product ${product.name} has null latitude/longitude")
-                    false
+        viewModelScope.launch {
+            try {
+                val products = repository.getProducts() // Llamada suspendida
+                val filteredProducts = products.filter { product ->
+                    if (product.latitude != null && product.longitude != null) {
+                        calculateDistance(userLatitude, userLongitude, product.latitude!!, product.longitude!!) <= 10.0
+                    } else {
+                        Log.d("Product", "Product ${product.name} has null latitude/longitude")
+                        false
+                    }
                 }
+                _isProximityFilterApplied.value = true
+                productList.value = filteredProducts
+            } catch (e: Exception) {
+                Log.e("ProductViewModel", "Error loading products by proximity", e)
+                productList.value = emptyList() // En caso de error, devolver lista vacía
             }
-            _isProximityFilterApplied.value = true
-            productList.value = filteredProducts
         }
     }
 
     private fun filterProductsBasedOnBattery(products: List<Product>): List<Product> {
-        if (products == null || products.isEmpty()) {
+        if (products.isEmpty()) {
             return emptyList()
         }
 
@@ -102,5 +120,5 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             loadProductsByProximity(userLatitude, userLongitude)
         }
     }
-
 }
+

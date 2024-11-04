@@ -31,6 +31,7 @@ import java.util.Calendar
 import android.location.Location
 import android.widget.ImageButton
 import androidx.core.app.ActivityCompat
+import com.example.ecostyle.view.PublishItemFragment
 import com.google.android.gms.location.LocationServices
 
 enum class ProviderType {
@@ -217,6 +218,12 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     .replace(R.id.fragment_container, profileFragment)
                     .commit()
             }
+            R.id.nav_item_6 -> {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, PublishItemFragment())
+                    .commit()
+                }
+
         }
 
         drawer.closeDrawer(GravityCompat.START)
