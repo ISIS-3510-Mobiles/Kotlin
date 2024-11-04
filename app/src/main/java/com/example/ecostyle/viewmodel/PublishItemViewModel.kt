@@ -24,13 +24,15 @@ class PublishItemViewModel : ViewModel() {
         imageUri: Uri,
         quantity: Int,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        brand: String,
+        initialProduct: String
     ) {
         // Lanzar una corrutina para realizar la operación en un hilo secundario
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 // Llamar al repositorio para publicar el producto
-                val success = repository.publishProductToFirestore(name, price, description, ecoFriendly, imageUri, quantity, latitude, longitude)
+                val success = repository.publishProductToFirestore(name, price, description, ecoFriendly, imageUri, quantity, latitude, longitude, brand, initialProduct)
                 _publishStatus.postValue(success) // Actualizar el estado de la publicación en la UI
             } catch (e: Exception) {
                 // Si hay algún error, publicar false

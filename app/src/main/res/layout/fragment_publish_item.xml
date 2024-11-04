@@ -77,6 +77,46 @@
         android:visibility="gone"
         android:text="Error message"/>
 
+    <EditText
+        android:id="@+id/product_brand_edittext"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:hint="@string/hint_product_brand"
+        android:importantForAutofill="no"
+        android:inputType="text" />
+
+    <!-- Texto para el mensaje de error de la marca -->
+    <TextView
+        android:id="@+id/brand_error_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_red_dark"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:text="Error message"/>
+
+    <EditText
+        android:id="@+id/product_initialPrice_edittext"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:hint="Inital product price"
+        android:importantForAutofill="no"
+        android:inputType="numberDecimal" />
+
+    <!-- Texto para el mensaje de error de la marca -->
+    <TextView
+        android:id="@+id/initialPrice_error_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_red_dark"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:text="Error message"/>
+
+
+
     <!-- Checkbox para indicar si el producto es eco-friendly -->
     <CheckBox
         android:id="@+id/ecofriendly_checkbox"
@@ -95,6 +135,14 @@
         android:scaleType="fitCenter"
         android:src="@drawable/ic_no_image"
         android:layout_gravity="center" />
+    <TextView
+        android:id="@+id/image_error_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_red_dark"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:text="Upload a photo"/>
 
     <EditText
         android:id="@+id/product_quantity_edittext"

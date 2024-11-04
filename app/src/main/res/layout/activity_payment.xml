@@ -22,17 +22,19 @@
     <!-- Spinner para método de pago -->
     <Spinner
         android:id="@+id/payment_methods_spinner"
-        android:layout_width="match_parent"
+        android:layout_width="378dp"
         android:layout_height="55dp"
         android:layout_marginBottom="16dp"
-        android:background="@color/gray_light"
-        android:padding="16dp"
-        android:spinnerMode="dropdown"
-        android:popupBackground="@color/white"
-        android:drawableRight="@drawable/ic_arrow_down"
+        android:background="@drawable/rounded_white"
+        android:drawableEnd="@drawable/ic_arrow_down"
+        android:dropDownVerticalOffset="5dp"
         android:gravity="center_vertical"
-        android:paddingRight="16dp"
-        android:dropDownVerticalOffset="5dp" />
+        android:layoutDirection="ltr"
+        android:padding="16dp"
+        android:paddingEnd="16dp"
+        android:popupBackground="@color/white"
+        android:spinnerMode="dropdown" />
+
 
 
     <!-- Información de facturación -->
