@@ -1,5 +1,3 @@
-// ProductDetailFragment.kt
-
 package com.example.ecostyle.view
 
 import android.os.Bundle
@@ -18,6 +16,7 @@ import com.example.ecostyle.viewmodel.ProductDetailViewModel
 import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.example.ecostyle.model.CartItem
+import com.example.ecostyle.utils.LocalStorageManager
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.*
 import com.google.firebase.firestore.ktx.firestore
@@ -78,19 +77,20 @@ class ProductDetailFragment : Fragment() {
                 .load(product.imageResource)
                 .into(productImage)
 
-            // Actualizar el icono del botón de favoritos basado en isFavorite
-            val likeIconRes = if (product.isFavorite) {
-                R.drawable.baseline_favorite_24_2 // Ícono de corazón lleno
-            } else {
-                R.drawable.baseline_favorite_border_24 // Ícono de corazón vacío
-            }
-            favoriteButton.setImageResource(likeIconRes)
+            // Verificar si el producto está marcado como favorito en el almacenamiento local
+            product.isFavorite = LocalStorageManager.isProductLiked(requireContext(), product.firebaseId)
+
+            // Actualizar el icono de "like"
+            updateLikeIcon(product.isFavorite)
         }
 
         viewModel.loadProduct(productId)
 
         favoriteButton.setOnClickListener {
-            viewModel.toggleFavorite()
+            val product = viewModel.product.value
+            if (product != null) {
+                toggleFavorite(product)
+            }
         }
 
         addToCartButton.setOnClickListener {
@@ -98,6 +98,68 @@ class ProductDetailFragment : Fragment() {
                 addToCart(product)
             }
         }
+    }
+
+    private fun toggleFavorite(product: Product) {
+        val db = FirebaseFirestore.getInstance()
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val context = requireContext()
+
+        if (userId != null) {
+            val likesRef = db.collection("likes").document(userId).collection("items")
+
+            likesRef.whereEqualTo("firebaseId", product.firebaseId).get()
+                .addOnSuccessListener { documents ->
+                    if (!documents.isEmpty) {
+                        // El producto ya tiene "like", así que lo eliminamos
+                        for (document in documents) {
+                            likesRef.document(document.id).delete()
+                                .addOnSuccessListener {
+                                    product.isFavorite = false
+                                    updateLikeIcon(product.isFavorite)
+                                    Toast.makeText(context, "${product.name} removed from favorites", Toast.LENGTH_SHORT).show()
+                                    LocalStorageManager.removeLikedProduct(context, product.firebaseId)
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(context, "Error removing from favorites", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                    } else {
+                        // Añadir el producto a likes
+                        val likeItem = hashMapOf(
+                            "firebaseId" to product.firebaseId,
+                            "productName" to product.name,
+                            "productPrice" to product.price,
+                            "productImage" to product.imageResource,
+                            "timestamp" to System.currentTimeMillis()
+                        )
+                        likesRef.add(likeItem)
+                            .addOnSuccessListener {
+                                product.isFavorite = true
+                                updateLikeIcon(product.isFavorite)
+                                Toast.makeText(context, "${product.name} added to favorites", Toast.LENGTH_SHORT).show()
+                                LocalStorageManager.addLikedProduct(context, product.firebaseId)
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(context, "Error adding to favorites", Toast.LENGTH_SHORT).show()
+                            }
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(context, "Error accessing favorites", Toast.LENGTH_SHORT).show()
+                }
+        } else {
+            Toast.makeText(context, "User not authenticated", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun updateLikeIcon(isFavorite: Boolean) {
+        val likeIconRes = if (isFavorite) {
+            R.drawable.baseline_favorite_24_2 // Ícono de corazón lleno
+        } else {
+            R.drawable.baseline_favorite_border_24 // Ícono de corazón vacío
+        }
+        favoriteButton.setImageResource(likeIconRes)
     }
 
     // Añadir productos al carrito

@@ -1,4 +1,5 @@
 // ProductAdapter.kt
+
 package com.example.ecostyle.adapter
 
 import android.util.Log
@@ -14,6 +15,7 @@ import com.bumptech.glide.Glide
 import com.example.ecostyle.R
 import com.example.ecostyle.model.CartItem
 import com.example.ecostyle.model.Product
+import com.example.ecostyle.utils.LocalStorageManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -39,6 +41,8 @@ class ProductAdapter(
 
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
         val product = productList[position]
+        val context = holder.itemView.context
+
         holder.productName.text = product.name
         holder.productPrice.text = product.price.toString()
 
@@ -54,15 +58,16 @@ class ProductAdapter(
             addToCart(holder, product)
         }
 
-        // Update the like button icon based on isFavorite
-        val likeIconRes = if (product.isFavorite) {
-            R.drawable.baseline_favorite_24_2 // Filled heart icon
+        // Actualizar el icono del botón de "like" basado en el almacenamiento local
+        val isLiked = LocalStorageManager.isProductLiked(context, product.firebaseId)
+        val likeIconRes = if (isLiked) {
+            R.drawable.baseline_favorite_24_2 // Ícono de corazón lleno
         } else {
-            R.drawable.baseline_favorite_border_24 // Empty heart icon
+            R.drawable.baseline_favorite_border_24 // Ícono de corazón vacío
         }
         holder.likeButton.setImageResource(likeIconRes)
 
-        // Handle clicks on the like button
+        // Manejar clics en el botón de "like"
         holder.likeButton.setOnClickListener {
             toggleFavorite(holder, product)
         }
@@ -75,6 +80,7 @@ class ProductAdapter(
     private fun toggleFavorite(holder: ProductViewHolder, product: Product) {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val context = holder.itemView.context
 
         if (userId != null) {
             val likesRef = db.collection("likes").document(userId).collection("items")
@@ -82,24 +88,24 @@ class ProductAdapter(
             likesRef.whereEqualTo("firebaseId", product.firebaseId).get()
                 .addOnSuccessListener { documents ->
                     if (!documents.isEmpty) {
-                        // Product is already in likes, so remove it
+                        // El producto ya tiene "like", así que lo eliminamos
                         for (document in documents) {
                             likesRef.document(document.id).delete()
                                 .addOnSuccessListener {
                                     product.isFavorite = false
                                     notifyItemChanged(holder.adapterPosition)
-                                    Toast.makeText(holder.itemView.context, "${product.name} removed from favorites", Toast.LENGTH_SHORT).show()
-                                    // Update the icon immediately
+                                    Toast.makeText(context, "${product.name} removed from favorites", Toast.LENGTH_SHORT).show()
                                     holder.likeButton.setImageResource(R.drawable.baseline_favorite_border_24)
+                                    LocalStorageManager.removeLikedProduct(context, product.firebaseId) // Actualizar almacenamiento local
                                     onLikeClicked?.invoke(product)
                                 }
                                 .addOnFailureListener { e ->
-                                    Toast.makeText(holder.itemView.context, "Error removing from favorites", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Error removing from favorites", Toast.LENGTH_SHORT).show()
                                     Log.e("ProductAdapter", "Error removing from favorites", e)
                                 }
                         }
                     } else {
-                        // Add the product to likes
+                        // Añadir el producto a likes
                         val likeItem = hashMapOf(
                             "firebaseId" to product.firebaseId,
                             "productName" to product.name,
@@ -111,26 +117,25 @@ class ProductAdapter(
                             .addOnSuccessListener {
                                 product.isFavorite = true
                                 notifyItemChanged(holder.adapterPosition)
-                                Toast.makeText(holder.itemView.context, "${product.name} added to favorites", Toast.LENGTH_SHORT).show()
-                                // Update the icon immediately
+                                Toast.makeText(context, "${product.name} added to favorites", Toast.LENGTH_SHORT).show()
                                 holder.likeButton.setImageResource(R.drawable.baseline_favorite_24_2)
+                                LocalStorageManager.addLikedProduct(context, product.firebaseId) // Actualizar almacenamiento local
                                 onLikeClicked?.invoke(product)
                             }
                             .addOnFailureListener { e ->
-                                Toast.makeText(holder.itemView.context, "Error adding to favorites", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Error adding to favorites", Toast.LENGTH_SHORT).show()
                                 Log.e("ProductAdapter", "Error adding to favorites", e)
                             }
                     }
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(holder.itemView.context, "Error accessing favorites", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Error accessing favorites", Toast.LENGTH_SHORT).show()
                     Log.e("ProductAdapter", "Error accessing favorites", e)
                 }
         } else {
-            Toast.makeText(holder.itemView.context, "User not authenticated", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "User not authenticated", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     private fun addToCart(holder: ProductViewHolder, product: Product) {
         val db = FirebaseFirestore.getInstance()
@@ -157,14 +162,13 @@ class ProductAdapter(
                                             cartRef.document(document.id).update("quantity", newQuantity)
                                             Toast.makeText(holder.itemView.context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
                                         } else {
-                                            Toast.makeText(holder.itemView.context, "\n" +
-                                                    "There is no more stock available", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(holder.itemView.context, "No more stock available", Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 } else {
-                                    // Añadir producto por primera vez al carrito con su firebaseId
+                                    // Añadir producto por primera vez al carrito
                                     val cartItem = hashMapOf(
-                                        "firebaseId" to product.firebaseId,  // Guardar el ID de producto
+                                        "firebaseId" to product.firebaseId,
                                         "productName" to product.name,
                                         "productPrice" to product.price,
                                         "productImage" to product.imageResource,
@@ -175,7 +179,7 @@ class ProductAdapter(
                                 }
                             }
                     } else {
-                        Toast.makeText(holder.itemView.context, "There is no more stock available", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(holder.itemView.context, "No more stock available", Toast.LENGTH_SHORT).show()
                     }
                 }
             }

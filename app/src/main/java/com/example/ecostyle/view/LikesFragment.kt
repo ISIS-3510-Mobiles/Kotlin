@@ -14,6 +14,7 @@ import com.example.ecostyle.R
 import com.example.ecostyle.adapter.LikesAdapter
 import com.example.ecostyle.model.LikeItem
 import com.example.ecostyle.model.Product
+import com.example.ecostyle.utils.LocalStorageManager
 import com.example.ecostyle.viewmodel.ProductViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -88,17 +89,17 @@ class LikesFragment : Fragment() {
                     val documents = db.collection("likes").document(userId).collection("items").get().await()
 
                     val likeItems = mutableListOf<LikeItem>()
+                    val likedProductIds = mutableSetOf<String>()
 
                     for (document in documents) {
                         val likeItem = document.toObject(LikeItem::class.java)
                         likeItem?.let {
                             likeItem.id = document.id
-
                             // Buscar el producto correspondiente en la lista de productos
                             val product = productList.find { it.firebaseId == likeItem.firebaseId }
-
                             if (product != null) {
                                 likeItem.productId = product.id
+                                likedProductIds.add(product.firebaseId) // Añadir al conjunto de almacenamiento local
                             } else {
                                 likeItem.productId = -1 // Producto no encontrado
                             }
@@ -106,6 +107,10 @@ class LikesFragment : Fragment() {
                             likeItems.add(likeItem)
                         }
                     }
+
+                    // Guardar los IDs de productos con "like" en el almacenamiento local
+                    LocalStorageManager.saveLikedProducts(requireContext(), likedProductIds)
+
 
                     withContext(Dispatchers.Main) {
                         likesAdapter.setLikeItems(likeItems)
