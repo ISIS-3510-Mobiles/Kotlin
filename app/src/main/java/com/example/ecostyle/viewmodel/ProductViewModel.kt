@@ -11,6 +11,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.ecostyle.model.Product
 import com.example.ecostyle.Repository.ProductRepository
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+
+
 
 class ProductViewModel(application: Application) : AndroidViewModel(application) {
     private val productList: MutableLiveData<List<Product>> = MutableLiveData()
@@ -24,7 +29,17 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         loadProducts()
+
+        performInternalAnalysis()
+
     }
+
+    data class ResaleMetrics(
+        val groupKey: String,
+        val averageRVR: Double,
+        val medianRVR: Double,
+        val productCount: Int
+    )
 
     fun getProductList(): LiveData<List<Product>> {
         return productList
@@ -118,6 +133,108 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         } else {
             // Si no está aplicado, cargar productos dentro de los 10 km
             loadProductsByProximity(userLatitude, userLongitude)
+        }
+    }
+
+    fun performInternalAnalysis() {
+        viewModelScope.launch {
+            try {
+                val products = repository.getProducts()
+
+                if (products.isNotEmpty()) {
+                    val metricsByBrand = calculateResaleMetrics(products) { it.brand }
+
+                    // Log the results
+                    printResaleMetrics(metricsByBrand, "Brand")
+
+                    // Save results to CSV files
+                    saveMetricsToCsv(metricsByBrand, "brand_metrics.csv")
+                } else {
+                    Log.d("ProductViewModel", "No products available for analysis.")
+                }
+            } catch (e: Exception) {
+                Log.e("ProductViewModel", "Error performing internal analysis", e)
+            }
+        }
+    }
+
+    // Helper function to parse price strings to Double
+    private fun parsePrice(priceStr: String?): Double? {
+        return priceStr?.replace(Regex("[^\\d.]"), "")?.toDoubleOrNull()
+    }
+
+    // Function to calculate resale metrics grouped by a key (brand or product type)
+    private fun calculateResaleMetrics(
+        products: List<Product>,
+        groupBy: (Product) -> String?
+    ): List<ResaleMetrics> {
+        return products.groupBy { groupBy(it) ?: "Unknown" }
+            .mapNotNull { (groupKey, productsInGroup) ->
+                val rvrValues = productsInGroup.mapNotNull { product ->
+                    val initialPrice = parsePrice(product.initialPrice)
+                    val resalePrice = parsePrice(product.price)
+                    if (initialPrice != null && resalePrice != null && initialPrice > 0) {
+                        (resalePrice / initialPrice) * 100
+                    } else {
+                        null
+                    }
+                }
+
+                if (rvrValues.isNotEmpty()) {
+                    ResaleMetrics(
+                        groupKey = groupKey,
+                        averageRVR = rvrValues.average(),
+                        medianRVR = rvrValues.median(),
+                        productCount = rvrValues.size
+                    )
+                } else {
+                    null
+                }
+            }
+    }
+
+    // Extension function to calculate the median of a list of Doubles
+    private fun List<Double>.median(): Double {
+        if (isEmpty()) return 0.0
+        val sortedList = sorted()
+        val middle = size / 2
+        return if (size % 2 == 0) {
+            (sortedList[middle - 1] + sortedList[middle]) / 2
+        } else {
+            sortedList[middle]
+        }
+    }
+
+    // Function to log the resale metrics
+    private fun printResaleMetrics(metricsList: List<ResaleMetrics>, groupBy: String) {
+        Log.d("ResaleMetrics", "Resale Metrics Grouped by $groupBy:")
+        metricsList.forEach { metrics ->
+            Log.d("ResaleMetrics", "Group: ${metrics.groupKey}")
+            Log.d("ResaleMetrics", "Average RVR: ${"%.2f".format(metrics.averageRVR)}%")
+            Log.d("ResaleMetrics", "Median RVR: ${"%.2f".format(metrics.medianRVR)}%")
+            Log.d("ResaleMetrics", "Number of Products: ${metrics.productCount}")
+            Log.d("ResaleMetrics", "----------------------------")
+        }
+    }
+
+    // Function to save the metrics to a CSV file
+    private suspend fun saveMetricsToCsv(metricsList: List<ResaleMetrics>, fileName: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>().applicationContext
+                val file = File(context.filesDir, fileName)
+
+                file.printWriter().use { out ->
+                    out.println("Group,Average RVR,Median RVR,Product Count")
+                    metricsList.forEach { metrics ->
+                        out.println("${metrics.groupKey},${metrics.averageRVR},${metrics.medianRVR},${metrics.productCount}")
+                    }
+                }
+
+                Log.d("ResaleMetrics", "Metrics saved to ${file.absolutePath}")
+            } catch (e: Exception) {
+                Log.e("ResaleMetrics", "Error saving metrics to CSV", e)
+            }
         }
     }
 }
