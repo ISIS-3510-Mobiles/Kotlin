@@ -31,6 +31,7 @@ import java.util.Calendar
 import android.location.Location
 import android.widget.ImageButton
 import androidx.core.app.ActivityCompat
+import com.example.ecostyle.view.LikesFragment
 import com.example.ecostyle.view.PublishItemFragment
 import com.google.android.gms.location.LocationServices
 
@@ -223,6 +224,12 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     .replace(R.id.fragment_container, PublishItemFragment())
                     .commit()
                 }
+            R.id.nav_item_7 -> {
+
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, LikesFragment())
+                    .commit()
+            }
 
         }
 
