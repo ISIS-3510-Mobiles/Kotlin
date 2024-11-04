@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton // Changed to ImageButton for consistency
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -27,7 +28,7 @@ class ProductAdapter(
         val productName: TextView = itemView.findViewById(R.id.product_name)
         val productPrice: TextView = itemView.findViewById(R.id.product_price)
         val addToCartButton: TextView = itemView.findViewById(R.id.add_to_cart_button)
-        val likeButton: ImageView = itemView.findViewById(R.id.favorite_icon)
+        val likeButton: ImageButton = itemView.findViewById(R.id.favorite_icon) // Use ImageButton
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductViewHolder {
@@ -53,13 +54,17 @@ class ProductAdapter(
             addToCart(holder, product)
         }
 
-        // Actualizar el ícono del botón de "like" basado en isFavorite
-        val likeIconRes = if (product.isFavorite) R.drawable.baseline_favorite_24_2 else R.drawable.baseline_favorite_border_24
+        // Update the like button icon based on isFavorite
+        val likeIconRes = if (product.isFavorite) {
+            R.drawable.baseline_favorite_24_2 // Filled heart icon
+        } else {
+            R.drawable.baseline_favorite_border_24 // Empty heart icon
+        }
         holder.likeButton.setImageResource(likeIconRes)
 
-        // Manejar clics en el botón de "like"
+        // Handle clicks on the like button
         holder.likeButton.setOnClickListener {
-            toggleLikeProduct(holder, product)
+            toggleFavorite(holder, product)
         }
     }
 
@@ -67,46 +72,114 @@ class ProductAdapter(
         return productList.size
     }
 
-    private fun toggleLikeProduct(holder: ProductViewHolder, product: Product) {
+    private fun toggleFavorite(holder: ProductViewHolder, product: Product) {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
         if (userId != null) {
-            val likesRef = db.collection("users").document(userId).collection("likes")
+            val likesRef = db.collection("likes").document(userId).collection("items")
 
-            if (product.isFavorite) {
-                // Quitar "like" al producto
-                likesRef.document(product.firebaseId).delete()
-                    .addOnSuccessListener {
-                        product.isFavorite = false
-                        notifyItemChanged(holder.adapterPosition)
-                        onLikeClicked?.invoke(product)
+            likesRef.whereEqualTo("firebaseId", product.firebaseId).get()
+                .addOnSuccessListener { documents ->
+                    if (!documents.isEmpty) {
+                        // Product is already in likes, so remove it
+                        for (document in documents) {
+                            likesRef.document(document.id).delete()
+                                .addOnSuccessListener {
+                                    product.isFavorite = false
+                                    notifyItemChanged(holder.adapterPosition)
+                                    Toast.makeText(holder.itemView.context, "${product.name} removed from favorites", Toast.LENGTH_SHORT).show()
+                                    // Update the icon immediately
+                                    holder.likeButton.setImageResource(R.drawable.baseline_favorite_border_24)
+                                    onLikeClicked?.invoke(product)
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(holder.itemView.context, "Error removing from favorites", Toast.LENGTH_SHORT).show()
+                                    Log.e("ProductAdapter", "Error removing from favorites", e)
+                                }
+                        }
+                    } else {
+                        // Add the product to likes
+                        val likeItem = hashMapOf(
+                            "firebaseId" to product.firebaseId,
+                            "productName" to product.name,
+                            "productPrice" to product.price,
+                            "productImage" to product.imageResource,
+                            "timestamp" to System.currentTimeMillis()
+                        )
+                        likesRef.add(likeItem)
+                            .addOnSuccessListener {
+                                product.isFavorite = true
+                                notifyItemChanged(holder.adapterPosition)
+                                Toast.makeText(holder.itemView.context, "${product.name} added to favorites", Toast.LENGTH_SHORT).show()
+                                // Update the icon immediately
+                                holder.likeButton.setImageResource(R.drawable.baseline_favorite_24_2)
+                                onLikeClicked?.invoke(product)
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(holder.itemView.context, "Error adding to favorites", Toast.LENGTH_SHORT).show()
+                                Log.e("ProductAdapter", "Error adding to favorites", e)
+                            }
                     }
-                    .addOnFailureListener {
-                        Toast.makeText(holder.itemView.context, "Error al quitar de favoritos", Toast.LENGTH_SHORT).show()
-                    }
-            } else {
-                // Dar "like" al producto
-                val likeData = hashMapOf(
-                    "productId" to product.firebaseId
-                )
-                likesRef.document(product.firebaseId).set(likeData)
-                    .addOnSuccessListener {
-                        product.isFavorite = true
-                        notifyItemChanged(holder.adapterPosition)
-                        onLikeClicked?.invoke(product)
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(holder.itemView.context, "Error al agregar a favoritos", Toast.LENGTH_SHORT).show()
-                    }
-            }
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(holder.itemView.context, "Error accessing favorites", Toast.LENGTH_SHORT).show()
+                    Log.e("ProductAdapter", "Error accessing favorites", e)
+                }
         } else {
-            Toast.makeText(holder.itemView.context, "Usuario no autenticado", Toast.LENGTH_SHORT).show()
+            Toast.makeText(holder.itemView.context, "User not authenticated", Toast.LENGTH_SHORT).show()
         }
     }
 
+
     private fun addToCart(holder: ProductViewHolder, product: Product) {
-        // Tu implementación existente para agregar al carrito
+        val db = FirebaseFirestore.getInstance()
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+
+        if (userId != null) {
+            val productRef = db.collection("Products").document(product.firebaseId)
+
+            productRef.get().addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val availableQuantity = document.getLong("quantity")?.toInt() ?: 0
+
+                    if (availableQuantity > 0) {
+                        val cartRef = db.collection("carts").document(userId).collection("items")
+                        cartRef.whereEqualTo("firebaseId", product.firebaseId).get()
+                            .addOnSuccessListener { documents ->
+                                if (!documents.isEmpty) {
+                                    // Incrementar la cantidad si ya existe en el carrito
+                                    for (document in documents) {
+                                        val cartItem = document.toObject(CartItem::class.java)
+                                        val newQuantity = cartItem.quantity + 1
+
+                                        if (newQuantity <= availableQuantity) {
+                                            cartRef.document(document.id).update("quantity", newQuantity)
+                                            Toast.makeText(holder.itemView.context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(holder.itemView.context, "\n" +
+                                                    "There is no more stock available", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                } else {
+                                    // Añadir producto por primera vez al carrito con su firebaseId
+                                    val cartItem = hashMapOf(
+                                        "firebaseId" to product.firebaseId,  // Guardar el ID de producto
+                                        "productName" to product.name,
+                                        "productPrice" to product.price,
+                                        "productImage" to product.imageResource,
+                                        "quantity" to 1
+                                    )
+                                    cartRef.add(cartItem)
+                                    Toast.makeText(holder.itemView.context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                    } else {
+                        Toast.makeText(holder.itemView.context, "There is no more stock available", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
     }
 
     fun setProductList(newList: List<Product>) {
