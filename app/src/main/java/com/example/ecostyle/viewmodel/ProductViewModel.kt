@@ -10,6 +10,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.ecostyle.model.Product
 import com.example.ecostyle.Repository.ProductRepository
+import com.example.ecostyle.utils.LocalStorageManager
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -27,8 +30,13 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     private val _isProximityFilterApplied = MutableLiveData<Boolean>()
     val isProximityFilterApplied: LiveData<Boolean> get() = _isProximityFilterApplied
 
+    // LiveData para almacenar los IDs de productos con "like"
+    private val _likedProductIds = MutableLiveData<Set<String>>()
+    val likedProductIds: LiveData<Set<String>> get() = _likedProductIds
+
     init {
         loadProducts()
+        listenToLikes()
 
         performInternalAnalysis()
 
@@ -49,7 +57,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             try {
                 val products = repository.getProducts() // Llamada suspendida
-                productList.value = filterProductsBasedOnBattery(products)
+                val productsWithLikes = updateProductsWithLikes(products)
+                productList.value = filterProductsBasedOnBattery(productsWithLikes)
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading products", e)
                 productList.value = emptyList() // En caso de error, devolver lista vacía
@@ -57,13 +66,23 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    // Actualizar productos con el estado de "like" basado en el almacenamiento local
+    private fun updateProductsWithLikes(products: List<Product>): List<Product> {
+        val likedIds = _likedProductIds.value ?: emptySet()
+        return products.map { product ->
+            product.isFavorite = likedIds.contains(product.firebaseId)
+            product
+        }
+    }
+
     fun loadAllProducts() {
         viewModelScope.launch {
             try {
                 val products = repository.getProducts() // Llamada suspendida
+                val productsWithLikes = updateProductsWithLikes(products)
                 _isEcoFriendlyFilterApplied.value = false
                 _isProximityFilterApplied.value = false
-                productList.value = products
+                productList.value = productsWithLikes
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading all products", e)
                 productList.value = emptyList() // En caso de error, devolver lista vacía
@@ -75,7 +94,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             try {
                 val products = repository.getProducts() // Llamada suspendida
-                val filteredProducts = products.filter { product ->
+                val productsWithLikes = updateProductsWithLikes(products)
+                val filteredProducts = productsWithLikes.filter { product ->
                     if (product.latitude != null && product.longitude != null) {
                         calculateDistance(userLatitude, userLongitude, product.latitude!!, product.longitude!!) <= 10.0
                     } else {
@@ -237,5 +257,33 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             }
         }
     }
-}
 
+
+    // Escuchar cambios en los likes y actualizar el almacenamiento local
+    private fun listenToLikes() {
+        val db = FirebaseFirestore.getInstance()
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+
+        if (userId != null) {
+            db.collection("likes").document(userId).collection("items")
+                .addSnapshotListener { snapshot, e ->
+                    if (e != null) {
+                        Log.w("ProductViewModel", "Listen failed.", e)
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null) {
+                        val likedIds = snapshot.documents.mapNotNull { doc ->
+                            doc.getString("firebaseId")
+                        }.toSet()
+
+                        // Actualizar LiveData y almacenamiento local
+                        _likedProductIds.postValue(likedIds)
+                        LocalStorageManager.saveLikedProducts(getApplication(), likedIds)
+                        // Recargar productos para reflejar el estado actualizado
+                        loadProducts()
+                    }
+                }
+        }
+    }
+}

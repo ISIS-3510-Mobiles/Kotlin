@@ -61,7 +61,10 @@ class ProductRepository {
         imageUri: Uri,
         quantity: Int,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        brand: String,
+        initialPrice: String
+
     ): Boolean {
         return try {
             // Obtener el ID máximo actual de la base de datos
@@ -99,7 +102,9 @@ class ProductRepository {
                 "isFavorite" to false,
                 "latitude" to latitude,  // Guardar la latitud
                 "longitude" to longitude,  // Guardar la longitud
-                "quantity" to quantity
+                "quantity" to quantity,
+                "brand" to brand,
+                "initialPrice" to initialPrice
             )
 
             // Guardar los detalles del producto en Firestore
