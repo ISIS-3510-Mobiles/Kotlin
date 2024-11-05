@@ -4,6 +4,7 @@ package com.example.ecostyle.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.BatteryManager
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -24,6 +25,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     private val _isEcoFriendlyFilterApplied = MutableLiveData<Boolean>()
     val isEcoFriendlyFilterApplied: LiveData<Boolean> get() = _isEcoFriendlyFilterApplied
 
+    private val sharedPreferences: SharedPreferences = getApplication<Application>().getSharedPreferences("EcoStylePrefs", Context.MODE_PRIVATE)
+
     private val _isProximityFilterApplied = MutableLiveData<Boolean>()
     val isProximityFilterApplied: LiveData<Boolean> get() = _isProximityFilterApplied
 
@@ -34,6 +37,9 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     init {
         loadProducts()
         listenToLikes()
+
+        val isProximityFilterCached = sharedPreferences.getBoolean("proximity_filter", false)
+        _isProximityFilterApplied.value = isProximityFilterCached
     }
 
     fun getProductList(): LiveData<List<Product>> {
@@ -69,6 +75,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                 val productsWithLikes = updateProductsWithLikes(products)
                 _isEcoFriendlyFilterApplied.value = false
                 _isProximityFilterApplied.value = false
+                sharedPreferences.edit().putBoolean("proximity_filter", false).apply()
+
                 productList.value = productsWithLikes
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading all products", e)
@@ -91,6 +99,7 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
                 _isProximityFilterApplied.value = true
+                sharedPreferences.edit().putBoolean("proximity_filter", true).apply()
                 productList.value = filteredProducts
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading products by proximity", e)

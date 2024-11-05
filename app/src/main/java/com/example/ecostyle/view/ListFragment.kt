@@ -93,9 +93,6 @@ class ListFragment : Fragment() {
 
         checkLocationPermission()
 
-        resetFilterButton.setOnClickListener {
-            productViewModel.toggleProximityFilter(userLatitude, userLongitude)
-        }
 
         productViewModel.isProximityFilterApplied.observe(viewLifecycleOwner) { isFiltered ->
             if (isFiltered) {
@@ -103,6 +100,10 @@ class ListFragment : Fragment() {
             } else {
 //                resetFilterButton.visibility = View.GONE
             }
+        }
+
+        resetFilterButton.setOnClickListener {
+            productViewModel.toggleProximityFilter(userLatitude, userLongitude)
         }
     }
     private fun showEcoFriendlyMessage() {
