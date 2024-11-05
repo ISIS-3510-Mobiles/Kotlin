@@ -1,11 +1,13 @@
-// ProductViewModel.kt
-
 package com.example.ecostyle.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.content.SharedPreferences
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.util.Log
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -16,6 +18,11 @@ import com.example.ecostyle.utils.LocalStorageManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+
+
 
 class ProductViewModel(application: Application) : AndroidViewModel(application) {
     private val productList: MutableLiveData<List<Product>> = MutableLiveData()
@@ -23,6 +30,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
 
     private val _isEcoFriendlyFilterApplied = MutableLiveData<Boolean>()
     val isEcoFriendlyFilterApplied: LiveData<Boolean> get() = _isEcoFriendlyFilterApplied
+
+    private val sharedPreferences: SharedPreferences = getApplication<Application>().getSharedPreferences("EcoStylePrefs", Context.MODE_PRIVATE)
 
     private val _isProximityFilterApplied = MutableLiveData<Boolean>()
     val isProximityFilterApplied: LiveData<Boolean> get() = _isProximityFilterApplied
@@ -34,7 +43,19 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     init {
         loadProducts()
         listenToLikes()
+
+        val isProximityFilterCached = sharedPreferences.getBoolean("proximity_filter", false)
+        _isProximityFilterApplied.value = isProximityFilterCached
+        performInternalAnalysis()
+
     }
+
+    data class ResaleMetrics(
+        val groupKey: String,
+        val averageRVR: Double,
+        val medianRVR: Double,
+        val productCount: Int
+    )
 
     fun getProductList(): LiveData<List<Product>> {
         return productList
@@ -69,6 +90,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                 val productsWithLikes = updateProductsWithLikes(products)
                 _isEcoFriendlyFilterApplied.value = false
                 _isProximityFilterApplied.value = false
+                sharedPreferences.edit().putBoolean("proximity_filter", false).apply()
+
                 productList.value = productsWithLikes
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading all products", e)
@@ -80,6 +103,9 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     fun loadProductsByProximity(userLatitude: Double, userLongitude: Double) {
         viewModelScope.launch {
             try {
+
+                saveLastKnownLocation(userLatitude, userLongitude)
+
                 val products = repository.getProducts() // Llamada suspendida
                 val productsWithLikes = updateProductsWithLikes(products)
                 val filteredProducts = productsWithLikes.filter { product ->
@@ -91,6 +117,7 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
                 _isProximityFilterApplied.value = true
+                sharedPreferences.edit().putBoolean("proximity_filter", true).apply()
                 productList.value = filteredProducts
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading products by proximity", e)
@@ -143,6 +170,109 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun performInternalAnalysis() {
+        viewModelScope.launch {
+            try {
+                val products = repository.getProducts()
+
+                if (products.isNotEmpty()) {
+                    val metricsByBrand = calculateResaleMetrics(products) { it.brand }
+
+                    // Log the results
+                    printResaleMetrics(metricsByBrand, "Brand")
+
+                    // Save results to CSV files
+                    saveMetricsToCsv(metricsByBrand, "brand_metrics.csv")
+                } else {
+                    Log.d("ProductViewModel", "No products available for analysis.")
+                }
+            } catch (e: Exception) {
+                Log.e("ProductViewModel", "Error performing internal analysis", e)
+            }
+        }
+    }
+
+    // Helper function to parse price strings to Double
+    private fun parsePrice(priceStr: String?): Double? {
+        return priceStr?.replace(Regex("[^\\d.]"), "")?.toDoubleOrNull()
+    }
+
+    // Function to calculate resale metrics grouped by a key (brand or product type)
+    private fun calculateResaleMetrics(
+        products: List<Product>,
+        groupBy: (Product) -> String?
+    ): List<ResaleMetrics> {
+        return products.groupBy { groupBy(it) ?: "Unknown" }
+            .mapNotNull { (groupKey, productsInGroup) ->
+                val rvrValues = productsInGroup.mapNotNull { product ->
+                    val initialPrice = parsePrice(product.initialPrice)
+                    val resalePrice = parsePrice(product.price)
+                    if (initialPrice != null && resalePrice != null && initialPrice > 0) {
+                        (resalePrice / initialPrice) * 100
+                    } else {
+                        null
+                    }
+                }
+
+                if (rvrValues.isNotEmpty()) {
+                    ResaleMetrics(
+                        groupKey = groupKey,
+                        averageRVR = rvrValues.average(),
+                        medianRVR = rvrValues.median(),
+                        productCount = rvrValues.size
+                    )
+                } else {
+                    null
+                }
+            }
+    }
+
+    // Extension function to calculate the median of a list of Doubles
+    private fun List<Double>.median(): Double {
+        if (isEmpty()) return 0.0
+        val sortedList = sorted()
+        val middle = size / 2
+        return if (size % 2 == 0) {
+            (sortedList[middle - 1] + sortedList[middle]) / 2
+        } else {
+            sortedList[middle]
+        }
+    }
+
+    // Function to log the resale metrics
+    private fun printResaleMetrics(metricsList: List<ResaleMetrics>, groupBy: String) {
+        Log.d("ResaleMetrics", "Resale Metrics Grouped by $groupBy:")
+        metricsList.forEach { metrics ->
+            Log.d("ResaleMetrics", "Group: ${metrics.groupKey}")
+            Log.d("ResaleMetrics", "Average RVR: ${"%.2f".format(metrics.averageRVR)}%")
+            Log.d("ResaleMetrics", "Median RVR: ${"%.2f".format(metrics.medianRVR)}%")
+            Log.d("ResaleMetrics", "Number of Products: ${metrics.productCount}")
+            Log.d("ResaleMetrics", "----------------------------")
+        }
+    }
+
+    // Function to save the metrics to a CSV file
+    private suspend fun saveMetricsToCsv(metricsList: List<ResaleMetrics>, fileName: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>().applicationContext
+                val file = File(context.filesDir, fileName)
+
+                file.printWriter().use { out ->
+                    out.println("Group,Average RVR,Median RVR,Product Count")
+                    metricsList.forEach { metrics ->
+                        out.println("${metrics.groupKey},${metrics.averageRVR},${metrics.medianRVR},${metrics.productCount}")
+                    }
+                }
+
+                Log.d("ResaleMetrics", "Metrics saved to ${file.absolutePath}")
+            } catch (e: Exception) {
+                Log.e("ResaleMetrics", "Error saving metrics to CSV", e)
+            }
+        }
+    }
+
+
     // Escuchar cambios en los likes y actualizar el almacenamiento local
     private fun listenToLikes() {
         val db = FirebaseFirestore.getInstance()
@@ -168,6 +298,24 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                         loadProducts()
                     }
                 }
+        }
+    }
+
+    private fun saveLastKnownLocation(latitude: Double, longitude: Double) {
+        sharedPreferences.edit().apply {
+            putFloat("cached_latitude", latitude.toFloat())
+            putFloat("cached_longitude", longitude.toFloat())
+            apply()
+        }
+    }
+
+    private fun getCachedLocation(): Pair<Double, Double>? {
+        val cachedLat = sharedPreferences.getFloat("cached_latitude", Float.NaN)
+        val cachedLon = sharedPreferences.getFloat("cached_longitude", Float.NaN)
+        return if (!cachedLat.isNaN() && !cachedLon.isNaN()) {
+            Pair(cachedLat.toDouble(), cachedLon.toDouble())
+        } else {
+            null
         }
     }
 }

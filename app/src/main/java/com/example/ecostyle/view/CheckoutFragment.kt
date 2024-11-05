@@ -216,14 +216,14 @@ class CheckoutFragment : Fragment() {
         subtotalTextView?.text = "Subtotal: ${numberFormat.format(subtotal)}"
 
         val taxesTextView = view?.findViewById<TextView>(R.id.taxes_text_view)
-        taxesTextView?.text = "Impuestos (7%): ${numberFormat.format(taxes)}"
+        taxesTextView?.text = "Taxes (7%): ${numberFormat.format(taxes)}"
 
         totalPriceTextView.text = "Total: ${numberFormat.format(totalWithTaxes)}"
     }
 
     private fun updateItemCount(itemCount: Int) {
         val itemCountTextView = view?.findViewById<TextView>(R.id.item_count_text_view)
-        itemCountTextView?.text = "Total de artículos: $itemCount"
+        itemCountTextView?.text = "Total items: $itemCount"
     }
 
     private fun updateCartStatus(hasItems: Boolean) {

@@ -119,6 +119,9 @@ class ProductDetailFragment : Fragment() {
                                     updateLikeIcon(product.isFavorite)
                                     Toast.makeText(context, "${product.name} removed from favorites", Toast.LENGTH_SHORT).show()
                                     LocalStorageManager.removeLikedProduct(context, product.firebaseId)
+
+                                    // Aquí puedes registrar el evento de 'like' eliminado
+                                    product.name?.let { it1 -> logLikeEvent(it1, false) }
                                 }
                                 .addOnFailureListener { e ->
                                     Toast.makeText(context, "Error removing from favorites", Toast.LENGTH_SHORT).show()
@@ -139,6 +142,9 @@ class ProductDetailFragment : Fragment() {
                                 updateLikeIcon(product.isFavorite)
                                 Toast.makeText(context, "${product.name} added to favorites", Toast.LENGTH_SHORT).show()
                                 LocalStorageManager.addLikedProduct(context, product.firebaseId)
+
+                                // Aquí puedes registrar el evento de 'like' añadido
+                                product.name?.let { it1 -> logLikeEvent(it1, true) }
                             }
                             .addOnFailureListener { e ->
                                 Toast.makeText(context, "Error adding to favorites", Toast.LENGTH_SHORT).show()
@@ -152,6 +158,14 @@ class ProductDetailFragment : Fragment() {
             Toast.makeText(context, "User not authenticated", Toast.LENGTH_SHORT).show()
         }
     }
+
+    // Función para registrar el evento
+    private fun logLikeEvent(productName: String, liked: Boolean) {
+        val eventName = if (liked) "liked_$productName" else "unliked_$productName"
+        // Aquí puedes usar tu herramienta de analytics para registrar el evento
+        Log.d("AnalyticsEvent", "Event: $eventName")
+    }
+
 
     private fun updateLikeIcon(isFavorite: Boolean) {
         val likeIconRes = if (isFavorite) {
