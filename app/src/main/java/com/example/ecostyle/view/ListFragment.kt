@@ -63,6 +63,10 @@ class ListFragment : Fragment() {
         recyclerView.layoutManager = gridLayoutManager
 
         productAdapter = ProductAdapter(emptyList(), { product ->
+
+            // Aquí es donde puedes registrar el evento de 'like'
+            product.name?.let { logProductLikeEvent(it) }
+
             val productDetailFragment = ProductDetailFragment().apply {
                 arguments = Bundle().apply {
                     putInt("PRODUCT_ID", product.id)
@@ -76,6 +80,9 @@ class ListFragment : Fragment() {
 
             Log.d("ListFragment", "Navigating to product details with ID: ${product.id}")
         })
+
+
+
 
         recyclerView.adapter = productAdapter
 
@@ -109,6 +116,14 @@ class ListFragment : Fragment() {
             productViewModel.toggleProximityFilter(userLatitude, userLongitude)
         }
     }
+
+    // Función para registrar el evento
+    private fun logProductLikeEvent(productName: String) {
+        val eventName = "liked_$productName"
+        // Aquí puedes usar tu herramienta de analytics para registrar el evento
+        Log.d("AnalyticsEvent", "Event: $eventName")
+    }
+
     private fun showEcoFriendlyMessage() {
         ecoFriendlyMessage.visibility = View.VISIBLE
     }
