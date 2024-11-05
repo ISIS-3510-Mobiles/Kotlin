@@ -2,8 +2,12 @@ package com.example.ecostyle.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.content.SharedPreferences
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.util.Log
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -27,6 +31,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     private val _isEcoFriendlyFilterApplied = MutableLiveData<Boolean>()
     val isEcoFriendlyFilterApplied: LiveData<Boolean> get() = _isEcoFriendlyFilterApplied
 
+    private val sharedPreferences: SharedPreferences = getApplication<Application>().getSharedPreferences("EcoStylePrefs", Context.MODE_PRIVATE)
+
     private val _isProximityFilterApplied = MutableLiveData<Boolean>()
     val isProximityFilterApplied: LiveData<Boolean> get() = _isProximityFilterApplied
 
@@ -38,6 +44,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         loadProducts()
         listenToLikes()
 
+        val isProximityFilterCached = sharedPreferences.getBoolean("proximity_filter", false)
+        _isProximityFilterApplied.value = isProximityFilterCached
         performInternalAnalysis()
 
     }
@@ -82,6 +90,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                 val productsWithLikes = updateProductsWithLikes(products)
                 _isEcoFriendlyFilterApplied.value = false
                 _isProximityFilterApplied.value = false
+                sharedPreferences.edit().putBoolean("proximity_filter", false).apply()
+
                 productList.value = productsWithLikes
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading all products", e)
@@ -93,6 +103,9 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     fun loadProductsByProximity(userLatitude: Double, userLongitude: Double) {
         viewModelScope.launch {
             try {
+
+                saveLastKnownLocation(userLatitude, userLongitude)
+
                 val products = repository.getProducts() // Llamada suspendida
                 val productsWithLikes = updateProductsWithLikes(products)
                 val filteredProducts = productsWithLikes.filter { product ->
@@ -104,6 +117,7 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
                 _isProximityFilterApplied.value = true
+                sharedPreferences.edit().putBoolean("proximity_filter", true).apply()
                 productList.value = filteredProducts
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading products by proximity", e)
@@ -284,6 +298,24 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                         loadProducts()
                     }
                 }
+        }
+    }
+
+    private fun saveLastKnownLocation(latitude: Double, longitude: Double) {
+        sharedPreferences.edit().apply {
+            putFloat("cached_latitude", latitude.toFloat())
+            putFloat("cached_longitude", longitude.toFloat())
+            apply()
+        }
+    }
+
+    private fun getCachedLocation(): Pair<Double, Double>? {
+        val cachedLat = sharedPreferences.getFloat("cached_latitude", Float.NaN)
+        val cachedLon = sharedPreferences.getFloat("cached_longitude", Float.NaN)
+        return if (!cachedLat.isNaN() && !cachedLon.isNaN()) {
+            Pair(cachedLat.toDouble(), cachedLon.toDouble())
+        } else {
+            null
         }
     }
 }

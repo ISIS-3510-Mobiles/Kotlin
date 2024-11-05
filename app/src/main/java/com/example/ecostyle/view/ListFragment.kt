@@ -1,7 +1,10 @@
 package com.example.ecostyle.view
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -93,9 +96,6 @@ class ListFragment : Fragment() {
 
         checkLocationPermission()
 
-        resetFilterButton.setOnClickListener {
-            productViewModel.toggleProximityFilter(userLatitude, userLongitude)
-        }
 
         productViewModel.isProximityFilterApplied.observe(viewLifecycleOwner) { isFiltered ->
             if (isFiltered) {
@@ -103,6 +103,10 @@ class ListFragment : Fragment() {
             } else {
 //                resetFilterButton.visibility = View.GONE
             }
+        }
+
+        resetFilterButton.setOnClickListener {
+            productViewModel.toggleProximityFilter(userLatitude, userLongitude)
         }
     }
     private fun showEcoFriendlyMessage() {
@@ -146,22 +150,34 @@ class ListFragment : Fragment() {
             return
         }
 
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location ->
-                if (location != null) {
-                    userLatitude = location.latitude
-                    userLongitude = location.longitude
-                    productViewModel.loadProductsByProximity(userLatitude, userLongitude)
-                } else {
-                    Log.d("ListFragment", "Location is null")
-                    Toast.makeText(requireContext(), "Failed to retrieve location", Toast.LENGTH_SHORT).show()
+        if (hasInternetConnection()) {
+            // Online mode: get live location
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location ->
+                    if (location != null) {
+                        userLatitude = location.latitude
+                        userLongitude = location.longitude
+                        productViewModel.loadProductsByProximity(userLatitude, userLongitude)
+                    } else {
+                        Log.d("ListFragment", "Location is null")
+                        Toast.makeText(requireContext(), "Failed to retrieve location", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            }
-            .addOnFailureListener { e ->
-                Log.e("ListFragment", "Failed to get location", e)
-                Toast.makeText(requireContext(), "Unable to get location. Please try again.", Toast.LENGTH_SHORT).show()
-            }
+                .addOnFailureListener { e ->
+                    Log.e("ListFragment", "Failed to get location", e)
+                    Toast.makeText(requireContext(), "Unable to get location. Please try again.", Toast.LENGTH_SHORT).show()
+                }
+        } else {
+            // Offline mode: use cached location
+            Toast.makeText(requireContext(), "You are offline. Using last known location.", Toast.LENGTH_SHORT).show()
+            productViewModel.loadProductsByProximity(userLatitude, userLongitude)  // Fallback to cached location
+        }
     }
-
+    private fun hasInternetConnection(): Boolean {
+        val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+    }
 
 }
