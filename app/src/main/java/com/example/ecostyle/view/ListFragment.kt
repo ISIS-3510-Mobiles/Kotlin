@@ -24,6 +24,7 @@ import com.example.ecostyle.adapter.ProductAdapter
 import com.example.ecostyle.viewmodel.ProductViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.firebase.analytics.FirebaseAnalytics
 
 class ListFragment : Fragment() {
 
@@ -121,7 +122,10 @@ class ListFragment : Fragment() {
     private fun logProductLikeEvent(productName: String) {
         val eventName = "liked_$productName"
         // Aquí puedes usar tu herramienta de analytics para registrar el evento
-        Log.d("AnalyticsEvent", "Event: $eventName")
+        val analytics = FirebaseAnalytics.getInstance(requireContext())
+        val bundle = Bundle()
+        bundle.putString("message", "Number likes")
+        analytics.logEvent(eventName, bundle)
     }
 
     private fun showEcoFriendlyMessage() {

@@ -17,6 +17,8 @@ import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.example.ecostyle.model.CartItem
 import com.example.ecostyle.utils.LocalStorageManager
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.FirebaseAnalyticsLegacyRegistrar
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.*
 import com.google.firebase.firestore.ktx.firestore
@@ -163,7 +165,10 @@ class ProductDetailFragment : Fragment() {
     private fun logLikeEvent(productName: String, liked: Boolean) {
         val eventName = if (liked) "liked_$productName" else "unliked_$productName"
         // Aquí puedes usar tu herramienta de analytics para registrar el evento
-        Log.d("AnalyticsEvent", "Event: $eventName")
+        val analytics = FirebaseAnalytics.getInstance(requireContext())
+        val bundle = Bundle()
+        bundle.putString("message", "Number likes")
+        analytics.logEvent(eventName, bundle)
     }
 
 
