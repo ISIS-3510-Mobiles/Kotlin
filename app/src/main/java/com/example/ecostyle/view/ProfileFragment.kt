@@ -1,8 +1,11 @@
 package com.example.ecostyle.view
 
+import UploadWorker
 import android.Manifest
 import android.app.Activity
-import android.content.*
+import android.content.ContentValues
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.ConnectivityManager
@@ -21,6 +24,7 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.work.*
 import com.bumptech.glide.Glide
 import com.example.ecostyle.activity.AuthActivity
 import com.example.ecostyle.R
@@ -41,7 +45,6 @@ class ProfileFragment : Fragment() {
     private var storageReference = FirebaseStorage.getInstance().reference
     private lateinit var email: String
     private var pendingImageFile: File? = null
-    private lateinit var connectivityReceiver: ConnectivityReceiver
 
     // Código para solicitar permisos
     private val requestPermissionLauncher = registerForActivityResult(
@@ -128,23 +131,7 @@ class ProfileFragment : Fragment() {
             requireActivity().finish()
         }
 
-        // Inicializar el receptor de conectividad
-        connectivityReceiver = ConnectivityReceiver()
-
         return view
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Registrar el receptor para escuchar cambios en la conectividad
-        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        requireActivity().registerReceiver(connectivityReceiver, filter)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        // Desregistrar el receptor
-        requireActivity().unregisterReceiver(connectivityReceiver)
     }
 
     private fun checkCameraPermissionAndOpenCamera() {
@@ -216,8 +203,9 @@ class ProfileFragment : Fragment() {
             // Hay conexión, subir la imagen
             uploadImageToStorage(imageBitmap, email)
         } else {
-            // No hay conexión, guardar la imagen localmente
+            // No hay conexión, guardar la imagen localmente y programar la tarea
             saveImageLocally(imageBitmap)
+            scheduleImageUpload(email)
             Toast.makeText(context, "No hay conexión a Internet. La imagen se subirá cuando se restablezca la conexión.", Toast.LENGTH_LONG).show()
         }
     }
@@ -295,7 +283,7 @@ class ProfileFragment : Fragment() {
     private fun saveImageLocally(imageBitmap: Bitmap) {
         try {
             val fileName = "pending_profile_image.jpg"
-            val file = File(requireContext().filesDir, fileName)
+            val file = File(requireContext().getExternalFilesDir(null), fileName)
             val fos = FileOutputStream(file)
             imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
             fos.close()
@@ -306,33 +294,28 @@ class ProfileFragment : Fragment() {
         }
     }
 
-    // Intentar subir la imagen pendiente si existe
-    private fun uploadPendingImage() {
-        if (pendingImageFile != null && pendingImageFile!!.exists()) {
-            val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, android.net.Uri.fromFile(pendingImageFile))
-            uploadImageToStorage(bitmap, email)
-        }
-    }
-
-    // Eliminar la imagen local después de subirla
     private fun deleteLocalImage() {
-        pendingImageFile?.let {
-            if (it.exists()) {
-                it.delete()
-                pendingImageFile = null
-            }
+        val fileName = "pending_profile_image.jpg"
+        val file = File(requireContext().getExternalFilesDir(null), fileName)
+        if (file.exists()) {
+            file.delete()
         }
     }
 
-    // Receptor para detectar cambios en la conectividad
-    inner class ConnectivityReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            context?.let {
-                if (hasInternetConnection(it)) {
-                    // Si hay conexión y hay una imagen pendiente, intentar subirla
-                    uploadPendingImage()
-                }
-            }
-        }
+    private fun scheduleImageUpload(email: String) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val uploadWorkRequest = OneTimeWorkRequestBuilder<UploadWorker>()
+            .setConstraints(constraints)
+            .setInputData(workDataOf("email" to email))
+            .build()
+
+        WorkManager.getInstance(requireContext()).enqueueUniqueWork(
+            "upload_profile_image",
+            ExistingWorkPolicy.REPLACE,
+            uploadWorkRequest
+        )
     }
 }
