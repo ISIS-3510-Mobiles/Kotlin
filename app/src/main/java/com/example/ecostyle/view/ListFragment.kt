@@ -65,7 +65,6 @@ class ListFragment : Fragment() {
 
         productAdapter = ProductAdapter(emptyList(), { product ->
 
-            // Aquí es donde puedes registrar el evento de 'like'
             product.name?.let { logProductLikeEvent(it) }
 
             val productDetailFragment = ProductDetailFragment().apply {
@@ -121,7 +120,7 @@ class ListFragment : Fragment() {
     // Función para registrar el evento
     private fun logProductLikeEvent(productName: String) {
         val eventName = "liked_$productName"
-        // Aquí puedes usar tu herramienta de analytics para registrar el evento
+
         val analytics = FirebaseAnalytics.getInstance(requireContext())
         val bundle = Bundle()
         bundle.putString("message", "Number likes")

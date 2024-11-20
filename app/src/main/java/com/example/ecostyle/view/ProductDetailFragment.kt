@@ -1,5 +1,8 @@
 package com.example.ecostyle.view
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.*
@@ -91,7 +94,12 @@ class ProductDetailFragment : Fragment() {
         favoriteButton.setOnClickListener {
             val product = viewModel.product.value
             if (product != null) {
-                toggleFavorite(product)
+                if (!hasInternetConnection()) {
+                    Toast.makeText(context, "No Internet connection", Toast.LENGTH_SHORT).show()
+
+                } else {
+                    toggleFavorite(product)
+                }
             }
         }
 
@@ -234,5 +242,13 @@ class ProductDetailFragment : Fragment() {
         } else {
             Toast.makeText(requireContext(), "User not authenticated", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun hasInternetConnection(): Boolean {
+        val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || activeNetwork.hasTransport(
+            NetworkCapabilities.TRANSPORT_CELLULAR)
     }
 }
