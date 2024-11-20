@@ -2,11 +2,11 @@ package com.example.ecostyle.view
 
 import android.Manifest
 import android.app.Activity
-import android.content.ContentValues
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -29,14 +29,19 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.util.*
 
 class ProfileFragment : Fragment() {
+
     private lateinit var firebaseAnalytics: FirebaseAnalytics
     private lateinit var profileImage: ImageView
     private lateinit var btnCamara: Button
     private var storageReference = FirebaseStorage.getInstance().reference
     private lateinit var email: String
+    private var pendingImageFile: File? = null
+    private lateinit var connectivityReceiver: ConnectivityReceiver
 
     // Código para solicitar permisos
     private val requestPermissionLauncher = registerForActivityResult(
@@ -47,7 +52,7 @@ class ProfileFragment : Fragment() {
             dispatchTakePictureIntent()
         } else {
             // Permiso denegado, mostrar un mensaje o manejar el caso
-            Toast.makeText(context, "Camera permission denied.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Permiso de cámara denegado.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -58,9 +63,9 @@ class ProfileFragment : Fragment() {
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             val imageBitmap = result.data!!.extras?.get("data") as Bitmap
             profileImage.setImageBitmap(imageBitmap)
-            uploadImageToStorage(imageBitmap, email)
+            uploadImageWithConnectivityCheck(imageBitmap, email)
         } else {
-            Toast.makeText(context, "No photo was taken.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No se tomó ninguna foto.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -123,7 +128,23 @@ class ProfileFragment : Fragment() {
             requireActivity().finish()
         }
 
+        // Inicializar el receptor de conectividad
+        connectivityReceiver = ConnectivityReceiver()
+
         return view
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Registrar el receptor para escuchar cambios en la conectividad
+        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        requireActivity().registerReceiver(connectivityReceiver, filter)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Desregistrar el receptor
+        requireActivity().unregisterReceiver(connectivityReceiver)
     }
 
     private fun checkCameraPermissionAndOpenCamera() {
@@ -137,8 +158,7 @@ class ProfileFragment : Fragment() {
             }
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
                 // Mostrar una explicación al usuario
-                Toast.makeText(context, "\n" +
-                        "The app needs access to the camera to take photos.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "La aplicación necesita acceso a la cámara para tomar fotos.", Toast.LENGTH_LONG).show()
                 // Solicitar el permiso
                 requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
@@ -155,7 +175,7 @@ class ProfileFragment : Fragment() {
         if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
             takePictureLauncher.launch(takePictureIntent)
         } else {
-            Toast.makeText(context, "There is no camera app available.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No hay ninguna aplicación de cámara disponible.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -183,11 +203,22 @@ class ProfileFragment : Fragment() {
                 emailTextView.text = email
             } else {
                 // El documento no existe
-                println("The document does not exist.")
+                println("El documento no existe.")
             }
         }.addOnFailureListener { exception ->
-            println("\n" +
-                    "Error getting document: $exception")
+            println("Error al obtener el documento: $exception")
+        }
+    }
+
+    // Nueva función para manejar la carga de la imagen con verificación de conectividad
+    private fun uploadImageWithConnectivityCheck(imageBitmap: Bitmap, email: String) {
+        if (hasInternetConnection(requireContext())) {
+            // Hay conexión, subir la imagen
+            uploadImageToStorage(imageBitmap, email)
+        } else {
+            // No hay conexión, guardar la imagen localmente
+            saveImageLocally(imageBitmap)
+            Toast.makeText(context, "No hay conexión a Internet. La imagen se subirá cuando se restablezca la conexión.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -210,13 +241,13 @@ class ProfileFragment : Fragment() {
                 updateUserProfileImageUrl(email, imageUrl)
                 // Guardar la imagen en la galería
                 saveImageToGallery(requireContext(), imageBitmap)
-
+                // Eliminar la imagen local si existe
+                deleteLocalImage()
             }
         }.addOnFailureListener {
             // Manejar errores en la subida
-            println("\n" +
-                    "Error uploading image: ${it.message}")
-            Toast.makeText(context, "Error uploading image.", Toast.LENGTH_SHORT).show()
+            println("Error al subir la imagen: ${it.message}")
+            Toast.makeText(context, "Error al subir la imagen.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -227,11 +258,10 @@ class ProfileFragment : Fragment() {
         db.collection("User").document(email)
             .update("imgUrl", imageUrl)
             .addOnSuccessListener {
-                println("Profile image successfully updated in Firestore")
+                println("Imagen de perfil actualizada correctamente en Firestore")
             }
             .addOnFailureListener {
-                println("\n" +
-                        "Error updating image in Firestore: ${it.message}")
+                println("Error al actualizar la imagen en Firestore: ${it.message}")
             }
     }
 
@@ -247,11 +277,62 @@ class ProfileFragment : Fragment() {
             context.contentResolver.openOutputStream(it)?.use { outputStream ->
                 imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
             }
-            Toast.makeText(context, "Image saved to gallery!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "¡Imagen guardada en la galería!", Toast.LENGTH_SHORT).show()
         } ?: run {
-            Toast.makeText(context, "Error saving image to gallery", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error al guardar la imagen en la galería", Toast.LENGTH_SHORT).show()
         }
     }
 
-}
+    private fun hasInternetConnection(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+        val network = connectivityManager?.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+    }
 
+    // Guardar la imagen localmente para subirla después
+    private fun saveImageLocally(imageBitmap: Bitmap) {
+        try {
+            val fileName = "pending_profile_image.jpg"
+            val file = File(requireContext().filesDir, fileName)
+            val fos = FileOutputStream(file)
+            imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+            fos.close()
+            pendingImageFile = file
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "Error al guardar la imagen localmente.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Intentar subir la imagen pendiente si existe
+    private fun uploadPendingImage() {
+        if (pendingImageFile != null && pendingImageFile!!.exists()) {
+            val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, android.net.Uri.fromFile(pendingImageFile))
+            uploadImageToStorage(bitmap, email)
+        }
+    }
+
+    // Eliminar la imagen local después de subirla
+    private fun deleteLocalImage() {
+        pendingImageFile?.let {
+            if (it.exists()) {
+                it.delete()
+                pendingImageFile = null
+            }
+        }
+    }
+
+    // Receptor para detectar cambios en la conectividad
+    inner class ConnectivityReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            context?.let {
+                if (hasInternetConnection(it)) {
+                    // Si hay conexión y hay una imagen pendiente, intentar subirla
+                    uploadPendingImage()
+                }
+            }
+        }
+    }
+}
