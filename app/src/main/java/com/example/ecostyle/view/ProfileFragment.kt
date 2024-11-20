@@ -55,7 +55,7 @@ class ProfileFragment : Fragment() {
             dispatchTakePictureIntent()
         } else {
             // Permiso denegado, mostrar un mensaje o manejar el caso
-            Toast.makeText(context, "Permiso de cámara denegado.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Camera permission denied.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -68,7 +68,7 @@ class ProfileFragment : Fragment() {
             profileImage.setImageBitmap(imageBitmap)
             uploadImageWithConnectivityCheck(imageBitmap, email)
         } else {
-            Toast.makeText(context, "No se tomó ninguna foto.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No photo was taken.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -145,7 +145,7 @@ class ProfileFragment : Fragment() {
             }
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
                 // Mostrar una explicación al usuario
-                Toast.makeText(context, "La aplicación necesita acceso a la cámara para tomar fotos.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "The app needs access to the camera to take photos.", Toast.LENGTH_LONG).show()
                 // Solicitar el permiso
                 requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
@@ -162,7 +162,7 @@ class ProfileFragment : Fragment() {
         if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
             takePictureLauncher.launch(takePictureIntent)
         } else {
-            Toast.makeText(context, "No hay ninguna aplicación de cámara disponible.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No camera app available.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -206,7 +206,7 @@ class ProfileFragment : Fragment() {
             // No hay conexión, guardar la imagen localmente y programar la tarea
             saveImageLocally(imageBitmap)
             scheduleImageUpload(email)
-            Toast.makeText(context, "No hay conexión a Internet. La imagen se subirá cuando se restablezca la conexión.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "No internet. The image will be uploaded when the connection is restored.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -234,8 +234,8 @@ class ProfileFragment : Fragment() {
             }
         }.addOnFailureListener {
             // Manejar errores en la subida
-            println("Error al subir la imagen: ${it.message}")
-            Toast.makeText(context, "Error al subir la imagen.", Toast.LENGTH_SHORT).show()
+            println("Error uploading the image: ${it.message}")
+            Toast.makeText(context, "Error uploading the image.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -246,10 +246,10 @@ class ProfileFragment : Fragment() {
         db.collection("User").document(email)
             .update("imgUrl", imageUrl)
             .addOnSuccessListener {
-                println("Imagen de perfil actualizada correctamente en Firestore")
+                println("Successfully updated profile picture in Firestore")
             }
             .addOnFailureListener {
-                println("Error al actualizar la imagen en Firestore: ${it.message}")
+                println("Error updating image in Firestore: ${it.message}")
             }
     }
 
@@ -265,9 +265,9 @@ class ProfileFragment : Fragment() {
             context.contentResolver.openOutputStream(it)?.use { outputStream ->
                 imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
             }
-            Toast.makeText(context, "¡Imagen guardada en la galería!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "¡Image saved on Gallery!", Toast.LENGTH_SHORT).show()
         } ?: run {
-            Toast.makeText(context, "Error al guardar la imagen en la galería", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error saving image on Gallery", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -290,7 +290,7 @@ class ProfileFragment : Fragment() {
             pendingImageFile = file
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Error al guardar la imagen localmente.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error saving image locally.", Toast.LENGTH_SHORT).show()
         }
     }
 
