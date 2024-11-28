@@ -1,5 +1,3 @@
-// ProductAdapter.kt
-
 package com.example.ecostyle.adapter
 
 import android.content.Context
@@ -155,6 +153,13 @@ class ProductAdapter(
     private fun addToCart(holder: ProductViewHolder, product: Product) {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val context = holder.itemView.context // Obtén el contexto del itemView
+
+        // Verificar la conexión antes de continuar
+        if (!isNetworkAvailable(context)) {
+            Toast.makeText(context, "You are offline. Unable to add products.", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         if (userId != null) {
             val productRef = db.collection("Products").document(product.firebaseId)
@@ -168,20 +173,20 @@ class ProductAdapter(
                         cartRef.whereEqualTo("firebaseId", product.firebaseId).get()
                             .addOnSuccessListener { documents ->
                                 if (!documents.isEmpty) {
-                                    // Incrementar la cantidad si ya existe en el carrito
+                                    // Incrementar cantidad si ya existe en el carrito
                                     for (document in documents) {
                                         val cartItem = document.toObject(CartItem::class.java)
                                         val newQuantity = cartItem.quantity + 1
 
                                         if (newQuantity <= availableQuantity) {
                                             cartRef.document(document.id).update("quantity", newQuantity)
-                                            Toast.makeText(holder.itemView.context, "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
                                         } else {
-                                            Toast.makeText(holder.itemView.context, "No hay más stock disponible", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "No more stock available", Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 } else {
-                                    // Añadir producto por primera vez al carrito
+                                    // Añadir el producto al carrito por primera vez
                                     val cartItem = hashMapOf(
                                         "firebaseId" to product.firebaseId,
                                         "productName" to product.name,
@@ -190,16 +195,28 @@ class ProductAdapter(
                                         "quantity" to 1
                                     )
                                     cartRef.add(cartItem)
-                                    Toast.makeText(holder.itemView.context, "${product.name} añadido al carrito", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
                                 }
                             }
                     } else {
-                        Toast.makeText(holder.itemView.context, "No hay más stock disponible", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "No more stock available", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         }
     }
+
+
+    private fun isNetworkAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+    }
+
+
 
     fun setProductList(newList: List<Product>) {
         productList = newList
