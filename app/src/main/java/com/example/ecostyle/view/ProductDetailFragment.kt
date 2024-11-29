@@ -21,7 +21,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.example.ecostyle.model.CartItem
 import com.example.ecostyle.utils.LocalStorageManager
 import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.ktx.FirebaseAnalyticsLegacyRegistrar
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.*
 import com.google.firebase.firestore.ktx.firestore
@@ -194,6 +193,12 @@ class ProductDetailFragment : Fragment() {
         val db = Firebase.firestore
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
+        // Verificar conexión a Internet antes de continuar
+        if (!hasInternetConnection()) {
+            Toast.makeText(requireContext(), "No Internet connection. Unable to add to cart.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         if (userId != null) {
             val cartRef = db.collection("carts").document(userId).collection("items")
 
@@ -243,6 +248,7 @@ class ProductDetailFragment : Fragment() {
             Toast.makeText(requireContext(), "User not authenticated", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     private fun hasInternetConnection(): Boolean {
         val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
