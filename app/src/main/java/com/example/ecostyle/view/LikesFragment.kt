@@ -1,8 +1,10 @@
 // LikesFragment.kt
+
 package com.example.ecostyle.view
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
@@ -27,8 +29,8 @@ class LikesFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private var likeItemList: List<LikeItem> = emptyList()
 
-    private val productViewModel: ProductViewModel by activityViewModels()  // Compartir el ViewModel
-    private var productList: List<Product> = emptyList()  // Almacenar la lista de productos
+    private val productViewModel: ProductViewModel by activityViewModels()  // Share the ViewModel
+    private var productList: List<Product> = emptyList()  // Store the product list
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -41,20 +43,20 @@ class LikesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Configurar RecyclerView y Adapter
+        // Configure RecyclerView and Adapter
         recyclerView = view.findViewById(R.id.recycler_view_liked_products)
         recyclerView.layoutManager = LinearLayoutManager(context)
 
         likesAdapter = LikesAdapter(likeItemList, { likeItem ->
             if (likeItem.productId != -1) {
-                // Navegar al detalle del producto pasando el productId
+                // Navigate to product detail passing the productId
                 val productDetailFragment = ProductDetailFragment().apply {
                     arguments = Bundle().apply {
                         putInt("PRODUCT_ID", likeItem.productId)
                     }
                 }
 
-                // Navegar al ProductDetailFragment
+                // Navigate to ProductDetailFragment
                 parentFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, productDetailFragment)
                     .addToBackStack(null)
@@ -63,18 +65,17 @@ class LikesFragment : Fragment() {
                 Toast.makeText(context, "Product not found", Toast.LENGTH_SHORT).show()
             }
         }, { likeItem ->
-            // Eliminar el producto de favoritos
+            // Remove the product from favorites
             removeFromLikes(likeItem)
         })
 
         recyclerView.adapter = likesAdapter
 
-        // Observar la lista de productos
+        // Observe the product list
         productViewModel.getProductList().observe(viewLifecycleOwner) { products ->
             if (products != null) {
-
-                productList = products  // Almacenar la lista de productos
-                // Ahora que tenemos la lista de productos, cargamos los favoritos
+                productList = products  // Store the product list
+                // Now that we have the product list, load the liked items
                 loadLikedItems(productList)
             }
         }
@@ -96,22 +97,21 @@ class LikesFragment : Fragment() {
                         val likeItem = document.toObject(LikeItem::class.java)
                         likeItem?.let {
                             likeItem.id = document.id
-                            // Buscar el producto correspondiente en la lista de productos
+                            // Find the corresponding product in the product list
                             val product = productList.find { it.firebaseId == likeItem.firebaseId }
                             if (product != null) {
                                 likeItem.productId = product.id
-                                likedProductIds.add(product.firebaseId) // Añadir al conjunto de almacenamiento local
+                                likedProductIds.add(product.firebaseId) // Add to local storage set
                             } else {
-                                likeItem.productId = -1 // Producto no encontrado
+                                likeItem.productId = -1 // Product not found
                             }
 
                             likeItems.add(likeItem)
                         }
                     }
 
-                    // Guardar los IDs de productos con "like" en el almacenamiento local
+                    // Save the IDs of liked products in local storage
                     LocalStorageManager.saveLikedProducts(requireContext(), likedProductIds)
-
 
                     withContext(Dispatchers.Main) {
                         likesAdapter.setLikeItems(likeItems)
@@ -131,13 +131,23 @@ class LikesFragment : Fragment() {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
+        val context = requireContext()
+
+        // Check for Internet connection before removing
+        if (!hasInternetConnection(context)) {
+            Toast.makeText(context, "No Internet connection. Please check your connectivity.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         if (userId != null) {
             val likesRef = db.collection("likes").document(userId).collection("items")
             likesRef.document(likeItem.id).delete()
                 .addOnSuccessListener {
                     Toast.makeText(context, "${likeItem.productName} removed from favorites", Toast.LENGTH_SHORT).show()
-                    // Recargar los favoritos
-                    loadLikedItems(productList)  // Pasar productList como argumento
+                    // Remove from local storage
+                    LocalStorageManager.removeLikedProduct(context, likeItem.firebaseId)
+                    // Reload favorites
+                    loadLikedItems(productList)  // Pass productList as argument
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(context, "Error removing from favorites", Toast.LENGTH_SHORT).show()
@@ -145,10 +155,11 @@ class LikesFragment : Fragment() {
         }
     }
 
-    // Verificar disponibilidad de red (opcional)
-    private fun isNetworkAvailable(context: Context): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val activeNetwork = connectivityManager.activeNetworkInfo
-        return activeNetwork != null && activeNetwork.isConnected
+    private fun hasInternetConnection(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+        val network = connectivityManager?.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
     }
 }

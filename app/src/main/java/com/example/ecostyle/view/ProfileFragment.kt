@@ -1,5 +1,6 @@
 package com.example.ecostyle.view
 
+import UploadWorker
 import android.Manifest
 import android.app.Activity
 import android.content.ContentValues
@@ -7,6 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -21,6 +24,7 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.work.*
 import com.bumptech.glide.Glide
 import com.example.ecostyle.activity.AuthActivity
 import com.example.ecostyle.R
@@ -29,14 +33,18 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.util.*
 
 class ProfileFragment : Fragment() {
+
     private lateinit var firebaseAnalytics: FirebaseAnalytics
     private lateinit var profileImage: ImageView
     private lateinit var btnCamara: Button
     private var storageReference = FirebaseStorage.getInstance().reference
     private lateinit var email: String
+    private var pendingImageFile: File? = null
 
     // Código para solicitar permisos
     private val requestPermissionLauncher = registerForActivityResult(
@@ -58,7 +66,7 @@ class ProfileFragment : Fragment() {
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             val imageBitmap = result.data!!.extras?.get("data") as Bitmap
             profileImage.setImageBitmap(imageBitmap)
-            uploadImageToStorage(imageBitmap, email)
+            uploadImageWithConnectivityCheck(imageBitmap, email)
         } else {
             Toast.makeText(context, "No photo was taken.", Toast.LENGTH_SHORT).show()
         }
@@ -137,8 +145,7 @@ class ProfileFragment : Fragment() {
             }
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
                 // Mostrar una explicación al usuario
-                Toast.makeText(context, "\n" +
-                        "The app needs access to the camera to take photos.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "The app needs access to the camera to take photos.", Toast.LENGTH_LONG).show()
                 // Solicitar el permiso
                 requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
@@ -155,7 +162,7 @@ class ProfileFragment : Fragment() {
         if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
             takePictureLauncher.launch(takePictureIntent)
         } else {
-            Toast.makeText(context, "There is no camera app available.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No camera app available.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -183,11 +190,23 @@ class ProfileFragment : Fragment() {
                 emailTextView.text = email
             } else {
                 // El documento no existe
-                println("The document does not exist.")
+                println("El documento no existe.")
             }
         }.addOnFailureListener { exception ->
-            println("\n" +
-                    "Error getting document: $exception")
+            println("Error al obtener el documento: $exception")
+        }
+    }
+
+    // Nueva función para manejar la carga de la imagen con verificación de conectividad
+    private fun uploadImageWithConnectivityCheck(imageBitmap: Bitmap, email: String) {
+        if (hasInternetConnection(requireContext())) {
+            // Hay conexión, subir la imagen
+            uploadImageToStorage(imageBitmap, email)
+        } else {
+            // No hay conexión, guardar la imagen localmente y programar la tarea
+            saveImageLocally(imageBitmap)
+            scheduleImageUpload(email)
+            Toast.makeText(context, "No internet. The image will be uploaded when the connection is restored.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -210,13 +229,13 @@ class ProfileFragment : Fragment() {
                 updateUserProfileImageUrl(email, imageUrl)
                 // Guardar la imagen en la galería
                 saveImageToGallery(requireContext(), imageBitmap)
-
+                // Eliminar la imagen local si existe
+                deleteLocalImage()
             }
         }.addOnFailureListener {
             // Manejar errores en la subida
-            println("\n" +
-                    "Error uploading image: ${it.message}")
-            Toast.makeText(context, "Error uploading image.", Toast.LENGTH_SHORT).show()
+            println("Error uploading the image: ${it.message}")
+            Toast.makeText(context, "Error uploading the image.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -227,11 +246,10 @@ class ProfileFragment : Fragment() {
         db.collection("User").document(email)
             .update("imgUrl", imageUrl)
             .addOnSuccessListener {
-                println("Profile image successfully updated in Firestore")
+                println("Successfully updated profile picture in Firestore")
             }
             .addOnFailureListener {
-                println("\n" +
-                        "Error updating image in Firestore: ${it.message}")
+                println("Error updating image in Firestore: ${it.message}")
             }
     }
 
@@ -247,11 +265,57 @@ class ProfileFragment : Fragment() {
             context.contentResolver.openOutputStream(it)?.use { outputStream ->
                 imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
             }
-            Toast.makeText(context, "Image saved to gallery!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "¡Image saved on Gallery!", Toast.LENGTH_SHORT).show()
         } ?: run {
-            Toast.makeText(context, "Error saving image to gallery", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error saving image on Gallery", Toast.LENGTH_SHORT).show()
         }
     }
 
-}
+    private fun hasInternetConnection(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+        val network = connectivityManager?.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+    }
 
+    // Guardar la imagen localmente para subirla después
+    private fun saveImageLocally(imageBitmap: Bitmap) {
+        try {
+            val fileName = "pending_profile_image.jpg"
+            val file = File(requireContext().getExternalFilesDir(null), fileName)
+            val fos = FileOutputStream(file)
+            imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+            fos.close()
+            pendingImageFile = file
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "Error saving image locally.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun deleteLocalImage() {
+        val fileName = "pending_profile_image.jpg"
+        val file = File(requireContext().getExternalFilesDir(null), fileName)
+        if (file.exists()) {
+            file.delete()
+        }
+    }
+
+    private fun scheduleImageUpload(email: String) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val uploadWorkRequest = OneTimeWorkRequestBuilder<UploadWorker>()
+            .setConstraints(constraints)
+            .setInputData(workDataOf("email" to email))
+            .build()
+
+        WorkManager.getInstance(requireContext()).enqueueUniqueWork(
+            "upload_profile_image",
+            ExistingWorkPolicy.REPLACE,
+            uploadWorkRequest
+        )
+    }
+}

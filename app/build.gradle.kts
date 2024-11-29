@@ -103,4 +103,15 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.5.0")
     debugImplementation("androidx.compose.ui:ui-tooling:1.5.0")
+
+    // WorkManager con soporte para Kotlin Coroutines
+    implementation ("androidx.work:work-runtime-ktx:2.8.0") // Usa la versión más reciente disponible
+
+    // Kotlin Coroutines
+        implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4") // Usa la versión más reciente
+
+    // Para utilizar 'await()' con Firebase
+        implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4") // Asegúrate de que coincida con la versión de coroutines-core
+
+
 }

@@ -24,6 +24,7 @@ import com.example.ecostyle.adapter.ProductAdapter
 import com.example.ecostyle.viewmodel.ProductViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.firebase.analytics.FirebaseAnalytics
 
 class ListFragment : Fragment() {
 
@@ -63,6 +64,9 @@ class ListFragment : Fragment() {
         recyclerView.layoutManager = gridLayoutManager
 
         productAdapter = ProductAdapter(emptyList(), { product ->
+
+            product.name?.let { logProductLikeEvent(it) }
+
             val productDetailFragment = ProductDetailFragment().apply {
                 arguments = Bundle().apply {
                     putInt("PRODUCT_ID", product.id)
@@ -76,6 +80,9 @@ class ListFragment : Fragment() {
 
             Log.d("ListFragment", "Navigating to product details with ID: ${product.id}")
         })
+
+
+
 
         recyclerView.adapter = productAdapter
 
@@ -114,6 +121,17 @@ class ListFragment : Fragment() {
             productViewModel.toggleProximityFilter(userLatitude, userLongitude)
         }
     }
+
+    // Función para registrar el evento
+    private fun logProductLikeEvent(productName: String) {
+        val eventName = "liked_$productName"
+
+        val analytics = FirebaseAnalytics.getInstance(requireContext())
+        val bundle = Bundle()
+        bundle.putString("message", "Number likes")
+        analytics.logEvent(eventName, bundle)
+    }
+
     private fun showEcoFriendlyMessage() {
         ecoFriendlyMessage.visibility = View.VISIBLE
     }
