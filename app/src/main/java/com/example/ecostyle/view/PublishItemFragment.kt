@@ -67,6 +67,10 @@ class PublishItemFragment : Fragment() {
         ecoFriendlyCheckbox = view.findViewById(R.id.ecofriendly_checkbox)
         imageView = view.findViewById(R.id.product_image_view)
 
+// Agregar TextWatchers con límite de 7 dígitos
+        priceEditText.addTextChangedListener(createThousandSeparatorTextWatcher(priceEditText, view.findViewById(R.id.price_error_text_view)))
+        initialPriceEditText.addTextChangedListener(createThousandSeparatorTextWatcher(initialPriceEditText, view.findViewById(R.id.initialPrice_error_text_view)))
+
         val uploadImageButton = view.findViewById<Button>(R.id.upload_image_button)
         val takePhotoButton = view.findViewById<Button>(R.id.take_photo_button)
         publishButton = view.findViewById(R.id.publish_button)
@@ -156,15 +160,21 @@ class PublishItemFragment : Fragment() {
                 if (s.toString() != currentText) {
                     editText.removeTextChangedListener(this)
 
+                    // Limitar a 7 dígitos antes de procesar
                     val cleanText = s.toString().replace(".", "")
-                    if (cleanText.isNotEmpty()) {
-                        val formatted = formatToThousandSeparator(cleanText.toDouble())
-                        currentText = formatted
+                    if (cleanText.length > 7) {
+                        editText.setText(currentText) // Restaurar el texto anterior si excede 7 dígitos
+                        editText.setSelection(currentText.length)
+                    } else {
+                        if (cleanText.isNotEmpty()) {
+                            val formatted = formatToThousandSeparator(cleanText.toDouble())
+                            currentText = formatted
 
-                        editText.setText(formatted)
-                        editText.setSelection(formatted.length)
+                            editText.setText(formatted)
+                            editText.setSelection(formatted.length)
 
-                        validatePrice(editText, errorTextView)
+                            validatePrice(editText, errorTextView)
+                        }
                     }
 
                     editText.addTextChangedListener(this)
@@ -212,77 +222,150 @@ class PublishItemFragment : Fragment() {
     }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+        if (requestCode == 1) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permiso otorgado, abrir la cámara
-                openCameraForImage()
+                Toast.makeText(requireContext(), "Permission granted. Try again.", Toast.LENGTH_SHORT).show()
             } else {
-                // Permiso denegado, mostrar un mensaje al usuario
-                Toast.makeText(requireContext(), "Camera permission is required to take a photo", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Permission denied. Cannot access location.", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
 
     // Manejar el resultado de la selección de la imagen o la foto tomada
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        val imageErrorTextView = view?.findViewById<TextView>(R.id.image_error_text_view)
+
         if (resultCode == Activity.RESULT_OK) {
-            if (requestCode == IMAGE_PICK_CODE) {
-                // Imagen seleccionada de la galería
-                productImageUri = data?.data!!
-                imageView.setImageURI(productImageUri)  // Mostrar la imagen seleccionada
-            } else if (requestCode == CAMERA_CAPTURE_CODE) {
-                // Imagen capturada con la cámara
-                val bitmap = data?.extras?.get("data") as? Bitmap
-                if (bitmap != null) {
-                    imageView.setImageBitmap(bitmap)
+            when (requestCode) {
+                IMAGE_PICK_CODE -> {
+                    productImageUri = data?.data!!
+                    val savedUri = saveImageToLocalStorage(productImageUri)
+                    if (savedUri != null) {
+                        productImageUri = savedUri
+                        imageView.setImageURI(productImageUri)
+                        imageErrorTextView?.visibility = View.GONE
 
-                    // Guardar el Bitmap como un archivo y obtener su Uri
-                    val tempImageUri = saveBitmapToFile(bitmap)
+                        // Guardar URI en SharedPreferences
+                        saveImageUriToPreferences(productImageUri)
+                    } else {
+                        Toast.makeText(requireContext(), "Failed to save selected image locally", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                CAMERA_CAPTURE_CODE -> {
+                    val bitmap = data?.extras?.get("data") as? Bitmap
+                    if (bitmap != null) {
+                        val savedUri = saveBitmapToFile(bitmap)
+                        if (savedUri != null) {
+                            productImageUri = savedUri
+                            imageView.setImageURI(productImageUri)
+                            imageErrorTextView?.visibility = View.GONE
 
-                    // Actualizar productImageUri para que apunte al archivo temporal
-                    if (tempImageUri != null) {
-                        productImageUri = tempImageUri
-                        imageView.setImageURI(productImageUri)  // Mostrar la imagen capturada
+                            // Guardar URI en SharedPreferences
+                            saveImageUriToPreferences(productImageUri)
+                        } else {
+                            Toast.makeText(requireContext(), "Failed to save captured image", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
+        } else {
+            Toast.makeText(requireContext(), "Image selection/capture cancelled", Toast.LENGTH_SHORT).show()
+        }
+    }
+    private fun saveImageUriToPreferences(uri: Uri) {
+        val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putString("imageUri", uri.toString()).apply()
+    }
+
+    private fun saveImageToLocalStorage(uri: Uri): Uri? {
+        try {
+            val inputStream = requireContext().contentResolver.openInputStream(uri)
+            val file = File(requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "saved_image.jpg")
+            val outputStream = FileOutputStream(file)
+
+            inputStream?.copyTo(outputStream)
+            inputStream?.close()
+            outputStream.close()
+
+            return Uri.fromFile(file)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(requireContext(), "Error saving image: ${e.message}", Toast.LENGTH_SHORT).show()
+            return null
         }
     }
 
-    // Obtener la ubicación del usuario y publicar el producto
-    // Obtener la ubicación del usuario y publicar el producto
     private fun getLocationAndPublishProduct(
         name: String, price: String, description: String, ecoFriendly: Boolean,
         imageUri: Uri, quantity: Int, brand: String, initialPrice: String
     ) {
+        if (!File(imageUri.path ?: "").exists()) {
+            Toast.makeText(requireContext(), "Image file not found. Please re-upload the image.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (!isGPSEnabled()) {
+            Toast.makeText(requireContext(), "GPS is disabled. Please enable it and try again.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED) {
+            != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+
             ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
             return
         }
 
-        // Intentar obtener la última ubicación conocida
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location: Location? ->
-                if (location != null) {
-                    // La ubicación es válida, procede con la publicación del producto
+        requestCurrentLocation { location ->
+            if (location != null) {
+                try {
                     viewModel.publishProduct(
-                        name, price, description, ecoFriendly, imageUri, quantity, location.latitude, location.longitude, brand, initialPrice
+                        name, price, description, ecoFriendly, imageUri, quantity,
+                        location.latitude, location.longitude, brand, initialPrice
                     )
-                } else {
-                    // La ubicación es null, mostrar un mensaje al usuario
-                    Toast.makeText(requireContext(), "Location is not available. Verify that GPS is activated and try again.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Product published successfully!", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), "Failed to publish product: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
+            } else {
+                Toast.makeText(requireContext(), "Unable to retrieve current location. Ensure GPS is enabled.", Toast.LENGTH_SHORT).show()
             }
-            .addOnFailureListener { exception ->
-                // Maneja errores en la obtención de la ubicación
-                Toast.makeText(requireContext(), "Error getting location: ${exception.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    private fun requestCurrentLocation(callback: (Location?) -> Unit) {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED) {
+
+            val locationRequest = com.google.android.gms.location.LocationRequest.create().apply {
+                priority = com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
+                interval = 5000 // 5 segundos
+                fastestInterval = 2000 // 2 segundos
+                numUpdates = 1 // Solo una actualización
             }
+
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                object : com.google.android.gms.location.LocationCallback() {
+                    override fun onLocationResult(locationResult: com.google.android.gms.location.LocationResult) {
+                        fusedLocationClient.removeLocationUpdates(this)
+                        callback(locationResult.lastLocation)
+                    }
+                },
+                null
+            )
+        } else {
+            callback(null)
+        }
     }
 
+    private fun isGPSEnabled(): Boolean {
+        val locationManager = requireContext().getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+        return locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)
+    }
 
     // Validar los campos de entrada
     private fun setupFieldValidation(
@@ -400,6 +483,16 @@ class PublishItemFragment : Fragment() {
         }
     }
 
+    private fun validateImage(imageErrorTextView: TextView): Boolean {
+        return if (this::productImageUri.isInitialized) {
+            imageErrorTextView.visibility = View.GONE
+            true
+        } else {
+            imageErrorTextView.visibility = View.VISIBLE
+            false
+        }
+    }
+
     private fun saveDataLocally(
         name: String, price: String, description: String, ecoFriendly: Boolean,
         quantity: String, brand: String, initialPrice: String
@@ -414,19 +507,16 @@ class PublishItemFragment : Fragment() {
         editor.putString("brand", brand)
         editor.putString("initialPrice", initialPrice)
 
-        // Guardar la imagen en el almacenamiento externo y almacenar la URI
+        // Guardar la URI de la imagen
         if (this::productImageUri.isInitialized) {
-            val file = File(requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "saved_image.jpg")
-            val fos = FileOutputStream(file)
-            val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, productImageUri)
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
-            fos.flush()
-            fos.close()
-            editor.putString("imageUri", Uri.fromFile(file).toString())
+            editor.putString("imageUri", productImageUri.toString())
         }
 
         editor.apply()
     }
+
+
+
 
     // Guardar los datos del formulario automáticamente
     private fun setupAutoSaveFields() {
@@ -436,6 +526,7 @@ class PublishItemFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 sharedPreferences.edit().putString("name", s.toString()).apply()
             }
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
@@ -444,6 +535,7 @@ class PublishItemFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 sharedPreferences.edit().putString("price", s.toString()).apply()
             }
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
@@ -452,6 +544,7 @@ class PublishItemFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 sharedPreferences.edit().putString("description", s.toString()).apply()
             }
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
@@ -460,6 +553,7 @@ class PublishItemFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 sharedPreferences.edit().putString("quantity", s.toString()).apply()
             }
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
@@ -468,6 +562,7 @@ class PublishItemFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 sharedPreferences.edit().putString("brand", s.toString()).apply()
             }
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
@@ -476,6 +571,7 @@ class PublishItemFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 sharedPreferences.edit().putString("initialPrice", s.toString()).apply()
             }
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
@@ -483,7 +579,28 @@ class PublishItemFragment : Fragment() {
         ecoFriendlyCheckbox.setOnCheckedChangeListener { _, isChecked ->
             sharedPreferences.edit().putBoolean("ecoFriendly", isChecked).apply()
         }
+
+        // Guardar la URI de la imagen automáticamente si está inicializada
+        if (this::productImageUri.isInitialized) {
+            val file = File(requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "auto_saved_image.jpg")
+            try {
+                val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, productImageUri)
+                if (bitmap != null) {
+                    val fos = FileOutputStream(file)
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+                    fos.flush()
+                    fos.close()
+                    sharedPreferences.edit().putString("imageUri", Uri.fromFile(file).toString()).apply()
+                } else {
+                    Toast.makeText(requireContext(), "Error: Bitmap is null, cannot save image.", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(requireContext(), "Error saving image: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
+
 
     // Cargar los datos guardados en el formulario desde SharedPreferences
     private fun loadFormData() {
@@ -507,8 +624,13 @@ class PublishItemFragment : Fragment() {
 
         // Cargar la imagen si existe
         if (!imageUriString.isNullOrEmpty()) {
-            productImageUri = Uri.parse(imageUriString)
-            imageView.setImageURI(productImageUri)
+            val file = File(Uri.parse(imageUriString).path ?: "")
+            if (file.exists()) {
+                productImageUri = Uri.parse(imageUriString)
+                imageView.setImageURI(productImageUri)
+            } else {
+                Toast.makeText(requireContext(), "Image file not found. Please re-upload the image.", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
