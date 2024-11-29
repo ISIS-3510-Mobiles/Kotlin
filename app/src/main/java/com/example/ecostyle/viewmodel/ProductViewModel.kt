@@ -41,11 +41,24 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     val likedProductIds: LiveData<Set<String>> get() = _likedProductIds
 
     init {
+/*
         loadProducts()
         listenToLikes()
 
         val isProximityFilterCached = sharedPreferences.getBoolean("proximity_filter", false)
+        sharedPreferences.edit().putBoolean("proximity_filter", false).apply()
+
+        Log.d("Initialization", "Proximity filter initialized as OFF.")
         _isProximityFilterApplied.value = isProximityFilterCached
+        performInternalAnalysis()
+
+ */
+        val isProximityFilterCached = sharedPreferences.getBoolean("proximity_filter", false)
+        _isProximityFilterApplied.value = isProximityFilterCached
+        if (!isProximityFilterCached) {
+            loadAllProducts()
+        }
+        listenToLikes()
         performInternalAnalysis()
 
     }
@@ -84,6 +97,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun loadAllProducts() {
+        Log.d("ProductViewModel", "loadAllProducts called")
+
         viewModelScope.launch {
             try {
                 val products = repository.getProducts() // Llamada suspendida
@@ -93,6 +108,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                 sharedPreferences.edit().putBoolean("proximity_filter", false).apply()
 
                 productList.value = productsWithLikes
+
+                Log.d("ProximityFilter", "Loaded all products. Proximity filter is OFF.")
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading all products", e)
                 productList.value = emptyList() // En caso de error, devolver lista vacía
@@ -101,24 +118,40 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun loadProductsByProximity(userLatitude: Double, userLongitude: Double) {
+        Log.d("ProductViewModel", "loadProductsByProximity called with location: $userLatitude, $userLongitude")
+        Log.d("ProximityFilter", "User location: $userLatitude, $userLongitude")
         viewModelScope.launch {
             try {
 
+                //if (_isProximityFilterApplied.value == false) return@launch
+
+
                 saveLastKnownLocation(userLatitude, userLongitude)
+                Log.d("ProximityFilter", "Saving user location: Latitude = $userLatitude, Longitude = $userLongitude")
 
                 val products = repository.getProducts() // Llamada suspendida
+
                 val productsWithLikes = updateProductsWithLikes(products)
                 val filteredProducts = productsWithLikes.filter { product ->
+                    Log.d("ProductCoordinates", "Product: ${product.name}, Latitude: ${product.latitude}, Longitude: ${product.longitude}")
+
                     if (product.latitude != null && product.longitude != null) {
-                        calculateDistance(userLatitude, userLongitude, product.latitude!!, product.longitude!!) <= 10.0
+                        val distance = calculateDistance(userLatitude, userLongitude, product.latitude!!, product.longitude!!)
+                        Log.d("ProximityFilter", "Product: ${product.name}, Distance: $distance")
+                        distance<= 5.0
                     } else {
                         Log.d("Product", "Product ${product.name} has null latitude/longitude")
                         false
                     }
+
                 }
+                Log.d("ProximityFilter", "Filtered products count: ${filteredProducts.size}")
+
                 _isProximityFilterApplied.value = true
                 sharedPreferences.edit().putBoolean("proximity_filter", true).apply()
                 productList.value = filteredProducts
+                Log.d("ProximityFilter", "productList updated with ${filteredProducts.size} products.")
+
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading products by proximity", e)
                 productList.value = emptyList() // En caso de error, devolver lista vacía
@@ -150,6 +183,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        Log.d("DistanceCalc", "Calculating distance: From ($lat1, $lon1) to ($lat2, $lon2)")
+
         val earthRadius = 6371.0
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
@@ -306,16 +341,6 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             putFloat("cached_latitude", latitude.toFloat())
             putFloat("cached_longitude", longitude.toFloat())
             apply()
-        }
-    }
-
-    private fun getCachedLocation(): Pair<Double, Double>? {
-        val cachedLat = sharedPreferences.getFloat("cached_latitude", Float.NaN)
-        val cachedLon = sharedPreferences.getFloat("cached_longitude", Float.NaN)
-        return if (!cachedLat.isNaN() && !cachedLon.isNaN()) {
-            Pair(cachedLat.toDouble(), cachedLon.toDouble())
-        } else {
-            null
         }
     }
 }

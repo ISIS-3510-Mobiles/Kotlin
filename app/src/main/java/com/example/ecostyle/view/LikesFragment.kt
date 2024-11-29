@@ -72,6 +72,7 @@ class LikesFragment : Fragment() {
         // Observar la lista de productos
         productViewModel.getProductList().observe(viewLifecycleOwner) { products ->
             if (products != null) {
+
                 productList = products  // Almacenar la lista de productos
                 // Ahora que tenemos la lista de productos, cargamos los favoritos
                 loadLikedItems(productList)

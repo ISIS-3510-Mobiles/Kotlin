@@ -82,7 +82,11 @@ class ListFragment : Fragment() {
         productViewModel = ViewModelProvider(this).get(ProductViewModel::class.java)
 
         productViewModel.getProductList().observe(viewLifecycleOwner) { products ->
+            Log.d("ListFragment", "Observer triggered. Received ${products.size} products.")
+
+            Log.d("ListFragment", "Received ${products.size} products from ViewModel.")
             productAdapter.setProductList(products)
+            Log.d("ListFragment", "RecyclerView updated with ${products.size} products.")
         }
         productViewModel.isEcoFriendlyFilterApplied.observe(viewLifecycleOwner) { isEcoFriendly ->
             if (isEcoFriendly) {
@@ -98,6 +102,7 @@ class ListFragment : Fragment() {
 
 
         productViewModel.isProximityFilterApplied.observe(viewLifecycleOwner) { isFiltered ->
+            Log.d("ListFragment", "Proximity filter state: $isFiltered")
             if (isFiltered) {
                 resetFilterButton.visibility = View.VISIBLE
             } else {
@@ -157,20 +162,51 @@ class ListFragment : Fragment() {
                     if (location != null) {
                         userLatitude = location.latitude
                         userLongitude = location.longitude
+                        saveCachedLocation(userLatitude, userLongitude)
                         productViewModel.loadProductsByProximity(userLatitude, userLongitude)
                     } else {
-                        Log.d("ListFragment", "Location is null")
-                        Toast.makeText(requireContext(), "Failed to retrieve location", Toast.LENGTH_SHORT).show()
+                        Log.d("ListFragment", "Live location is null. Using cached location.")
+                        val cachedLocation = getCachedLocation()
+                        if (cachedLocation != null) {
+                            userLatitude = cachedLocation.first
+                            userLongitude = cachedLocation.second
+                            Log.d("ListFragment", "Using cached location: Latitude = $userLatitude, Longitude = $userLongitude")
+                            productViewModel.loadProductsByProximity(userLatitude, userLongitude)
+                        } else {
+                            Log.d("ListFragment", "No cached location found. Loading all products.")
+                            productViewModel.loadAllProducts()
+                        }
                     }
                 }
                 .addOnFailureListener { e ->
-                    Log.e("ListFragment", "Failed to get location", e)
-                    Toast.makeText(requireContext(), "Unable to get location. Please try again.", Toast.LENGTH_SHORT).show()
+                    Log.e("ListFragment", "Failed to get live location", e)
+                    val cachedLocation = getCachedLocation()
+                    if (cachedLocation != null) {
+                        userLatitude = cachedLocation.first
+                        userLongitude = cachedLocation.second
+                        productViewModel.loadProductsByProximity(userLatitude, userLongitude)
+                    } else {
+                        Toast.makeText(requireContext(), "Unable to retrieve location.", Toast.LENGTH_SHORT).show()
+                        productViewModel.loadAllProducts()
+                    }
                 }
         } else {
+            /*
             // Offline mode: use cached location
             Toast.makeText(requireContext(), "You are offline. Using last known location.", Toast.LENGTH_SHORT).show()
             productViewModel.loadProductsByProximity(userLatitude, userLongitude)  // Fallback to cached location
+
+             */
+            Log.d("ListFragment", "Offline. Using cached location.")
+            val cachedLocation = getCachedLocation()
+            if (cachedLocation != null) {
+                userLatitude = cachedLocation.first
+                userLongitude = cachedLocation.second
+                productViewModel.loadProductsByProximity(userLatitude, userLongitude)
+            } else {
+                Log.d("ListFragment", "No cached location found. Loading all products.")
+                productViewModel.loadAllProducts()
+            }
         }
     }
     private fun hasInternetConnection(): Boolean {
@@ -178,6 +214,30 @@ class ListFragment : Fragment() {
         val network = connectivityManager.activeNetwork ?: return false
         val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
         return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+    }
+
+    private fun getCachedLocation(): Pair<Double, Double>? {
+        val sharedPreferences = requireContext().getSharedPreferences("EcoStylePrefs", Context.MODE_PRIVATE)
+        val cachedLat = sharedPreferences.getFloat("cached_latitude", Float.NaN)
+        val cachedLon = sharedPreferences.getFloat("cached_longitude", Float.NaN)
+        Log.d("ListFragment", "Retrieved cached location: Latitude = $cachedLat, Longitude = $cachedLon")
+
+        return if (!cachedLat.isNaN() && !cachedLon.isNaN()) {
+            Pair(cachedLat.toDouble(), cachedLon.toDouble())
+        } else {
+            null
+        }
+    }
+
+    private fun saveCachedLocation(latitude: Double, longitude: Double) {
+        val sharedPreferences = requireContext().getSharedPreferences("EcoStylePrefs", Context.MODE_PRIVATE)
+        sharedPreferences.edit().apply {
+            putFloat("cached_latitude", latitude.toFloat())
+            putFloat("cached_longitude", longitude.toFloat())
+            apply()
+        }
+        Log.d("ListFragment", "Saved location: Latitude = $latitude, Longitude = $longitude")
+
     }
 
 }
