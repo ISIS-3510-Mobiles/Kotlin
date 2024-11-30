@@ -249,16 +249,30 @@ class PublishItemFragment : Fragment() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                openCameraForImage()
-            } else {
-                Toast.makeText(requireContext(), "Permiso denegado. No se puede acceder a la cámara.", Toast.LENGTH_SHORT).show()
+        when (requestCode) {
+            CAMERA_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openCameraForImage()
+                } else {
+                    Toast.makeText(requireContext(), "Permission denied. Cannot access the camera.", Toast.LENGTH_SHORT).show()
+                }
+            }
+            LOCATION_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    pendingPublishParams?.let {
+                        getLocationAndPublishProduct(
+                            it.name, it.price, it.description, it.ecoFriendly,
+                            it.imageUri, it.quantity, it.brand, it.initialPrice
+                        )
+                        pendingPublishParams = null
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Location permission denied.", Toast.LENGTH_SHORT).show()
+                    pendingPublishParams = null
+                }
             }
         }
     }
-
-
 
     // Manejar el resultado de la selección de la imagen o la foto tomada
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -309,6 +323,18 @@ class PublishItemFragment : Fragment() {
             return null
         }
     }
+    private var pendingPublishParams: PendingPublishParams? = null
+
+    data class PendingPublishParams(
+        val name: String,
+        val price: String,
+        val description: String,
+        val ecoFriendly: Boolean,
+        val imageUri: Uri,
+        val quantity: Int,
+        val brand: String,
+        val initialPrice: String
+    )
 
     private fun getLocationAndPublishProduct(
         name: String, price: String, description: String, ecoFriendly: Boolean,
@@ -325,11 +351,16 @@ class PublishItemFragment : Fragment() {
         }
 
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
             != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
+            pendingPublishParams = PendingPublishParams(
+                name, price, description, ecoFriendly, imageUri, quantity, brand, initialPrice
+            )
+            ActivityCompat.requestPermissions(
+                requireActivity(),
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
             return
         }
 
@@ -520,13 +551,14 @@ class PublishItemFragment : Fragment() {
         editor.putString("brand", brand)
         editor.putString("initialPrice", initialPrice)
 
-        // Guardar la URI de la imagen
+        // Save the image URI if it's initialized
         if (this::productImageUri.isInitialized) {
             editor.putString("imageUri", productImageUri.toString())
         }
 
         editor.apply()
     }
+
 
 
 
@@ -618,20 +650,29 @@ class PublishItemFragment : Fragment() {
     // Cargar los datos guardados en el formulario desde SharedPreferences
     private fun loadFormData() {
         val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
-        val imageUriString = sharedPreferences.getString("imageUri", null)
+        nameEditText.setText(sharedPreferences.getString("name", ""))
+        priceEditText.setText(sharedPreferences.getString("price", ""))
+        descriptionEditText.setText(sharedPreferences.getString("description", ""))
+        quantityEditText.setText(sharedPreferences.getString("quantity", ""))
+        brandEditText.setText(sharedPreferences.getString("brand", ""))
+        initialPriceEditText.setText(sharedPreferences.getString("initialPrice", ""))
+        ecoFriendlyCheckbox.isChecked = sharedPreferences.getBoolean("ecoFriendly", false)
 
+        val imageUriString = sharedPreferences.getString("imageUri", null)
         if (!imageUriString.isNullOrEmpty()) {
             val file = File(Uri.parse(imageUriString).path ?: "")
             if (file.exists()) {
                 productImageUri = Uri.parse(imageUriString)
                 imageView.setImageURI(productImageUri)
             } else {
-                imageView.setImageResource(0) // Limpia el ImageView si no hay imagen
+                imageView.setImageResource(0) // Clear the ImageView if there is no image
                 sharedPreferences.edit().remove("imageUri").apply()
                 Toast.makeText(requireContext(), "Previous image file not found. Please re-upload the image.", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
+
 
 
     // Limpiar el formulario y los datos almacenados en SharedPreferences
@@ -643,11 +684,12 @@ class PublishItemFragment : Fragment() {
         ecoFriendlyCheckbox.isChecked = false
         brandEditText.text.clear()
         initialPriceEditText.text.clear()
-        imageView.setImageResource(0) // Limpiar la imagen
+        imageView.setImageResource(0) // Clear the image
 
         val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
         sharedPreferences.edit().clear().apply()
     }
+
 
     // Verificar si hay conexión a Internet
     private fun isNetworkAvailable(context: Context): Boolean {
@@ -669,7 +711,9 @@ class PublishItemFragment : Fragment() {
         const val IMAGE_PICK_CODE = 1001
         const val CAMERA_CAPTURE_CODE = 1002
         const val CAMERA_PERMISSION_REQUEST_CODE = 1003
+        const val LOCATION_PERMISSION_REQUEST_CODE = 1004
     }
+
     private fun deletePreviousImage() {
         val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
         val previousImageUriString = sharedPreferences.getString("imageUri", null)
@@ -715,9 +759,6 @@ class PublishItemFragment : Fragment() {
             return true
         }
     }
-
-
-
 
 }
 
