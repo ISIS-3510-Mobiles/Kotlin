@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Define el path para almacenar imágenes en el directorio externo -->
     <external-path
         name="external_images"
-        path="Android/data/${applicationId}/files/Pictures" />
+        path="Android/data/com.example.ecostyle/files/Pictures" />
 </paths>

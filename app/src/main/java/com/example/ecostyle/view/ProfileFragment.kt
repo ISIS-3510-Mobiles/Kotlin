@@ -1,6 +1,6 @@
+// ProfileFragment.kt
 package com.example.ecostyle.view
 
-import UploadWorker
 import android.Manifest
 import android.app.Activity
 import android.content.ContentValues
@@ -8,8 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -24,7 +23,6 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.work.*
 import com.bumptech.glide.Glide
 import com.example.ecostyle.activity.AuthActivity
 import com.example.ecostyle.R
@@ -38,13 +36,12 @@ import java.io.FileOutputStream
 import java.util.*
 
 class ProfileFragment : Fragment() {
-
     private lateinit var firebaseAnalytics: FirebaseAnalytics
     private lateinit var profileImage: ImageView
     private lateinit var btnCamara: Button
     private var storageReference = FirebaseStorage.getInstance().reference
     private lateinit var email: String
-    private var pendingImageFile: File? = null
+    private val localImageFileName = "profile_image.png"
 
     // Código para solicitar permisos
     private val requestPermissionLauncher = registerForActivityResult(
@@ -55,7 +52,7 @@ class ProfileFragment : Fragment() {
             dispatchTakePictureIntent()
         } else {
             // Permiso denegado, mostrar un mensaje o manejar el caso
-            Toast.makeText(context, "Camera permission denied.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Permiso de cámara denegado.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -66,9 +63,12 @@ class ProfileFragment : Fragment() {
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             val imageBitmap = result.data!!.extras?.get("data") as Bitmap
             profileImage.setImageBitmap(imageBitmap)
-            uploadImageWithConnectivityCheck(imageBitmap, email)
+            // Guardar la imagen en el almacenamiento interno
+            saveImageToInternalStorage(imageBitmap)
+            // Intentar subir la imagen a Firebase (si hay conexión)
+            uploadImageToStorage(imageBitmap, email)
         } else {
-            Toast.makeText(context, "No photo was taken.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No se tomó ninguna foto.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -145,7 +145,7 @@ class ProfileFragment : Fragment() {
             }
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
                 // Mostrar una explicación al usuario
-                Toast.makeText(context, "The app needs access to the camera to take photos.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "La aplicación necesita acceso a la cámara para tomar fotos.", Toast.LENGTH_LONG).show()
                 // Solicitar el permiso
                 requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
@@ -162,51 +162,46 @@ class ProfileFragment : Fragment() {
         if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
             takePictureLauncher.launch(takePictureIntent)
         } else {
-            Toast.makeText(context, "No camera app available.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No hay una aplicación de cámara disponible.", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun loadUserProfile(email: String, nameTextView: TextView, emailTextView: TextView) {
         val db = FirebaseFirestore.getInstance()
 
-        // Recuperar el documento del usuario desde la colección "User"
-        val docRef = db.collection("User").document(email)
-        docRef.get().addOnSuccessListener { document ->
-            if (document != null && document.exists()) {
-                val name = document.getString("name") ?: ""
-                val imgUrl = document.getString("imgUrl") ?: ""
+        // Establecer el correo electrónico y nombre en los TextViews
+        emailTextView.text = email
 
-                if (imgUrl.isNotEmpty()) {
-                    // Si el imgUrl no está vacío, cargar la imagen con Glide
-                    Glide.with(this)
-                        .load(imgUrl)
-                        .placeholder(R.drawable.ic_launcher_foreground)
-                        .circleCrop()
-                        .into(profileImage)
-                }
-
-                // Actualizar los TextViews con los datos obtenidos
-                nameTextView.text = name
-                emailTextView.text = email
-            } else {
-                // El documento no existe
-                println("El documento no existe.")
-            }
-        }.addOnFailureListener { exception ->
-            println("Error al obtener el documento: $exception")
-        }
-    }
-
-    // Nueva función para manejar la carga de la imagen con verificación de conectividad
-    private fun uploadImageWithConnectivityCheck(imageBitmap: Bitmap, email: String) {
-        if (hasInternetConnection(requireContext())) {
-            // Hay conexión, subir la imagen
-            uploadImageToStorage(imageBitmap, email)
+        // Intentar cargar la imagen desde el almacenamiento interno
+        val localBitmap = loadImageFromInternalStorage()
+        if (localBitmap != null) {
+            profileImage.setImageBitmap(localBitmap)
         } else {
-            // No hay conexión, guardar la imagen localmente y programar la tarea
-            saveImageLocally(imageBitmap)
-            scheduleImageUpload(email)
-            Toast.makeText(context, "No internet. The image will be uploaded when the connection is restored.", Toast.LENGTH_LONG).show()
+            // Si no hay imagen local, intentar cargar desde Firebase
+            val docRef = db.collection("User").document(email)
+            docRef.get().addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    val name = document.getString("name") ?: ""
+                    val imgUrl = document.getString("imgUrl") ?: ""
+
+                    if (imgUrl.isNotEmpty()) {
+                        // Si el imgUrl no está vacío, cargar la imagen con Glide
+                        Glide.with(this)
+                            .load(imgUrl)
+                            .placeholder(R.drawable.ic_launcher_foreground)
+                            .circleCrop()
+                            .into(profileImage)
+                    }
+
+                    // Actualizar el nombre en el TextView
+                    nameTextView.text = name
+                } else {
+                    // El documento no existe
+                    println("El documento no existe.")
+                }
+            }.addOnFailureListener { exception ->
+                println("Error al obtener el documento: $exception")
+            }
         }
     }
 
@@ -229,13 +224,11 @@ class ProfileFragment : Fragment() {
                 updateUserProfileImageUrl(email, imageUrl)
                 // Guardar la imagen en la galería
                 saveImageToGallery(requireContext(), imageBitmap)
-                // Eliminar la imagen local si existe
-                deleteLocalImage()
             }
         }.addOnFailureListener {
             // Manejar errores en la subida
-            println("Error uploading the image: ${it.message}")
-            Toast.makeText(context, "Error uploading the image.", Toast.LENGTH_SHORT).show()
+            println("Error al subir la imagen: ${it.message}")
+            Toast.makeText(context, "Error al subir la imagen.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -246,10 +239,10 @@ class ProfileFragment : Fragment() {
         db.collection("User").document(email)
             .update("imgUrl", imageUrl)
             .addOnSuccessListener {
-                println("Successfully updated profile picture in Firestore")
+                println("Imagen de perfil actualizada exitosamente en Firestore")
             }
             .addOnFailureListener {
-                println("Error updating image in Firestore: ${it.message}")
+                println("Error al actualizar la imagen en Firestore: ${it.message}")
             }
     }
 
@@ -265,57 +258,35 @@ class ProfileFragment : Fragment() {
             context.contentResolver.openOutputStream(it)?.use { outputStream ->
                 imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
             }
-            Toast.makeText(context, "¡Image saved on Gallery!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "¡Imagen guardada en la galería!", Toast.LENGTH_SHORT).show()
         } ?: run {
-            Toast.makeText(context, "Error saving image on Gallery", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error al guardar la imagen en la galería", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun hasInternetConnection(context: Context): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
-        val network = connectivityManager?.activeNetwork ?: return false
-        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
-        return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-    }
-
-    // Guardar la imagen localmente para subirla después
-    private fun saveImageLocally(imageBitmap: Bitmap) {
+    private fun saveImageToInternalStorage(bitmap: Bitmap) {
         try {
-            val fileName = "pending_profile_image.jpg"
-            val file = File(requireContext().getExternalFilesDir(null), fileName)
-            val fos = FileOutputStream(file)
-            imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
-            fos.close()
-            pendingImageFile = file
+            val fileOutputStream: FileOutputStream = requireContext().openFileOutput(localImageFileName, Context.MODE_PRIVATE)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
+            fileOutputStream.close()
+            Toast.makeText(context, "Imagen guardada localmente.", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Error saving image locally.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error al guardar la imagen localmente.", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun deleteLocalImage() {
-        val fileName = "pending_profile_image.jpg"
-        val file = File(requireContext().getExternalFilesDir(null), fileName)
-        if (file.exists()) {
-            file.delete()
+    private fun loadImageFromInternalStorage(): Bitmap? {
+        return try {
+            val file = File(requireContext().filesDir, localImageFileName)
+            if (file.exists()) {
+                BitmapFactory.decodeFile(file.absolutePath)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-    }
-
-    private fun scheduleImageUpload(email: String) {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
-        val uploadWorkRequest = OneTimeWorkRequestBuilder<UploadWorker>()
-            .setConstraints(constraints)
-            .setInputData(workDataOf("email" to email))
-            .build()
-
-        WorkManager.getInstance(requireContext()).enqueueUniqueWork(
-            "upload_profile_image",
-            ExistingWorkPolicy.REPLACE,
-            uploadWorkRequest
-        )
     }
 }

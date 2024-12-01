@@ -21,6 +21,7 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.example.ecostyle.R
@@ -97,7 +98,12 @@ class PublishItemFragment : Fragment() {
         setupAutoSaveFields()
 
         uploadImageButton.setOnClickListener { openGalleryForImage() }
-        takePhotoButton.setOnClickListener { openCameraForImage() }
+        takePhotoButton.setOnClickListener {
+            if (checkAndRequestPermissions()) {
+                openCameraForImage()
+            }
+        }
+
 
         publishButton.setOnClickListener {
             val productName = nameEditText.text.toString()
@@ -198,39 +204,75 @@ class PublishItemFragment : Fragment() {
 
     // Función para abrir la cámara para tomar la imagen del producto
     private fun openCameraForImage() {
-        imageSource = true // Imagen desde la cámara
+        try {
+            val imageFile = createImageFile()
+            productImageUri = FileProvider.getUriForFile(
+                requireContext(),
+                "${requireContext().packageName}.fileprovider",
+                imageFile
+            )
 
-        // Verificar el permiso de la cámara
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            // Permiso otorgado, abrir la cámara
-            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-            startActivityForResult(intent, CAMERA_CAPTURE_CODE)
-        } else {
-            // Solicitar el permiso de la cámara
-            ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST_CODE)
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(MediaStore.EXTRA_OUTPUT, productImageUri)
+                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            }
+
+            if (intent.resolveActivity(requireContext().packageManager) != null) {
+                startActivityForResult(intent, CAMERA_CAPTURE_CODE)
+            } else {
+                Toast.makeText(requireContext(), "No hay aplicación de cámara disponible", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "No se pudo abrir la cámara: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
+
+
+
 
     // Guardar el Bitmap en un archivo y devolver la Uri del archivo creado
     private fun saveBitmapToFile(bitmap: Bitmap): Uri? {
-        val file = File(requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "temp_image.jpg")
-        val fos = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
-        fos.flush()
-        fos.close()
-        return Uri.fromFile(file)
-    }
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 1) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(requireContext(), "Permission granted. Try again.", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(requireContext(), "Permission denied. Cannot access location.", Toast.LENGTH_SHORT).show()
-            }
+        try {
+            deletePreviousImage() // Elimina la imagen anterior
+            val file = File(requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "saved_image.jpg")
+            val fos = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+            fos.flush()
+            fos.close()
+            return Uri.fromFile(file)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(requireContext(), "Error saving image: ${e.message}", Toast.LENGTH_SHORT).show()
+            return null
         }
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            CAMERA_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openCameraForImage()
+                } else {
+                    Toast.makeText(requireContext(), "Permission denied. Cannot access the camera.", Toast.LENGTH_SHORT).show()
+                }
+            }
+            LOCATION_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    pendingPublishParams?.let {
+                        getLocationAndPublishProduct(
+                            it.name, it.price, it.description, it.ecoFriendly,
+                            it.imageUri, it.quantity, it.brand, it.initialPrice
+                        )
+                        pendingPublishParams = null
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Location permission denied.", Toast.LENGTH_SHORT).show()
+                    pendingPublishParams = null
+                }
+            }
+        }
+    }
 
     // Manejar el resultado de la selección de la imagen o la foto tomada
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -241,32 +283,13 @@ class PublishItemFragment : Fragment() {
             when (requestCode) {
                 IMAGE_PICK_CODE -> {
                     productImageUri = data?.data!!
-                    val savedUri = saveImageToLocalStorage(productImageUri)
-                    if (savedUri != null) {
-                        productImageUri = savedUri
-                        imageView.setImageURI(productImageUri)
-                        imageErrorTextView?.visibility = View.GONE
-
-                        // Guardar URI en SharedPreferences
-                        saveImageUriToPreferences(productImageUri)
-                    } else {
-                        Toast.makeText(requireContext(), "Failed to save selected image locally", Toast.LENGTH_SHORT).show()
-                    }
+                    saveAndUpdateImage(productImageUri, imageErrorTextView)
                 }
                 CAMERA_CAPTURE_CODE -> {
-                    val bitmap = data?.extras?.get("data") as? Bitmap
-                    if (bitmap != null) {
-                        val savedUri = saveBitmapToFile(bitmap)
-                        if (savedUri != null) {
-                            productImageUri = savedUri
-                            imageView.setImageURI(productImageUri)
-                            imageErrorTextView?.visibility = View.GONE
-
-                            // Guardar URI en SharedPreferences
-                            saveImageUriToPreferences(productImageUri)
-                        } else {
-                            Toast.makeText(requireContext(), "Failed to save captured image", Toast.LENGTH_SHORT).show()
-                        }
+                    if (::productImageUri.isInitialized) {
+                        saveAndUpdateImage(productImageUri, imageErrorTextView)
+                    } else {
+                        Toast.makeText(requireContext(), "Failed to capture image", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -274,6 +297,8 @@ class PublishItemFragment : Fragment() {
             Toast.makeText(requireContext(), "Image selection/capture cancelled", Toast.LENGTH_SHORT).show()
         }
     }
+
+
     private fun saveImageUriToPreferences(uri: Uri) {
         val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
         sharedPreferences.edit().putString("imageUri", uri.toString()).apply()
@@ -281,11 +306,13 @@ class PublishItemFragment : Fragment() {
 
     private fun saveImageToLocalStorage(uri: Uri): Uri? {
         try {
+            // Abre el stream de entrada para leer la imagen
             val inputStream = requireContext().contentResolver.openInputStream(uri)
+            deletePreviousImage() // Elimina la imagen anterior
             val file = File(requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "saved_image.jpg")
             val outputStream = FileOutputStream(file)
 
-            inputStream?.copyTo(outputStream)
+            inputStream?.copyTo(outputStream) // Copia la imagen al archivo local
             inputStream?.close()
             outputStream.close()
 
@@ -296,6 +323,18 @@ class PublishItemFragment : Fragment() {
             return null
         }
     }
+    private var pendingPublishParams: PendingPublishParams? = null
+
+    data class PendingPublishParams(
+        val name: String,
+        val price: String,
+        val description: String,
+        val ecoFriendly: Boolean,
+        val imageUri: Uri,
+        val quantity: Int,
+        val brand: String,
+        val initialPrice: String
+    )
 
     private fun getLocationAndPublishProduct(
         name: String, price: String, description: String, ecoFriendly: Boolean,
@@ -312,11 +351,16 @@ class PublishItemFragment : Fragment() {
         }
 
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
             != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
+            pendingPublishParams = PendingPublishParams(
+                name, price, description, ecoFriendly, imageUri, quantity, brand, initialPrice
+            )
+            ActivityCompat.requestPermissions(
+                requireActivity(),
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
             return
         }
 
@@ -507,13 +551,14 @@ class PublishItemFragment : Fragment() {
         editor.putString("brand", brand)
         editor.putString("initialPrice", initialPrice)
 
-        // Guardar la URI de la imagen
+        // Save the image URI if it's initialized
         if (this::productImageUri.isInitialized) {
             editor.putString("imageUri", productImageUri.toString())
         }
 
         editor.apply()
     }
+
 
 
 
@@ -605,34 +650,30 @@ class PublishItemFragment : Fragment() {
     // Cargar los datos guardados en el formulario desde SharedPreferences
     private fun loadFormData() {
         val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
-        val name = sharedPreferences.getString("name", "")
-        val price = sharedPreferences.getString("price", "")
-        val description = sharedPreferences.getString("description", "")
-        val quantity = sharedPreferences.getString("quantity", "")
-        val ecoFriendly = sharedPreferences.getBoolean("ecoFriendly", false)
-        val brand = sharedPreferences.getString("brand", "")
-        val initialPrice = sharedPreferences.getString("initialPrice", "")
+        nameEditText.setText(sharedPreferences.getString("name", ""))
+        priceEditText.setText(sharedPreferences.getString("price", ""))
+        descriptionEditText.setText(sharedPreferences.getString("description", ""))
+        quantityEditText.setText(sharedPreferences.getString("quantity", ""))
+        brandEditText.setText(sharedPreferences.getString("brand", ""))
+        initialPriceEditText.setText(sharedPreferences.getString("initialPrice", ""))
+        ecoFriendlyCheckbox.isChecked = sharedPreferences.getBoolean("ecoFriendly", false)
+
         val imageUriString = sharedPreferences.getString("imageUri", null)
-
-        nameEditText.setText(name)
-        priceEditText.setText(price)
-        descriptionEditText.setText(description)
-        quantityEditText.setText(quantity)
-        ecoFriendlyCheckbox.isChecked = ecoFriendly
-        brandEditText.setText(brand)
-        initialPriceEditText.setText(initialPrice)
-
-        // Cargar la imagen si existe
         if (!imageUriString.isNullOrEmpty()) {
             val file = File(Uri.parse(imageUriString).path ?: "")
             if (file.exists()) {
                 productImageUri = Uri.parse(imageUriString)
                 imageView.setImageURI(productImageUri)
             } else {
-                Toast.makeText(requireContext(), "Image file not found. Please re-upload the image.", Toast.LENGTH_SHORT).show()
+                imageView.setImageResource(0) // Clear the ImageView if there is no image
+                sharedPreferences.edit().remove("imageUri").apply()
+                Toast.makeText(requireContext(), "Previous image file not found. Please re-upload the image.", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
+
+
 
     // Limpiar el formulario y los datos almacenados en SharedPreferences
     private fun clearFormData() {
@@ -643,11 +684,12 @@ class PublishItemFragment : Fragment() {
         ecoFriendlyCheckbox.isChecked = false
         brandEditText.text.clear()
         initialPriceEditText.text.clear()
-        imageView.setImageResource(0) // Limpiar la imagen
+        imageView.setImageResource(0) // Clear the image
 
         val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
         sharedPreferences.edit().clear().apply()
     }
+
 
     // Verificar si hay conexión a Internet
     private fun isNetworkAvailable(context: Context): Boolean {
@@ -668,7 +710,55 @@ class PublishItemFragment : Fragment() {
     companion object {
         const val IMAGE_PICK_CODE = 1001
         const val CAMERA_CAPTURE_CODE = 1002
-        const val CAMERA_PERMISSION_REQUEST_CODE = 1003 // Código de solicitud de permiso para la cámara
+        const val CAMERA_PERMISSION_REQUEST_CODE = 1003
+        const val LOCATION_PERMISSION_REQUEST_CODE = 1004
     }
+
+    private fun deletePreviousImage() {
+        val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
+        val previousImageUriString = sharedPreferences.getString("imageUri", null)
+        if (!previousImageUriString.isNullOrEmpty()) {
+            val previousFile = File(Uri.parse(previousImageUriString).path ?: "")
+            if (previousFile.exists()) {
+                previousFile.delete()
+            }
+        }
+    }
+
+    private fun saveAndUpdateImage(uri: Uri, imageErrorTextView: TextView?) {
+        val savedUri = saveImageToLocalStorage(uri)
+        if (savedUri != null) {
+            productImageUri = savedUri
+
+            // Añadir un identificador único a la URI para evitar el caché
+            val uniqueUri = Uri.parse("${productImageUri}?timestamp=${System.currentTimeMillis()}")
+
+            imageView.setImageURI(null) // Limpia el caché del ImageView
+            imageView.setImageURI(uniqueUri) // Configura la URI única
+
+            imageErrorTextView?.visibility = View.GONE
+            saveImageUriToPreferences(productImageUri)
+        } else {
+            Toast.makeText(requireContext(), "Failed to save image locally", Toast.LENGTH_SHORT).show()
+        }
+    }
+    private fun createImageFile(): File {
+        val timestamp = System.currentTimeMillis().toString()
+        val storageDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        if (storageDir != null && !storageDir.exists()) {
+            storageDir.mkdirs() // Asegúrate de crear el directorio si no existe
+        }
+        return File.createTempFile("IMG_$timestamp", ".jpg", storageDir)
+    }
+
+    private fun checkAndRequestPermissions(): Boolean {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST_CODE)
+            return false
+        } else {
+            return true
+        }
+    }
+
 }
 
