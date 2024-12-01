@@ -1,3 +1,4 @@
+// ProfileFragment.kt
 package com.example.ecostyle.view
 
 import android.Manifest
@@ -7,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -29,6 +31,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.util.*
 
 class ProfileFragment : Fragment() {
@@ -37,6 +41,7 @@ class ProfileFragment : Fragment() {
     private lateinit var btnCamara: Button
     private var storageReference = FirebaseStorage.getInstance().reference
     private lateinit var email: String
+    private val localImageFileName = "profile_image.png"
 
     // Código para solicitar permisos
     private val requestPermissionLauncher = registerForActivityResult(
@@ -47,7 +52,7 @@ class ProfileFragment : Fragment() {
             dispatchTakePictureIntent()
         } else {
             // Permiso denegado, mostrar un mensaje o manejar el caso
-            Toast.makeText(context, "Camera permission denied.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Permiso de cámara denegado.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -58,9 +63,12 @@ class ProfileFragment : Fragment() {
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             val imageBitmap = result.data!!.extras?.get("data") as Bitmap
             profileImage.setImageBitmap(imageBitmap)
+            // Guardar la imagen en el almacenamiento interno
+            saveImageToInternalStorage(imageBitmap)
+            // Intentar subir la imagen a Firebase (si hay conexión)
             uploadImageToStorage(imageBitmap, email)
         } else {
-            Toast.makeText(context, "No photo was taken.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No se tomó ninguna foto.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -137,8 +145,7 @@ class ProfileFragment : Fragment() {
             }
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
                 // Mostrar una explicación al usuario
-                Toast.makeText(context, "\n" +
-                        "The app needs access to the camera to take photos.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "La aplicación necesita acceso a la cámara para tomar fotos.", Toast.LENGTH_LONG).show()
                 // Solicitar el permiso
                 requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
@@ -155,39 +162,46 @@ class ProfileFragment : Fragment() {
         if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
             takePictureLauncher.launch(takePictureIntent)
         } else {
-            Toast.makeText(context, "There is no camera app available.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No hay una aplicación de cámara disponible.", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun loadUserProfile(email: String, nameTextView: TextView, emailTextView: TextView) {
         val db = FirebaseFirestore.getInstance()
 
-        // Recuperar el documento del usuario desde la colección "User"
-        val docRef = db.collection("User").document(email)
-        docRef.get().addOnSuccessListener { document ->
-            if (document != null && document.exists()) {
-                val name = document.getString("name") ?: ""
-                val imgUrl = document.getString("imgUrl") ?: ""
+        // Establecer el correo electrónico y nombre en los TextViews
+        emailTextView.text = email
 
-                if (imgUrl.isNotEmpty()) {
-                    // Si el imgUrl no está vacío, cargar la imagen con Glide
-                    Glide.with(this)
-                        .load(imgUrl)
-                        .placeholder(R.drawable.ic_launcher_foreground)
-                        .circleCrop()
-                        .into(profileImage)
+        // Intentar cargar la imagen desde el almacenamiento interno
+        val localBitmap = loadImageFromInternalStorage()
+        if (localBitmap != null) {
+            profileImage.setImageBitmap(localBitmap)
+        } else {
+            // Si no hay imagen local, intentar cargar desde Firebase
+            val docRef = db.collection("User").document(email)
+            docRef.get().addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    val name = document.getString("name") ?: ""
+                    val imgUrl = document.getString("imgUrl") ?: ""
+
+                    if (imgUrl.isNotEmpty()) {
+                        // Si el imgUrl no está vacío, cargar la imagen con Glide
+                        Glide.with(this)
+                            .load(imgUrl)
+                            .placeholder(R.drawable.ic_launcher_foreground)
+                            .circleCrop()
+                            .into(profileImage)
+                    }
+
+                    // Actualizar el nombre en el TextView
+                    nameTextView.text = name
+                } else {
+                    // El documento no existe
+                    println("El documento no existe.")
                 }
-
-                // Actualizar los TextViews con los datos obtenidos
-                nameTextView.text = name
-                emailTextView.text = email
-            } else {
-                // El documento no existe
-                println("The document does not exist.")
+            }.addOnFailureListener { exception ->
+                println("Error al obtener el documento: $exception")
             }
-        }.addOnFailureListener { exception ->
-            println("\n" +
-                    "Error getting document: $exception")
         }
     }
 
@@ -210,13 +224,11 @@ class ProfileFragment : Fragment() {
                 updateUserProfileImageUrl(email, imageUrl)
                 // Guardar la imagen en la galería
                 saveImageToGallery(requireContext(), imageBitmap)
-
             }
         }.addOnFailureListener {
             // Manejar errores en la subida
-            println("\n" +
-                    "Error uploading image: ${it.message}")
-            Toast.makeText(context, "Error uploading image.", Toast.LENGTH_SHORT).show()
+            println("Error al subir la imagen: ${it.message}")
+            Toast.makeText(context, "Error al subir la imagen.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -227,11 +239,10 @@ class ProfileFragment : Fragment() {
         db.collection("User").document(email)
             .update("imgUrl", imageUrl)
             .addOnSuccessListener {
-                println("Profile image successfully updated in Firestore")
+                println("Imagen de perfil actualizada exitosamente en Firestore")
             }
             .addOnFailureListener {
-                println("\n" +
-                        "Error updating image in Firestore: ${it.message}")
+                println("Error al actualizar la imagen en Firestore: ${it.message}")
             }
     }
 
@@ -247,11 +258,35 @@ class ProfileFragment : Fragment() {
             context.contentResolver.openOutputStream(it)?.use { outputStream ->
                 imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
             }
-            Toast.makeText(context, "Image saved to gallery!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "¡Imagen guardada en la galería!", Toast.LENGTH_SHORT).show()
         } ?: run {
-            Toast.makeText(context, "Error saving image to gallery", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error al guardar la imagen en la galería", Toast.LENGTH_SHORT).show()
         }
     }
 
-}
+    private fun saveImageToInternalStorage(bitmap: Bitmap) {
+        try {
+            val fileOutputStream: FileOutputStream = requireContext().openFileOutput(localImageFileName, Context.MODE_PRIVATE)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
+            fileOutputStream.close()
+            Toast.makeText(context, "Imagen guardada localmente.", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "Error al guardar la imagen localmente.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
+    private fun loadImageFromInternalStorage(): Bitmap? {
+        return try {
+            val file = File(requireContext().filesDir, localImageFileName)
+            if (file.exists()) {
+                BitmapFactory.decodeFile(file.absolutePath)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+}

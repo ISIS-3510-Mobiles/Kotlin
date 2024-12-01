@@ -1,5 +1,8 @@
 package com.example.ecostyle.view
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.*
@@ -17,6 +20,7 @@ import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.example.ecostyle.model.CartItem
 import com.example.ecostyle.utils.LocalStorageManager
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.*
 import com.google.firebase.firestore.ktx.firestore
@@ -89,7 +93,12 @@ class ProductDetailFragment : Fragment() {
         favoriteButton.setOnClickListener {
             val product = viewModel.product.value
             if (product != null) {
-                toggleFavorite(product)
+                if (!hasInternetConnection()) {
+                    Toast.makeText(context, "No Internet connection", Toast.LENGTH_SHORT).show()
+
+                } else {
+                    toggleFavorite(product)
+                }
             }
         }
 
@@ -163,7 +172,10 @@ class ProductDetailFragment : Fragment() {
     private fun logLikeEvent(productName: String, liked: Boolean) {
         val eventName = if (liked) "liked_$productName" else "unliked_$productName"
         // Aquí puedes usar tu herramienta de analytics para registrar el evento
-        Log.d("AnalyticsEvent", "Event: $eventName")
+        val analytics = FirebaseAnalytics.getInstance(requireContext())
+        val bundle = Bundle()
+        bundle.putString("message", "Number likes")
+        analytics.logEvent(eventName, bundle)
     }
 
 
@@ -180,6 +192,12 @@ class ProductDetailFragment : Fragment() {
     private fun addToCart(product: Product) {
         val db = Firebase.firestore
         val userId = FirebaseAuth.getInstance().currentUser?.uid
+
+        // Verificar conexión a Internet antes de continuar
+        if (!hasInternetConnection()) {
+            Toast.makeText(requireContext(), "No Internet connection. Unable to add to cart.", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         if (userId != null) {
             val cartRef = db.collection("carts").document(userId).collection("items")
@@ -229,5 +247,14 @@ class ProductDetailFragment : Fragment() {
         } else {
             Toast.makeText(requireContext(), "User not authenticated", Toast.LENGTH_SHORT).show()
         }
+    }
+
+
+    private fun hasInternetConnection(): Boolean {
+        val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || activeNetwork.hasTransport(
+            NetworkCapabilities.TRANSPORT_CELLULAR)
     }
 }

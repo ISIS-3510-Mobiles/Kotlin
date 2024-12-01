@@ -1,12 +1,13 @@
-// ProductAdapter.kt
-
 package com.example.ecostyle.adapter
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton // Changed to ImageButton for consistency
+import android.widget.ImageButton // Asegúrate de que estás usando ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -30,7 +31,7 @@ class ProductAdapter(
         val productName: TextView = itemView.findViewById(R.id.product_name)
         val productPrice: TextView = itemView.findViewById(R.id.product_price)
         val addToCartButton: TextView = itemView.findViewById(R.id.add_to_cart_button)
-        val likeButton: ImageButton = itemView.findViewById(R.id.favorite_icon) // Use ImageButton
+        val likeButton: ImageButton = itemView.findViewById(R.id.favorite_icon) // Usa ImageButton
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductViewHolder {
@@ -46,7 +47,7 @@ class ProductAdapter(
         holder.productName.text = product.name
         holder.productPrice.text = product.price.toString()
 
-        Glide.with(holder.itemView.context)
+        Glide.with(context)
             .load(product.imageResource)
             .into(holder.productImage)
 
@@ -69,8 +70,20 @@ class ProductAdapter(
 
         // Manejar clics en el botón de "like"
         holder.likeButton.setOnClickListener {
-            toggleFavorite(holder, product)
+            if (!hasInternetConnection(context)) {
+                Toast.makeText(context, "No Internet connection", Toast.LENGTH_SHORT).show()
+            } else {
+                toggleFavorite(holder, product)
+            }
         }
+    }
+
+    private fun hasInternetConnection(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+        val network = connectivityManager?.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
     }
 
     override fun getItemCount(): Int {
@@ -94,14 +107,14 @@ class ProductAdapter(
                                 .addOnSuccessListener {
                                     product.isFavorite = false
                                     notifyItemChanged(holder.adapterPosition)
-                                    Toast.makeText(context, "${product.name} removed from favorites", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "${product.name} eliminado de favoritos", Toast.LENGTH_SHORT).show()
                                     holder.likeButton.setImageResource(R.drawable.baseline_favorite_border_24)
                                     LocalStorageManager.removeLikedProduct(context, product.firebaseId) // Actualizar almacenamiento local
                                     onLikeClicked?.invoke(product)
                                 }
                                 .addOnFailureListener { e ->
-                                    Toast.makeText(context, "Error removing from favorites", Toast.LENGTH_SHORT).show()
-                                    Log.e("ProductAdapter", "Error removing from favorites", e)
+                                    Toast.makeText(context, "Error al eliminar de favoritos", Toast.LENGTH_SHORT).show()
+                                    Log.e("ProductAdapter", "Error al eliminar de favoritos", e)
                                 }
                         }
                     } else {
@@ -117,29 +130,36 @@ class ProductAdapter(
                             .addOnSuccessListener {
                                 product.isFavorite = true
                                 notifyItemChanged(holder.adapterPosition)
-                                Toast.makeText(context, "${product.name} added to favorites", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "${product.name} añadido a favoritos", Toast.LENGTH_SHORT).show()
                                 holder.likeButton.setImageResource(R.drawable.baseline_favorite_24_2)
                                 LocalStorageManager.addLikedProduct(context, product.firebaseId) // Actualizar almacenamiento local
                                 onLikeClicked?.invoke(product)
                             }
                             .addOnFailureListener { e ->
-                                Toast.makeText(context, "Error adding to favorites", Toast.LENGTH_SHORT).show()
-                                Log.e("ProductAdapter", "Error adding to favorites", e)
+                                Toast.makeText(context, "Error al añadir a favoritos", Toast.LENGTH_SHORT).show()
+                                Log.e("ProductAdapter", "Error al añadir a favoritos", e)
                             }
                     }
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(context, "Error accessing favorites", Toast.LENGTH_SHORT).show()
-                    Log.e("ProductAdapter", "Error accessing favorites", e)
+                    Toast.makeText(context, "Error al acceder a favoritos", Toast.LENGTH_SHORT).show()
+                    Log.e("ProductAdapter", "Error al acceder a favoritos", e)
                 }
         } else {
-            Toast.makeText(context, "User not authenticated", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Usuario no autenticado", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun addToCart(holder: ProductViewHolder, product: Product) {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val context = holder.itemView.context // Obtén el contexto del itemView
+
+        // Verificar la conexión antes de continuar
+        if (!isNetworkAvailable(context)) {
+            Toast.makeText(context, "You are offline. Unable to add products.", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         if (userId != null) {
             val productRef = db.collection("Products").document(product.firebaseId)
@@ -153,20 +173,20 @@ class ProductAdapter(
                         cartRef.whereEqualTo("firebaseId", product.firebaseId).get()
                             .addOnSuccessListener { documents ->
                                 if (!documents.isEmpty) {
-                                    // Incrementar la cantidad si ya existe en el carrito
+                                    // Incrementar cantidad si ya existe en el carrito
                                     for (document in documents) {
                                         val cartItem = document.toObject(CartItem::class.java)
                                         val newQuantity = cartItem.quantity + 1
 
                                         if (newQuantity <= availableQuantity) {
                                             cartRef.document(document.id).update("quantity", newQuantity)
-                                            Toast.makeText(holder.itemView.context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
                                         } else {
-                                            Toast.makeText(holder.itemView.context, "No more stock available", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "No more stock available", Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 } else {
-                                    // Añadir producto por primera vez al carrito
+                                    // Añadir el producto al carrito por primera vez
                                     val cartItem = hashMapOf(
                                         "firebaseId" to product.firebaseId,
                                         "productName" to product.name,
@@ -175,16 +195,28 @@ class ProductAdapter(
                                         "quantity" to 1
                                     )
                                     cartRef.add(cartItem)
-                                    Toast.makeText(holder.itemView.context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "${product.name} added to cart", Toast.LENGTH_SHORT).show()
                                 }
                             }
                     } else {
-                        Toast.makeText(holder.itemView.context, "No more stock available", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "No more stock available", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         }
     }
+
+
+    private fun isNetworkAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+    }
+
+
 
     fun setProductList(newList: List<Product>) {
         productList = newList
