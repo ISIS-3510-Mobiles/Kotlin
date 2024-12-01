@@ -55,6 +55,7 @@ class PublishItemFragment : Fragment() {
     private lateinit var brandEditText: EditText
     private lateinit var initialPriceEditText: EditText
     private lateinit var publishButton: Button
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -62,6 +63,7 @@ class PublishItemFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_publish_item, container, false)
 
+        // Inicializar el cliente de localización
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
 
         // Inicializar las vistas
@@ -72,17 +74,11 @@ class PublishItemFragment : Fragment() {
         descriptionEditText = view.findViewById(R.id.product_description_edittext)
         ecoFriendlyCheckbox = view.findViewById(R.id.ecofriendly_checkbox)
         imageView = view.findViewById(R.id.product_image_view)
-
-// Agregar TextWatchers con límite de 7 dígitos
-        priceEditText.addTextChangedListener(createThousandSeparatorTextWatcher(priceEditText, view.findViewById(R.id.price_error_text_view)))
-        initialPriceEditText.addTextChangedListener(createThousandSeparatorTextWatcher(initialPriceEditText, view.findViewById(R.id.initialPrice_error_text_view)))
-
-        val uploadImageButton = view.findViewById<Button>(R.id.upload_image_button)
-        val takePhotoButton = view.findViewById<Button>(R.id.take_photo_button)
+        progressBar = view.findViewById(R.id.progress_bar)
         publishButton = view.findViewById(R.id.publish_button)
         quantityEditText = view.findViewById(R.id.product_quantity_edittext)
 
-        // Mensajes de error debajo de cada campo
+        // TextViews de errores
         val nameErrorTextView = view.findViewById<TextView>(R.id.name_error_text_view)
         val priceErrorTextView = view.findViewById<TextView>(R.id.price_error_text_view)
         val descriptionErrorTextView = view.findViewById<TextView>(R.id.description_error_text_view)
@@ -91,7 +87,17 @@ class PublishItemFragment : Fragment() {
         val quantityErrorTextView = view.findViewById<TextView>(R.id.quantity_error_text_view)
         val imageErrorTextView = view.findViewById<TextView>(R.id.image_error_text_view)
 
+        // Configuración de TextWatchers para el formateo de miles
+        priceEditText.addTextChangedListener(createThousandSeparatorTextWatcher(priceEditText, priceErrorTextView))
+        initialPriceEditText.addTextChangedListener(createThousandSeparatorTextWatcher(initialPriceEditText, initialPriceErrorTextView))
+
+        val uploadImageButton = view.findViewById<Button>(R.id.upload_image_button)
+        val takePhotoButton = view.findViewById<Button>(R.id.take_photo_button)
+
+        // Cargar datos guardados previamente
         loadFormData()
+
+        // Validación de los campos
         setupFieldValidation(
             nameEditText, nameErrorTextView,
             priceEditText, priceErrorTextView,
@@ -100,16 +106,21 @@ class PublishItemFragment : Fragment() {
             brandEditText, brandErrorTextView,
             initialPriceEditText, initialPriceErrorTextView
         )
+
+        // Guardado automático de los campos
         setupAutoSaveFields()
 
+        // Configuración del botón de subir imagen desde galería
         uploadImageButton.setOnClickListener { openGalleryForImage() }
+
+        // Configuración del botón de tomar foto
         takePhotoButton.setOnClickListener {
             if (checkAndRequestPermissions()) {
                 openCameraForImage()
             }
         }
 
-
+        // Configuración del botón de publicar
         publishButton.setOnClickListener {
             val productName = nameEditText.text.toString()
             val productPrice = priceEditText.text.toString()
@@ -119,6 +130,7 @@ class PublishItemFragment : Fragment() {
             val ecoFriendly = ecoFriendlyCheckbox.isChecked
             val quantityText = quantityEditText.text.toString()
 
+            // Validar los campos
             val nameValid = validateName(nameEditText, nameErrorTextView)
             val priceValid = validatePrice(priceEditText, priceErrorTextView)
             val initialPriceValid = validatePrice(initialPriceEditText, initialPriceErrorTextView)
@@ -126,7 +138,7 @@ class PublishItemFragment : Fragment() {
             val quantityValid = validateQuantity(quantityEditText, quantityErrorTextView)
             val brandValid = validateBrand(brandEditText, brandErrorTextView)
 
-            // Validar si se ha seleccionado una imagen
+            // Validar si se seleccionó una imagen
             val imageValid = if (this::productImageUri.isInitialized) {
                 imageErrorTextView.visibility = View.GONE
                 true
@@ -135,36 +147,33 @@ class PublishItemFragment : Fragment() {
                 false
             }
 
+            // Si todos los campos son válidos, proceder
             if (nameValid && priceValid && initialPriceValid && descriptionValid && quantityValid && brandValid && imageValid) {
                 if (isNetworkAvailable(requireContext())) {
+                    progressBar.visibility = View.VISIBLE // Mostrar la barra de progreso
+                    publishButton.isEnabled = false // Desactivar el botón de publicar
+
                     val quantity = quantityText.toInt()
-                    // Llamar a la función `getLocationAndPublishProduct` original
                     getLocationAndPublishProduct(
                         productName, productPrice, productDescription, ecoFriendly,
                         productImageUri, quantity, productBrand, productInitialPrice
                     )
                 } else {
-                    // Guardar datos localmente en caso de estar offline
+                    // Guardar datos localmente si no hay conexión
                     saveDataLocally(
                         productName, productPrice, productDescription, ecoFriendly,
                         quantityText, productBrand, productInitialPrice
                     )
-                    Toast.makeText(
-                        requireContext(),
-                        "Off-line. Data saved locally",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    Toast.makeText(requireContext(), "Off-line. Data saved locally", Toast.LENGTH_LONG).show()
                 }
             } else {
                 Toast.makeText(requireContext(), "Please fill all fields and correct errors", Toast.LENGTH_SHORT).show()
             }
         }
 
-        priceEditText.addTextChangedListener(createThousandSeparatorTextWatcher(priceEditText, priceErrorTextView))
-        initialPriceEditText.addTextChangedListener(createThousandSeparatorTextWatcher(initialPriceEditText, initialPriceErrorTextView))
-
         return view
     }
+
 
     private fun createThousandSeparatorTextWatcher(editText: EditText, errorTextView: TextView): TextWatcher {
         return object : TextWatcher {
@@ -236,26 +245,6 @@ class PublishItemFragment : Fragment() {
             }
         } catch (e: Exception) {
             Toast.makeText(requireContext(), "No se pudo abrir la cámara: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-
-
-
-    // Guardar el Bitmap en un archivo y devolver la Uri del archivo creado
-    private fun saveBitmapToFile(bitmap: Bitmap): Uri? {
-        try {
-            deletePreviousImage() // Elimina la imagen anterior
-            val file = File(requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "saved_image.jpg")
-            val fos = FileOutputStream(file)
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
-            fos.flush()
-            fos.close()
-            return Uri.fromFile(file)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(requireContext(), "Error saving image: ${e.message}", Toast.LENGTH_SHORT).show()
-            return null
         }
     }
 
@@ -389,11 +378,14 @@ class PublishItemFragment : Fragment() {
                             viewModel.publishStatus.observe(viewLifecycleOwner) { success ->
                                 success?.let {
                                     if (it) {
-                                        Toast.makeText(requireContext(), "Product published successfully!", Toast.LENGTH_SHORT).show()
-                                        navigateToConfirmation()
+                                        navigateToConfirmation() // Navegación a la vista de confirmación
+                                        progressBar.visibility = View.GONE // Ocultar el ProgressBar después de navegar
+                                        publishButton.isEnabled = true // Habilitar el botón nuevamente
                                         clearFormData()
                                     } else {
                                         Toast.makeText(requireContext(), "Failed to publish product.", Toast.LENGTH_SHORT).show()
+                                        progressBar.visibility = View.GONE // Ocultar el ProgressBar si falla
+                                        publishButton.isEnabled = true
                                     }
                                     viewModel.resetPublishStatus()
                                 }
@@ -401,15 +393,21 @@ class PublishItemFragment : Fragment() {
                         }
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
+                            progressBar.visibility = View.GONE // Ocultar el ProgressBar en caso de error
+                            publishButton.isEnabled = true
                             Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
             } else {
+                progressBar.visibility = View.GONE // Ocultar el ProgressBar si no se obtiene la ubicación
+                publishButton.isEnabled = true
                 Toast.makeText(requireContext(), "Unable to retrieve current location. Ensure GPS is enabled.", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
+
 
 
     private fun requestCurrentLocation(callback: (Location?) -> Unit) {
@@ -547,26 +545,27 @@ class PublishItemFragment : Fragment() {
     }
 
     private fun validateQuantity(quantityEditText: EditText, errorTextView: TextView): Boolean {
-        val quantity = quantityEditText.text.toString().toIntOrNull() ?: 0
-        return if (quantity <= 0) {
-            quantityEditText.setTextColor(Color.RED)
-            errorTextView.text = "Please enter a valid quantity"
-            errorTextView.visibility = View.VISIBLE
-            false
-        } else {
-            quantityEditText.setTextColor(ContextCompat.getColor(requireContext(), R.color.black))
-            errorTextView.visibility = View.GONE
-            true
-        }
-    }
+        val quantityText = quantityEditText.text.toString()
+        val quantity = quantityText.toIntOrNull() ?: -1
 
-    private fun validateImage(imageErrorTextView: TextView): Boolean {
-        return if (this::productImageUri.isInitialized) {
-            imageErrorTextView.visibility = View.GONE
-            true
-        } else {
-            imageErrorTextView.visibility = View.VISIBLE
-            false
+        return when {
+            quantity <= 0 -> { // Validar que la cantidad sea mayor a 0
+                quantityEditText.setTextColor(Color.RED)
+                errorTextView.text = "Please enter a valid quantity greater than 0"
+                errorTextView.visibility = View.VISIBLE
+                false
+            }
+            quantity > 1000000 -> { // Validar que la cantidad no supere 1,000,000
+                quantityEditText.setTextColor(Color.RED)
+                errorTextView.text = "Quantity cannot exceed 1,000,000"
+                errorTextView.visibility = View.VISIBLE
+                false
+            }
+            else -> { // Cantidad válida
+                quantityEditText.setTextColor(ContextCompat.getColor(requireContext(), R.color.black))
+                errorTextView.visibility = View.GONE
+                true
+            }
         }
     }
 
@@ -591,10 +590,6 @@ class PublishItemFragment : Fragment() {
 
         editor.apply()
     }
-
-
-
-
 
     // Guardar los datos del formulario automáticamente
     private fun setupAutoSaveFields() {
@@ -627,12 +622,23 @@ class PublishItemFragment : Fragment() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
+        quantityEditText.filters = arrayOf(android.text.InputFilter.LengthFilter(7)) // Limitar a 7 caracteres
+
         quantityEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                sharedPreferences.edit().putString("quantity", s.toString()).apply()
+                if (!s.isNullOrEmpty()) {
+                    val value = s.toString().toIntOrNull() ?: 0
+                    if (value > 1000000 || value == 0) {
+                        quantityEditText.setTextColor(Color.RED) // Error visual
+                    } else {
+                        quantityEditText.setTextColor(ContextCompat.getColor(requireContext(), R.color.black))
+                        sharedPreferences.edit().putString("quantity", s.toString()).apply() // Guardar solo si es válido
+                    }
+                }
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
@@ -679,6 +685,7 @@ class PublishItemFragment : Fragment() {
         }
     }
 
+
     private fun loadFormData() {
         val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
         nameEditText.setText(sharedPreferences.getString("name", ""))
@@ -721,6 +728,7 @@ class PublishItemFragment : Fragment() {
         val activeNetwork = connectivityManager.activeNetworkInfo
         return activeNetwork != null && activeNetwork.isConnected
     }
+
 
     // Redirigir a la página de confirmación
     private fun navigateToConfirmation() {
