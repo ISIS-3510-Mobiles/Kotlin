@@ -1,12 +1,17 @@
+// ProductDetailFragment.kt
+
 package com.example.ecostyle.view
 
+import android.app.AlertDialog
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.text.InputType
 import android.util.Log
 import android.view.*
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
@@ -26,6 +31,11 @@ import kotlinx.coroutines.*
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.ecostyle.adapter.CommentAdapter
+import com.example.ecostyle.model.Comment
+import com.google.firebase.firestore.FieldValue
 
 class ProductDetailFragment : Fragment() {
 
@@ -39,6 +49,12 @@ class ProductDetailFragment : Fragment() {
     private lateinit var productDescription: TextView
     private lateinit var favoriteButton: ImageButton
     private lateinit var addToCartButton: Button
+
+    private lateinit var commentsRecyclerView: RecyclerView
+    private lateinit var noCommentsTextView: TextView
+    private lateinit var addCommentButton: Button
+    private lateinit var commentAdapter: CommentAdapter
+    private var commentsList: MutableList<Comment> = mutableListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,6 +78,12 @@ class ProductDetailFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_product_detail, container, false)
     }
 
+    // Agrega el método onResume() aquí
+    override fun onResume() {
+        super.onResume()
+        uploadPendingComments()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -71,6 +93,15 @@ class ProductDetailFragment : Fragment() {
         productDescription = view.findViewById(R.id.product_detail_description)
         favoriteButton = view.findViewById(R.id.favorite_icon)
         addToCartButton = view.findViewById(R.id.btn_add_to_cart)
+
+        commentsRecyclerView = view.findViewById(R.id.comments_recyclerview)
+        noCommentsTextView = view.findViewById(R.id.no_comments_text)
+        addCommentButton = view.findViewById(R.id.add_comment_button)
+
+        // Configurar RecyclerView
+        commentAdapter = CommentAdapter(commentsList)
+        commentsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        commentsRecyclerView.adapter = commentAdapter
 
         viewModel.product.observe(viewLifecycleOwner) { product ->
             productName.text = product.name
@@ -89,6 +120,7 @@ class ProductDetailFragment : Fragment() {
         }
 
         viewModel.loadProduct(productId)
+        loadComments()
 
         favoriteButton.setOnClickListener {
             val product = viewModel.product.value
@@ -106,6 +138,9 @@ class ProductDetailFragment : Fragment() {
             viewModel.product.value?.let { product ->
                 addToCart(product)
             }
+        }
+        addCommentButton.setOnClickListener {
+            showAddCommentDialog()
         }
     }
 
@@ -178,7 +213,6 @@ class ProductDetailFragment : Fragment() {
         analytics.logEvent(eventName, bundle)
     }
 
-
     private fun updateLikeIcon(isFavorite: Boolean) {
         val likeIconRes = if (isFavorite) {
             R.drawable.baseline_favorite_24_2 // Ícono de corazón lleno
@@ -249,12 +283,132 @@ class ProductDetailFragment : Fragment() {
         }
     }
 
-
     private fun hasInternetConnection(): Boolean {
         val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false
         val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
         return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || activeNetwork.hasTransport(
             NetworkCapabilities.TRANSPORT_CELLULAR)
+    }
+
+    private fun loadComments() {
+        val db = FirebaseFirestore.getInstance()
+        val product = viewModel.product.value
+        val productId = product?.firebaseId ?: return
+
+        db.collection("Products").document(productId)
+            .collection("Comments")
+            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) {
+                    Log.w("ProductDetailFragment", "Listen failed.", e)
+                    return@addSnapshotListener
+                }
+
+                if (snapshots != null) {
+                    commentsList.clear()
+                    for (doc in snapshots.documents) {
+                        val comment = doc.toObject(Comment::class.java)
+                        if (comment != null) {
+                            commentsList.add(comment)
+                        }
+                    }
+                    commentAdapter.setCommentList(commentsList)
+
+                    if (commentsList.isEmpty()) {
+                        noCommentsTextView.visibility = View.VISIBLE
+                        commentsRecyclerView.visibility = View.GONE
+                    } else {
+                        noCommentsTextView.visibility = View.GONE
+                        commentsRecyclerView.visibility = View.VISIBLE
+                    }
+                }
+            }
+    }
+
+    private fun showAddCommentDialog() {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Add Comment")
+
+        val input = EditText(requireContext())
+        input.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        builder.setView(input)
+
+        builder.setPositiveButton("Submit") { dialog, which ->
+            val commentText = input.text.toString().trim()
+            if (commentText.isNotEmpty()) {
+                addComment(commentText)
+            } else {
+                Toast.makeText(requireContext(), "Comment cannot be empty", Toast.LENGTH_SHORT).show()
+            }
+        }
+        builder.setNegativeButton("Cancel") { dialog, which ->
+            dialog.cancel()
+        }
+
+        builder.show()
+    }
+
+    private fun addComment(commentText: String) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val userName = FirebaseAuth.getInstance().currentUser?.displayName ?: "Anonymous"
+        val product = viewModel.product.value
+        val productId = product?.firebaseId ?: return
+
+        val comment = Comment(
+            userId = userId ?: "",
+            userName = userName,
+            content = commentText,
+            timestamp = System.currentTimeMillis()
+        )
+
+        if (hasInternetConnection()) {
+            // Subir comentario a Firebase
+            val db = FirebaseFirestore.getInstance()
+            val commentsRef = db.collection("Products").document(productId).collection("Comments")
+            commentsRef.add(comment)
+                .addOnSuccessListener {
+                    Toast.makeText(requireContext(), "Comment added", Toast.LENGTH_SHORT).show()
+                    incrementCommentCount(productId)
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(requireContext(), "Failed to add comment", Toast.LENGTH_SHORT).show()
+                }
+        } else {
+            // Guardar comentario en almacenamiento local
+            LocalStorageManager.addPendingComment(requireContext(), productId, comment)
+            Toast.makeText(requireContext(), "No Internet. Comment saved locally and will be uploaded when online.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun incrementCommentCount(productId: String) {
+        val db = FirebaseFirestore.getInstance()
+        val productRef = db.collection("Products").document(productId)
+        productRef.update("number_comments", FieldValue.increment(1))
+    }
+
+    private fun uploadPendingComments() {
+        if (!hasInternetConnection()) return
+
+        val pendingComments = LocalStorageManager.getPendingComments(requireContext())
+        val product = viewModel.product.value
+        val productId = product?.firebaseId ?: return
+
+        val commentsForProduct = pendingComments[productId] ?: return
+
+        val db = FirebaseFirestore.getInstance()
+        val commentsRef = db.collection("Products").document(productId).collection("Comments")
+
+        for (comment in commentsForProduct) {
+            commentsRef.add(comment)
+                .addOnSuccessListener {
+                    incrementCommentCount(productId)
+                    // Después de subir todos los comentarios, eliminarlos del almacenamiento local
+                    LocalStorageManager.removePendingCommentsForProduct(requireContext(), productId)
+                }
+                .addOnFailureListener { e ->
+                    // Manejar errores si es necesario
+                }
+        }
     }
 }
