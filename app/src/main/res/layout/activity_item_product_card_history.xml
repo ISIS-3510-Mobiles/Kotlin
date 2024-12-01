@@ -44,10 +44,10 @@
 
         <!-- Estado del producto -->
         <TextView
-            android:id="@+id/product_status"
+            android:id="@+id/product_quantity"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Fecha: "
+            android:text="Quantity: 0"
             android:textSize="14sp" />
     </LinearLayout>
 </LinearLayout>
