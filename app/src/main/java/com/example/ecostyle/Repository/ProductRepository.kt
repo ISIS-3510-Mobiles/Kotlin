@@ -64,7 +64,6 @@ class ProductRepository {
         longitude: Double,
         brand: String,
         initialPrice: String
-
     ): Boolean {
         return try {
             // Obtener el ID máximo actual de la base de datos
@@ -100,8 +99,8 @@ class ProductRepository {
                 "ecofriendly" to ecoFriendly,
                 "imageResource" to downloadUrl.toString(),
                 "isFavorite" to false,
-                "latitude" to latitude,  // Guardar la latitud
-                "longitude" to longitude,  // Guardar la longitud
+                "latitude" to latitude,
+                "longitude" to longitude,
                 "quantity" to quantity,
                 "brand" to brand,
                 "initialPrice" to initialPrice
@@ -110,12 +109,43 @@ class ProductRepository {
             // Guardar los detalles del producto en Firestore
             db.collection("Products").add(productData).await()
 
+            // Agregar al historial del usuario
+            val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+            if (userId != null) {
+                addToSalesHistory(userId, productData)
+            }
+
             true  // Publicación exitosa
         } catch (e: Exception) {
             Log.e("ProductRepository", "Error publishing product", e)
             false  // Error al guardar en Firestore
         }
     }
+
+    private suspend fun addToSalesHistory(userId: String, productData: Map<String, Any>) {
+        try {
+            val historyRef = db.collection("historial").document(userId)
+
+            // Verificar si el documento ya existe
+            val documentSnapshot = historyRef.get().await()
+
+            if (documentSnapshot.exists()) {
+                // Si existe, actualiza el campo "ventas"
+                historyRef.update("ventas", com.google.firebase.firestore.FieldValue.arrayUnion(productData)).await()
+            } else {
+                // Si no existe, crea el documento con el historial inicial
+                val initialData = hashMapOf(
+                    "ventas" to listOf(productData),
+                    "compras" to emptyList<Map<String, Any>>() // Inicializa compras como lista vacía
+                )
+                historyRef.set(initialData).await()
+            }
+        } catch (e: Exception) {
+            Log.e("ProductRepository", "Error adding to sales history: ${e.message}", e)
+        }
+    }
+
+
 
 }
 

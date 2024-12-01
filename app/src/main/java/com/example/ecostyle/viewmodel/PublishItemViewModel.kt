@@ -13,10 +13,10 @@ class PublishItemViewModel : ViewModel() {
 
     private val repository = ProductRepository()
 
-    private val _publishStatus = MutableLiveData<Boolean>()
-    val publishStatus: LiveData<Boolean> get() = _publishStatus
+    private val _publishStatus = MutableLiveData<Boolean?>()
+    val publishStatus: LiveData<Boolean?> get() = _publishStatus
 
-    fun publishProduct(
+    suspend fun publishProduct(
         name: String,
         price: String,
         description: String,
@@ -26,19 +26,20 @@ class PublishItemViewModel : ViewModel() {
         latitude: Double,
         longitude: Double,
         brand: String,
-        initialProduct: String
-    ) {
-        // Lanzar una corrutina para realizar la operación en un hilo secundario
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                // Llamar al repositorio para publicar el producto
-                val success = repository.publishProductToFirestore(name, price, description, ecoFriendly, imageUri, quantity, latitude, longitude, brand, initialProduct)
-                _publishStatus.postValue(success) // Actualizar el estado de la publicación en la UI
-            } catch (e: Exception) {
-                // Si hay algún error, publicar false
-                _publishStatus.postValue(false)
-            }
+        initialPrice: String
+    ): Boolean {
+        return try {
+            repository.publishProductToFirestore(
+                name, price, description, ecoFriendly, imageUri, quantity,
+                latitude, longitude, brand, initialPrice
+            )
+        } catch (e: Exception) {
+            false
         }
+    }
+
+    fun resetPublishStatus() {
+        _publishStatus.postValue(null)
     }
 }
 

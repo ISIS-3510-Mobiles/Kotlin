@@ -34,6 +34,9 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.text.NumberFormat
 import java.util.Locale
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+
 
 class PublishItemFragment : Fragment() {
 
@@ -133,15 +136,22 @@ class PublishItemFragment : Fragment() {
             if (nameValid && priceValid && initialPriceValid && descriptionValid && quantityValid && brandValid && imageValid) {
                 if (isNetworkAvailable(requireContext())) {
                     val quantity = quantityText.toInt()
+                    // Llamar a la función `getLocationAndPublishProduct` original
                     getLocationAndPublishProduct(
-                        productName, productPrice, productDescription, ecoFriendly, productImageUri, quantity, productBrand, productInitialPrice
+                        productName, productPrice, productDescription, ecoFriendly,
+                        productImageUri, quantity, productBrand, productInitialPrice
                     )
-                    navigateToConfirmation()
-                    clearFormData()
                 } else {
-                    saveDataLocally(productName, productPrice, productDescription, ecoFriendly, quantityText, productBrand, productInitialPrice)
-                    Toast.makeText(requireContext(), "\n" +
-                            "Off-line. Data saved locally", Toast.LENGTH_LONG).show()
+                    // Guardar datos localmente en caso de estar offline
+                    saveDataLocally(
+                        productName, productPrice, productDescription, ecoFriendly,
+                        quantityText, productBrand, productInitialPrice
+                    )
+                    Toast.makeText(
+                        requireContext(),
+                        "Off-line. Data saved locally",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             } else {
                 Toast.makeText(requireContext(), "Please fill all fields and correct errors", Toast.LENGTH_SHORT).show()
@@ -351,8 +361,8 @@ class PublishItemFragment : Fragment() {
         }
 
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED) {
-
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             pendingPublishParams = PendingPublishParams(
                 name, price, description, ecoFriendly, imageUri, quantity, brand, initialPrice
             )
@@ -366,20 +376,31 @@ class PublishItemFragment : Fragment() {
 
         requestCurrentLocation { location ->
             if (location != null) {
-                try {
-                    viewModel.publishProduct(
-                        name, price, description, ecoFriendly, imageUri, quantity,
-                        location.latitude, location.longitude, brand, initialPrice
-                    )
-                    Toast.makeText(requireContext(), "Product published successfully!", Toast.LENGTH_SHORT).show()
-                } catch (e: Exception) {
-                    Toast.makeText(requireContext(), "Failed to publish product: ${e.message}", Toast.LENGTH_SHORT).show()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        // Llamar al ViewModel para publicar el producto
+                        val success = viewModel.publishProduct(
+                            name, price, description, ecoFriendly, imageUri, quantity,
+                            location.latitude, location.longitude, brand, initialPrice
+                        )
+
+                        if (success) {
+                            Toast.makeText(requireContext(), "Product published successfully!", Toast.LENGTH_SHORT).show()
+                            navigateToConfirmation()
+                            clearFormData()
+                        } else {
+                            Toast.makeText(requireContext(), "Failed to publish product.", Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } else {
                 Toast.makeText(requireContext(), "Unable to retrieve current location. Ensure GPS is enabled.", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
     private fun requestCurrentLocation(callback: (Location?) -> Unit) {
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
             == PackageManager.PERMISSION_GRANTED) {
