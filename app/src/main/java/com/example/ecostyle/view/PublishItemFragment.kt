@@ -35,7 +35,9 @@ import java.text.DecimalFormatSymbols
 import java.text.NumberFormat
 import java.util.Locale
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class PublishItemFragment : Fragment() {
@@ -376,29 +378,31 @@ class PublishItemFragment : Fragment() {
 
         requestCurrentLocation { location ->
             if (location != null) {
-                viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                     try {
-                        // Llamar al ViewModel para publicar el producto
                         viewModel.publishProduct(
                             name, price, description, ecoFriendly, imageUri, quantity,
                             location.latitude, location.longitude, brand, initialPrice
                         )
 
-                        // Observar cambios en el estado de publicación
-                        viewModel.publishStatus.observe(viewLifecycleOwner) { success ->
-                            success?.let {
-                                if (it) {
-                                    Toast.makeText(requireContext(), "Product published successfully!", Toast.LENGTH_SHORT).show()
-                                    navigateToConfirmation()
-                                    clearFormData()
-                                } else {
-                                    Toast.makeText(requireContext(), "Failed to publish product.", Toast.LENGTH_SHORT).show()
+                        withContext(Dispatchers.Main) {
+                            viewModel.publishStatus.observe(viewLifecycleOwner) { success ->
+                                success?.let {
+                                    if (it) {
+                                        Toast.makeText(requireContext(), "Product published successfully!", Toast.LENGTH_SHORT).show()
+                                        navigateToConfirmation()
+                                        clearFormData()
+                                    } else {
+                                        Toast.makeText(requireContext(), "Failed to publish product.", Toast.LENGTH_SHORT).show()
+                                    }
+                                    viewModel.resetPublishStatus()
                                 }
-                                viewModel.resetPublishStatus() // Restablecer el estado
                             }
                         }
                     } catch (e: Exception) {
-                        Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             } else {
@@ -406,6 +410,7 @@ class PublishItemFragment : Fragment() {
             }
         }
     }
+
 
     private fun requestCurrentLocation(callback: (Location?) -> Unit) {
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
@@ -432,6 +437,7 @@ class PublishItemFragment : Fragment() {
             callback(null)
         }
     }
+
 
     private fun isGPSEnabled(): Boolean {
         val locationManager = requireContext().getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
@@ -673,8 +679,6 @@ class PublishItemFragment : Fragment() {
         }
     }
 
-
-    // Cargar los datos guardados en el formulario desde SharedPreferences
     private fun loadFormData() {
         val sharedPreferences = requireContext().getSharedPreferences("PublishData", Context.MODE_PRIVATE)
         nameEditText.setText(sharedPreferences.getString("name", ""))
@@ -691,16 +695,9 @@ class PublishItemFragment : Fragment() {
             if (file.exists()) {
                 productImageUri = Uri.parse(imageUriString)
                 imageView.setImageURI(productImageUri)
-            } else {
-                imageView.setImageResource(0) // Clear the ImageView if there is no image
-                sharedPreferences.edit().remove("imageUri").apply()
-                Toast.makeText(requireContext(), "Previous image file not found. Please re-upload the image.", Toast.LENGTH_SHORT).show()
             }
         }
     }
-
-
-
 
     // Limpiar el formulario y los datos almacenados en SharedPreferences
     private fun clearFormData() {
@@ -786,6 +783,8 @@ class PublishItemFragment : Fragment() {
             return true
         }
     }
+
+
 
 }
 

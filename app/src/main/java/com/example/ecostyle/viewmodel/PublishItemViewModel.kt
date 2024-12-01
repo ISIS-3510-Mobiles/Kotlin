@@ -36,8 +36,6 @@ class PublishItemViewModel : ViewModel() {
                     name, price, description, ecoFriendly, imageUri, quantity,
                     latitude, longitude, brand, initialPrice
                 )
-
-                // Actualizar el estado en el hilo principal
                 withContext(Dispatchers.Main) {
                     _publishStatus.value = result
                 }

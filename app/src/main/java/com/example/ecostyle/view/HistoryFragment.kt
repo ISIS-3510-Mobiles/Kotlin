@@ -14,6 +14,11 @@ import com.example.ecostyle.R
 import com.example.ecostyle.adapter.HistoryAdapter
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class HistoryFragment : Fragment() {
 
@@ -24,6 +29,8 @@ class HistoryFragment : Fragment() {
     private lateinit var switchLabel: TextView
     private val productList = mutableListOf<Map<String, Any>>()
     private var isSalesHistory = false
+    private val db = FirebaseFirestore.getInstance()
+    private val userId by lazy { retrieveUserId() } // Renombrado para evitar conflicto
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -36,14 +43,12 @@ class HistoryFragment : Fragment() {
         historyTitle = view.findViewById(R.id.history_title)
         switchLabel = view.findViewById(R.id.switch_label)
 
-        val userId = getUserId() // Asignar el userId para usarlo en el adaptador y en otros métodos
-
         historyAdapter = HistoryAdapter(productList, isSalesHistory, userId)
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = historyAdapter
 
         switchProducts.setOnCheckedChangeListener { _, isChecked ->
-            isSalesHistory = isChecked // Actualiza la variable isSalesHistory
+            isSalesHistory = isChecked
             if (isChecked) {
                 historyTitle.text = "Sales history"
                 switchLabel.text = "Show Purchased Products"
@@ -66,33 +71,35 @@ class HistoryFragment : Fragment() {
     }
 
     private fun loadHistory(type: String) {
-        val userId = getUserId()
-        val db = FirebaseFirestore.getInstance()
+        if (userId.isEmpty()) {
+            Toast.makeText(requireContext(), "User not logged in", Toast.LENGTH_SHORT).show()
+            return
+        }
 
-        if (userId.isNotEmpty()) {
-            db.collection("historial").document(userId).get()
-                .addOnSuccessListener { document ->
-                    if (document.exists()) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val document = db.collection("historial").document(userId).get().await()
+                if (document.exists()) {
+                    val data = document.get(type) as? List<Map<String, Any>> ?: emptyList()
+                    withContext(Dispatchers.Main) {
                         productList.clear()
-                        val data = document.get(type) as? List<Map<String, Any>>
-                        if (data != null) {
-                            productList.addAll(data)
-                            historyAdapter.notifyDataSetChanged()
-                        } else {
-                            Toast.makeText(requireContext(), "No $type found", Toast.LENGTH_SHORT).show()
-                        }
+                        productList.addAll(data)
+                        historyAdapter.notifyDataSetChanged()
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(requireContext(), "No $type found", Toast.LENGTH_SHORT).show()
                     }
                 }
-                .addOnFailureListener {
-                    Toast.makeText(requireContext(), "Failed to load history: ${it.message}", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(requireContext(), "Failed to load history: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
-        } else {
-            Toast.makeText(requireContext(), "User not logged in", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
-    private fun getUserId(): String {
+    private fun retrieveUserId(): String { // Renombrado para evitar conflicto
         return FirebaseAuth.getInstance().currentUser?.uid ?: ""
     }
 }
-
