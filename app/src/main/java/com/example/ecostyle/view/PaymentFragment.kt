@@ -64,7 +64,9 @@ class PaymentFragment : Fragment() {
             if (!isNetworkAvailable(requireContext())) {
                 Toast.makeText(context, "Offline. Cannot proceed. Please try again later.", Toast.LENGTH_LONG).show()
             } else if (isValidForm()) {
-                updateStockAndConfirmPurchase(cartItems)
+                GlobalScope.launch(Dispatchers.IO) {
+                    updateStockAndConfirmPurchase(cartItems)
+                }
             } else {
                 Toast.makeText(context, "Please complete all fields correctly.", Toast.LENGTH_SHORT).show()
             }
@@ -79,17 +81,16 @@ class PaymentFragment : Fragment() {
         return view
     }
 
-    private fun updateStockAndConfirmPurchase(cartItems: List<CartItem>?) {
+    private suspend fun updateStockAndConfirmPurchase(cartItems: List<CartItem>?) {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
-        if (userId != null) {
-            GlobalScope.launch(Dispatchers.IO) {
-                var allAvailable = true
+        if (userId != null && !cartItems.isNullOrEmpty()) { // Validar que cartItems no sea nulo ni vacío
+            var allAvailable = true
 
-                cartItems?.forEach { cartItem ->
+            cartItems.forEach { cartItem ->
+                try {
                     val productRef = db.collection("Products").document(cartItem.firebaseId)
-
                     val productDoc = productRef.get().await()
                     val availableQuantity = productDoc.getLong("quantity")?.toInt() ?: 0
 
@@ -105,30 +106,102 @@ class PaymentFragment : Fragment() {
                             ).show()
                         }
                     }
-                }
-
-                if (allAvailable) {
-                    // Borrar el carrito del usuario al confirmar la compra
-                    val cartRef = db.collection("carts").document(userId).collection("items")
-                    cartRef.get().await().forEach { document ->
-                        cartRef.document(document.id).delete().await()
-                    }
-
-                    withContext(Dispatchers.Main) {
-                        showPurchaseConfirmation()
-                    }
-                } else {
+                } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(
                             requireContext(),
-                            "Some items in your cart do not have enough stock. Please review your cart.",
+                            "Error updating stock for ${cartItem.productName}: ${e.message}",
                             Toast.LENGTH_LONG
                         ).show()
                     }
                 }
             }
+
+            if (allAvailable) {
+                savePurchaseHistory(cartItems, userId)
+
+                val cartRef = db.collection("carts").document(userId).collection("items")
+                cartRef.get().await().forEach { document ->
+                    cartRef.document(document.id).delete().await()
+                }
+
+                withContext(Dispatchers.Main) {
+                    showPurchaseConfirmation()
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Some items in your cart do not have enough stock. Please review your cart.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
         } else {
-            Toast.makeText(context, "User not logged in. Please log in to proceed.", Toast.LENGTH_SHORT).show()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Cart is empty or user not logged in. Cannot proceed.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private suspend fun savePurchaseHistory(cartItems: List<CartItem>, userId: String) {
+        val db = FirebaseFirestore.getInstance()
+        val historyRef = db.collection("historial").document(userId)
+
+        try {
+            val documentSnapshot = historyRef.get().await()
+
+            if (documentSnapshot.exists()) {
+                val currentPurchases = documentSnapshot.get("compras") as? List<Map<String, Any>> ?: emptyList()
+                val updatedPurchases = currentPurchases.toMutableList()
+
+                cartItems.forEach { cartItem ->
+                    val existingProduct = updatedPurchases.find { it["productId"] == cartItem.firebaseId }
+                    if (existingProduct != null) {
+                        val currentQuantity = (existingProduct["quantity"] as? Number)?.toInt() ?: 0
+                        val newQuantity = currentQuantity + cartItem.quantity
+
+                        val updatedProduct = existingProduct.toMutableMap()
+                        updatedProduct["quantity"] = newQuantity
+
+                        updatedPurchases[updatedPurchases.indexOf(existingProduct)] = updatedProduct
+                    } else {
+                        updatedPurchases.add(
+                            hashMapOf(
+                                "productId" to cartItem.firebaseId,
+                                "name" to cartItem.productName,
+                                "price" to cartItem.productPrice,
+                                "quantity" to cartItem.quantity,
+                                "imageResource" to cartItem.productImage
+                            )
+                        )
+                    }
+                }
+
+                historyRef.update("compras", updatedPurchases).await()
+            } else {
+                val initialData = hashMapOf(
+                    "ventas" to emptyList<Map<String, Any>>(),
+                    "compras" to cartItems.map { cartItem ->
+                        hashMapOf(
+                            "productId" to cartItem.firebaseId,
+                            "name" to cartItem.productName,
+                            "price" to cartItem.productPrice,
+                            "quantity" to cartItem.quantity,
+                            "imageResource" to cartItem.productImage
+                        )
+                    }
+                )
+                historyRef.set(initialData).await()
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    requireContext(),
+                    "Failed to update purchase history: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 
@@ -138,7 +211,6 @@ class PaymentFragment : Fragment() {
 
     private fun validateBillingAddress(): Boolean {
         val addressText = billingAddress.text.toString()
-
 
         return if (addressText.length > 6 && addressText.isNotBlank() && addressText.matches(Regex("^(?=.*[A-Za-z])(?=.*\\d).+$"))) {
             billingAddress.setTextColor(Color.BLACK)
@@ -151,7 +223,6 @@ class PaymentFragment : Fragment() {
             false
         }
     }
-
 
     private fun validateBillingCity(): Boolean {
         val city = billingCity.text.toString().trim()
@@ -228,7 +299,6 @@ class PaymentFragment : Fragment() {
         return activeNetwork != null && activeNetwork.isConnected
     }
 
-    // Filtro personalizado para permitir solo dígitos en billingZipcode
     private class NumericInputFilter : InputFilter {
         override fun filter(
             source: CharSequence,
@@ -247,4 +317,5 @@ class PaymentFragment : Fragment() {
         }
     }
 }
+
 

@@ -8,13 +8,14 @@ import androidx.lifecycle.viewModelScope
 import com.example.ecostyle.Repository.ProductRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PublishItemViewModel : ViewModel() {
 
     private val repository = ProductRepository()
 
-    private val _publishStatus = MutableLiveData<Boolean>()
-    val publishStatus: LiveData<Boolean> get() = _publishStatus
+    private val _publishStatus = MutableLiveData<Boolean?>()
+    val publishStatus: LiveData<Boolean?> get() = _publishStatus
 
     fun publishProduct(
         name: String,
@@ -26,20 +27,28 @@ class PublishItemViewModel : ViewModel() {
         latitude: Double,
         longitude: Double,
         brand: String,
-        initialProduct: String
+        initialPrice: String
     ) {
-        // Lanzar una corrutina para realizar la operación en un hilo secundario
+        // Lanzar la operación en un hilo de fondo utilizando Dispatchers.IO
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Llamar al repositorio para publicar el producto
-                val success = repository.publishProductToFirestore(name, price, description, ecoFriendly, imageUri, quantity, latitude, longitude, brand, initialProduct)
-                _publishStatus.postValue(success) // Actualizar el estado de la publicación en la UI
+                val result = repository.publishProductToFirestore(
+                    name, price, description, ecoFriendly, imageUri, quantity,
+                    latitude, longitude, brand, initialPrice
+                )
+                withContext(Dispatchers.Main) {
+                    _publishStatus.value = result
+                }
             } catch (e: Exception) {
-                // Si hay algún error, publicar false
-                _publishStatus.postValue(false)
+                withContext(Dispatchers.Main) {
+                    _publishStatus.value = false
+                }
             }
         }
     }
-}
 
+    fun resetPublishStatus() {
+        _publishStatus.postValue(null)
+    }
+}
 
