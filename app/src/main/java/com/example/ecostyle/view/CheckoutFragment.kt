@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ecostyle.R
@@ -15,8 +16,10 @@ import com.example.ecostyle.adapter.CartAdapter
 import com.example.ecostyle.model.CartItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -49,13 +52,24 @@ class CheckoutFragment : Fragment() {
 
         checkoutButton.setOnClickListener {
             if (isNetworkAvailable(requireContext())) {
-                verifyStockBeforeCheckout()
+                if (cartAdapter.itemCount > 0) {
+                    verifyStockBeforeCheckout()
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Your cart is empty. Please add items to your cart before checking out.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             } else {
-
-                Toast.makeText(context, "Payment cannot be made offline. Please try again later.", Toast.LENGTH_LONG).show()
-
+                Toast.makeText(
+                    context,
+                    "Payment cannot be made offline. Please try again later.",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
+
 
         loadCartItems()
 
@@ -67,7 +81,7 @@ class CheckoutFragment : Fragment() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
         if (userId != null) {
-            GlobalScope.launch(Dispatchers.IO) {
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val documents = db.collection("carts").document(userId).collection("items").get().await()
                     val cartItems = mutableListOf<CartItem>()
@@ -76,7 +90,6 @@ class CheckoutFragment : Fragment() {
 
                     for (document in documents) {
                         val cartItem = document.toObject(CartItem::class.java)
-
                         cartItem?.let {
                             cartItem.id = document.id
                             cartItems.add(cartItem)
@@ -104,7 +117,11 @@ class CheckoutFragment : Fragment() {
 
     private fun decreaseCartItemQuantity(cartItem: CartItem) {
         if (!isNetworkAvailable(requireContext())) {
-            Toast.makeText(context, "You cannot modify the cart offline. Please try again later.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "You cannot modify the cart offline. Please try again later.",
+                Toast.LENGTH_LONG
+            ).show()
             return
         }
 
@@ -112,26 +129,27 @@ class CheckoutFragment : Fragment() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
         if (userId != null) {
-            val cartRef = db.collection("carts").document(userId).collection("items")
-
-            if (cartItem.quantity > 1) {
-                cartItem.quantity -= 1
-                cartRef.document(cartItem.id).update("quantity", cartItem.quantity)
-                    .addOnSuccessListener {
-                        loadCartItems()
-                    }
-            } else {
-                cartRef.document(cartItem.id).delete()
-                    .addOnSuccessListener {
-                        loadCartItems()
-                    }
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                if (cartItem.quantity > 1) {
+                    cartItem.quantity -= 1
+                    db.collection("carts").document(userId).collection("items")
+                        .document(cartItem.id).update("quantity", cartItem.quantity).await()
+                } else {
+                    db.collection("carts").document(userId).collection("items")
+                        .document(cartItem.id).delete().await()
+                }
+                loadCartItems()
             }
         }
     }
 
     private fun updateCartItemQuantity(cartItem: CartItem) {
         if (!isNetworkAvailable(requireContext())) {
-            Toast.makeText(context, "You cannot modify the cart offline. Please try again later.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "You cannot modify the cart offline. Please try again later.",
+                Toast.LENGTH_LONG
+            ).show()
             return
         }
 
@@ -139,12 +157,11 @@ class CheckoutFragment : Fragment() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
         if (userId != null) {
-            db.collection("carts").document(userId).collection("items")
-                .document(cartItem.id)
-                .update("quantity", cartItem.quantity)
-                .addOnSuccessListener {
-                    loadCartItems()
-                }
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                db.collection("carts").document(userId).collection("items")
+                    .document(cartItem.id).update("quantity", cartItem.quantity).await()
+                loadCartItems()
+            }
         }
     }
 
@@ -153,13 +170,12 @@ class CheckoutFragment : Fragment() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
         if (userId != null) {
-            val cartRef = db.collection("carts").document(userId).collection("items")
-
-            GlobalScope.launch(Dispatchers.IO) {
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                val cartRef = db.collection("carts").document(userId).collection("items")
                 val snapshot = cartRef.get().await()
                 var allAvailable = true
 
-                snapshot.documents.forEach { document ->
+                for (document in snapshot.documents) {
                     val cartItem = document.toObject(CartItem::class.java)
                     cartItem?.let {
                         if (cartItem.firebaseId.isNotEmpty()) {
@@ -170,7 +186,11 @@ class CheckoutFragment : Fragment() {
                             if (cartItem.quantity > availableQuantity) {
                                 allAvailable = false
                                 withContext(Dispatchers.Main) {
-                                    Toast.makeText(requireContext(), "The available quantity of ${cartItem.productName} is $availableQuantity.", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(
+                                        requireContext(),
+                                        "The available quantity of ${cartItem.productName} is $availableQuantity.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
                                 }
                             }
                         }
@@ -201,8 +221,8 @@ class CheckoutFragment : Fragment() {
     }
 
     private fun updateTotalPrice() {
-        val numberFormat = NumberFormat.getCurrencyInstance(Locale("es", "CO")) // Para formato en pesos colombianos (COP)
-        numberFormat.maximumFractionDigits = 0 // Sin decimales
+        val numberFormat = NumberFormat.getCurrencyInstance(Locale("es", "CO"))
+        numberFormat.maximumFractionDigits = 0
 
         val subtotal = cartAdapter.cartItemList.sumOf { cartItem ->
             val cleanPrice = cartItem.productPrice.replace(".", "").toDoubleOrNull() ?: 0.0
@@ -228,7 +248,8 @@ class CheckoutFragment : Fragment() {
 
     private fun updateCartStatus(hasItems: Boolean) {
         if (isAdded) {
-            val sharedPreferences = requireContext().getSharedPreferences("CartPrefs", Context.MODE_PRIVATE)
+            val sharedPreferences =
+                requireContext().getSharedPreferences("CartPrefs", Context.MODE_PRIVATE)
             val editor = sharedPreferences.edit()
             editor.putBoolean("hasItemsInCart", hasItems)
             editor.apply()
@@ -236,11 +257,10 @@ class CheckoutFragment : Fragment() {
     }
 
     private fun isNetworkAvailable(context: Context): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val connectivityManager =
+            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val activeNetwork = connectivityManager.activeNetworkInfo
         return activeNetwork != null && activeNetwork.isConnected
     }
 }
-
-
 

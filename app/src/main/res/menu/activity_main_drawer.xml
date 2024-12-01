@@ -13,13 +13,19 @@
             android:icon="@drawable/ic_cart"
             android:title="Cart" />
         <item
-            android:id="@+id/nav_item_4"
-            android:icon="@drawable/ic_eco"
-            android:title="Sustainability" />
-        <item
             android:id="@+id/nav_item_6"
             android:icon="@drawable/ic_sales"
             android:title="Sales" />
+        <item
+            android:id="@+id/nav_item_8"
+            android:icon="@drawable/ic_history"
+            android:title="History" />
+        <item
+            android:id="@+id/nav_item_4"
+            android:icon="@drawable/ic_eco"
+            android:title="Sustainability" />
+
+
         <item
             android:id="@+id/nav_item_5"
             android:icon="@drawable/ic_profile"
