@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 class HistoryFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
+    private lateinit var emptyView: TextView
     private lateinit var historyAdapter: HistoryAdapter
     private lateinit var switchProducts: Switch
     private lateinit var historyTitle: TextView
@@ -30,7 +31,7 @@ class HistoryFragment : Fragment() {
     private val productList = mutableListOf<Map<String, Any>>()
     private var isSalesHistory = false
     private val db = FirebaseFirestore.getInstance()
-    private val userId by lazy { retrieveUserId() } // Renombrado para evitar conflicto
+    private val userId by lazy { retrieveUserId() }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,6 +40,7 @@ class HistoryFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_history, container, false)
 
         recyclerView = view.findViewById(R.id.recycler_view_products)
+        emptyView = view.findViewById(R.id.empty_view)
         switchProducts = view.findViewById(R.id.switch_products)
         historyTitle = view.findViewById(R.id.history_title)
         switchLabel = view.findViewById(R.id.switch_label)
@@ -85,21 +87,41 @@ class HistoryFragment : Fragment() {
                         productList.clear()
                         productList.addAll(data)
                         historyAdapter.notifyDataSetChanged()
+                        toggleEmptyView(null) // No hay errores, usar lógica normal
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(requireContext(), "No $type found", Toast.LENGTH_SHORT).show()
+                        productList.clear()
+                        toggleEmptyView(null) // No hay productos pero sin errores
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "Failed to load history: ${e.message}", Toast.LENGTH_SHORT).show()
+                    productList.clear()
+                    toggleEmptyView("Histories could not be loaded. Please check your internet connection and try again.")
                 }
             }
         }
     }
 
-    private fun retrieveUserId(): String { // Renombrado para evitar conflicto
+    private fun toggleEmptyView(errorMessage: String?) {
+        if (productList.isEmpty()) {
+            emptyView.visibility = View.VISIBLE
+            recyclerView.visibility = View.GONE
+
+            // Mostrar mensaje de error si existe, o texto dinámico según el historial
+            emptyView.text = errorMessage ?: if (isSalesHistory) {
+                "You have not put any products for sale."
+            } else {
+                "You haven't bought anything yet, what are you waiting for to make your first purchase?"
+            }
+        } else {
+            emptyView.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
+        }
+    }
+
+    private fun retrieveUserId(): String {
         return FirebaseAuth.getInstance().currentUser?.uid ?: ""
     }
 }
