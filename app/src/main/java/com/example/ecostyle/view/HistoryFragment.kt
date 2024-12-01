@@ -23,6 +23,7 @@ class HistoryFragment : Fragment() {
     private lateinit var historyTitle: TextView
     private lateinit var switchLabel: TextView
     private val productList = mutableListOf<Map<String, Any>>()
+    private var isSalesHistory = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -35,18 +36,25 @@ class HistoryFragment : Fragment() {
         historyTitle = view.findViewById(R.id.history_title)
         switchLabel = view.findViewById(R.id.switch_label)
 
-        historyAdapter = HistoryAdapter(productList)
+        val userId = getUserId() // Asignar el userId para usarlo en el adaptador y en otros métodos
+
+        historyAdapter = HistoryAdapter(productList, isSalesHistory, userId)
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = historyAdapter
 
         switchProducts.setOnCheckedChangeListener { _, isChecked ->
+            isSalesHistory = isChecked // Actualiza la variable isSalesHistory
             if (isChecked) {
                 historyTitle.text = "Sales history"
                 switchLabel.text = "Show Purchased Products"
+                historyAdapter = HistoryAdapter(productList, isSalesHistory = true, userId = userId)
+                recyclerView.adapter = historyAdapter
                 loadHistory("ventas")
             } else {
                 historyTitle.text = "Purchase history"
                 switchLabel.text = "Show Sold Products"
+                historyAdapter = HistoryAdapter(productList, isSalesHistory = false, userId = userId)
+                recyclerView.adapter = historyAdapter
                 loadHistory("compras")
             }
         }
@@ -58,25 +66,33 @@ class HistoryFragment : Fragment() {
     }
 
     private fun loadHistory(type: String) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val userId = getUserId()
         val db = FirebaseFirestore.getInstance()
 
-        if (userId != null) {
-            db.collection("historial").document(userId).get().addOnSuccessListener { document ->
-                if (document.exists()) {
-                    productList.clear()
-                    val data = document.get(type) as List<Map<String, Any>>?
-                    if (data != null) {
-                        productList.addAll(data)
+        if (userId.isNotEmpty()) {
+            db.collection("historial").document(userId).get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        productList.clear()
+                        val data = document.get(type) as? List<Map<String, Any>>
+                        if (data != null) {
+                            productList.addAll(data)
+                            historyAdapter.notifyDataSetChanged()
+                        } else {
+                            Toast.makeText(requireContext(), "No $type found", Toast.LENGTH_SHORT).show()
+                        }
                     }
-                    historyAdapter.notifyDataSetChanged()
                 }
-            }.addOnFailureListener {
-                Toast.makeText(requireContext(), "Failed to load history: ${it.message}", Toast.LENGTH_SHORT).show()
-            }
+                .addOnFailureListener {
+                    Toast.makeText(requireContext(), "Failed to load history: ${it.message}", Toast.LENGTH_SHORT).show()
+                }
         } else {
             Toast.makeText(requireContext(), "User not logged in", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun getUserId(): String {
+        return FirebaseAuth.getInstance().currentUser?.uid ?: ""
     }
 }
 

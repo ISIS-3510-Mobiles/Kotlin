@@ -379,17 +379,23 @@ class PublishItemFragment : Fragment() {
                 viewLifecycleOwner.lifecycleScope.launch {
                     try {
                         // Llamar al ViewModel para publicar el producto
-                        val success = viewModel.publishProduct(
+                        viewModel.publishProduct(
                             name, price, description, ecoFriendly, imageUri, quantity,
                             location.latitude, location.longitude, brand, initialPrice
                         )
 
-                        if (success) {
-                            Toast.makeText(requireContext(), "Product published successfully!", Toast.LENGTH_SHORT).show()
-                            navigateToConfirmation()
-                            clearFormData()
-                        } else {
-                            Toast.makeText(requireContext(), "Failed to publish product.", Toast.LENGTH_SHORT).show()
+                        // Observar cambios en el estado de publicación
+                        viewModel.publishStatus.observe(viewLifecycleOwner) { success ->
+                            success?.let {
+                                if (it) {
+                                    Toast.makeText(requireContext(), "Product published successfully!", Toast.LENGTH_SHORT).show()
+                                    navigateToConfirmation()
+                                    clearFormData()
+                                } else {
+                                    Toast.makeText(requireContext(), "Failed to publish product.", Toast.LENGTH_SHORT).show()
+                                }
+                                viewModel.resetPublishStatus() // Restablecer el estado
+                            }
                         }
                     } catch (e: Exception) {
                         Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.ecostyle.Repository.ProductRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PublishItemViewModel : ViewModel() {
 
@@ -16,7 +17,7 @@ class PublishItemViewModel : ViewModel() {
     private val _publishStatus = MutableLiveData<Boolean?>()
     val publishStatus: LiveData<Boolean?> get() = _publishStatus
 
-    suspend fun publishProduct(
+    fun publishProduct(
         name: String,
         price: String,
         description: String,
@@ -27,14 +28,24 @@ class PublishItemViewModel : ViewModel() {
         longitude: Double,
         brand: String,
         initialPrice: String
-    ): Boolean {
-        return try {
-            repository.publishProductToFirestore(
-                name, price, description, ecoFriendly, imageUri, quantity,
-                latitude, longitude, brand, initialPrice
-            )
-        } catch (e: Exception) {
-            false
+    ) {
+        // Lanzar la operación en un hilo de fondo utilizando Dispatchers.IO
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val result = repository.publishProductToFirestore(
+                    name, price, description, ecoFriendly, imageUri, quantity,
+                    latitude, longitude, brand, initialPrice
+                )
+
+                // Actualizar el estado en el hilo principal
+                withContext(Dispatchers.Main) {
+                    _publishStatus.value = result
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _publishStatus.value = false
+                }
+            }
         }
     }
 
@@ -42,5 +53,4 @@ class PublishItemViewModel : ViewModel() {
         _publishStatus.postValue(null)
     }
 }
-
 
