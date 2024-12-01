@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="@android:color/white"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Switch para alternar entre productos comprados y vendidos -->
+        <Switch
+            android:id="@+id/switch_products"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Show Sold Products"
+            android:layout_gravity="center_horizontal"
+            android:textSize="16sp"
+            android:paddingBottom="16dp" />
+
+        <!-- RecyclerView para mostrar los productos -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_view_products"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            tools:listitem="@layout/activity_item_product_card_history" />
+
+        <!-- Resumen informativo (opcional) -->
+        <LinearLayout
+            android:id="@+id/summary_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="32dp"
+            android:visibility="gone">
+
+            <!-- Total de productos -->
+            <TextView
+                android:id="@+id/total_products_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Total de productos: 0"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Información adicional -->
+            <TextView
+                android:id="@+id/additional_info_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Algunos productos pueden estar pendientes de confirmación."
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
