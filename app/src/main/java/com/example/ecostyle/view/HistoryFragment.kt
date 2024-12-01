@@ -35,26 +35,23 @@ class HistoryFragment : Fragment() {
         historyTitle = view.findViewById(R.id.history_title)
         switchLabel = view.findViewById(R.id.switch_label)
 
-        // Configurar el RecyclerView y el Adaptador
         historyAdapter = HistoryAdapter(productList)
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = historyAdapter
 
-        // Configurar el Switch para alternar entre ventas y compras
         switchProducts.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                historyTitle.text = "Sales history" // Cambiar título a "Historial de ventas"
-                switchLabel.text = "Show Purchased Products" // Cambiar el texto del switch
+                historyTitle.text = "Sales history"
+                switchLabel.text = "Show Purchased Products"
                 loadHistory("ventas")
             } else {
-                historyTitle.text = "Purchase history" // Cambiar título a "Historial de compras"
-                switchLabel.text = "Show Sold Products" // Cambiar el texto del switch
+                historyTitle.text = "Purchase history"
+                switchLabel.text = "Show Sold Products"
                 loadHistory("compras")
             }
         }
 
-        // Cargar datos iniciales (compras por defecto)
-        historyTitle.text = "Historial de compras" // Título inicial
+        historyTitle.text = "Purchase history"
         loadHistory("compras")
 
         return view

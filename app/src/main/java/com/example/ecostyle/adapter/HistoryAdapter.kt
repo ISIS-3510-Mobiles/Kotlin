@@ -29,18 +29,16 @@ class HistoryAdapter(
     override fun onBindViewHolder(holder: HistoryViewHolder, position: Int) {
         val product = productList[position]
 
-        // Validar y extraer los datos
         val name = product["name"] as? String ?: "Unknown"
-        val price = product["price"] as? String ?: "0" // Manejar el precio como String
+        val price = product["price"] as? String ?: "0"
         val quantity = (product["quantity"] as? Number)?.toInt() ?: 0
         val imageUrl = product["imageResource"] as? String
 
-        // Configurar vistas
         holder.productName.text = name
-        holder.productPrice.text = "$$price" // Mostrar precio como String con prefijo $
-        holder.productQuantity.text = "Cantidad: $quantity"
+        holder.productPrice.text = "Unit price: $$price"
+        holder.productQuantity.text = "Quantity: $quantity"
 
-        // Cargar imagen
+
         if (!imageUrl.isNullOrEmpty()) {
             Glide.with(holder.itemView.context)
                 .load(imageUrl)
