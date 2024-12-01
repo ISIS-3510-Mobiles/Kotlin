@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Switch
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -19,6 +20,8 @@ class HistoryFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var historyAdapter: HistoryAdapter
     private lateinit var switchProducts: Switch
+    private lateinit var historyTitle: TextView
+    private lateinit var switchLabel: TextView
     private val productList = mutableListOf<Map<String, Any>>()
 
     override fun onCreateView(
@@ -29,6 +32,8 @@ class HistoryFragment : Fragment() {
 
         recyclerView = view.findViewById(R.id.recycler_view_products)
         switchProducts = view.findViewById(R.id.switch_products)
+        historyTitle = view.findViewById(R.id.history_title)
+        switchLabel = view.findViewById(R.id.switch_label)
 
         // Configurar el RecyclerView y el Adaptador
         historyAdapter = HistoryAdapter(productList)
@@ -37,10 +42,19 @@ class HistoryFragment : Fragment() {
 
         // Configurar el Switch para alternar entre ventas y compras
         switchProducts.setOnCheckedChangeListener { _, isChecked ->
-            loadHistory(if (isChecked) "ventas" else "compras")
+            if (isChecked) {
+                historyTitle.text = "Sales history" // Cambiar título a "Historial de ventas"
+                switchLabel.text = "Show Purchased Products" // Cambiar el texto del switch
+                loadHistory("ventas")
+            } else {
+                historyTitle.text = "Purchase history" // Cambiar título a "Historial de compras"
+                switchLabel.text = "Show Sold Products" // Cambiar el texto del switch
+                loadHistory("compras")
+            }
         }
 
         // Cargar datos iniciales (compras por defecto)
+        historyTitle.text = "Historial de compras" // Título inicial
         loadHistory("compras")
 
         return view

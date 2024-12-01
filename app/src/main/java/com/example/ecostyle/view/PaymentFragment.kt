@@ -83,11 +83,11 @@ class PaymentFragment : Fragment() {
         val db = FirebaseFirestore.getInstance()
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
-        if (userId != null) {
+        if (userId != null && !cartItems.isNullOrEmpty()) { // Validar que cartItems no sea nulo ni vacío
             GlobalScope.launch(Dispatchers.IO) {
                 var allAvailable = true
 
-                cartItems?.forEach { cartItem ->
+                cartItems.forEach { cartItem ->
                     val productRef = db.collection("Products").document(cartItem.firebaseId)
 
                     val productDoc = productRef.get().await()
@@ -108,6 +108,9 @@ class PaymentFragment : Fragment() {
                 }
 
                 if (allAvailable) {
+                    // Guardar los productos comprados en el historial de compras del usuario
+                    savePurchaseHistory(cartItems, userId)
+
                     // Borrar el carrito del usuario al confirmar la compra
                     val cartRef = db.collection("carts").document(userId).collection("items")
                     cartRef.get().await().forEach { document ->
@@ -128,7 +131,53 @@ class PaymentFragment : Fragment() {
                 }
             }
         } else {
-            Toast.makeText(context, "User not logged in. Please log in to proceed.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Cart is empty or user not logged in. Cannot proceed.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private suspend fun savePurchaseHistory(cartItems: List<CartItem>, userId: String) {
+        val db = FirebaseFirestore.getInstance()
+        val historyRef = db.collection("historial").document(userId)
+
+        try {
+            val documentSnapshot = historyRef.get().await()
+
+            if (documentSnapshot.exists()) {
+                // Si el historial ya existe, actualiza el campo "compras"
+                historyRef.update(
+                    "compras",
+                    com.google.firebase.firestore.FieldValue.arrayUnion(*cartItems.map { cartItem ->
+                        hashMapOf(
+                            "name" to cartItem.productName,
+                            "price" to cartItem.productPrice,
+                            "quantity" to cartItem.quantity,
+                            "imageResource" to cartItem.productImage
+                        )
+                    }.toTypedArray())
+                ).await()
+            } else {
+                // Si no existe, crea el documento con el historial inicial
+                val initialData = hashMapOf(
+                    "ventas" to listOf<Map<String, Any>>(), // Inicializa ventas como lista vacía
+                    "compras" to cartItems.map { cartItem ->
+                        hashMapOf(
+                            "name" to cartItem.productName,
+                            "price" to cartItem.productPrice,
+                            "quantity" to cartItem.quantity,
+                            "imageResource" to cartItem.productImage
+                        )
+                    }
+                )
+                historyRef.set(initialData).await()
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    requireContext(),
+                    "Failed to update purchase history: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 

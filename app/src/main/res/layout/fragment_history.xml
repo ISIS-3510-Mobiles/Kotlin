@@ -11,15 +11,44 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Switch para alternar entre productos comprados y vendidos -->
-        <Switch
-            android:id="@+id/switch_products"
-            android:layout_width="wrap_content"
+        <!-- Título dinámico -->
+        <TextView
+            android:id="@+id/history_title"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Show Sold Products"
-            android:layout_gravity="center_horizontal"
-            android:textSize="16sp"
-            android:paddingBottom="16dp" />
+            android:text="Historial de compras"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Contenedor del Switch y su etiqueta -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp">
+
+            <!-- Texto dinámico para el estado del switch -->
+            <TextView
+                android:id="@+id/switch_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Show Sold Products"
+                android:textSize="16sp"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Switch con área táctil expandida -->
+            <Switch
+                android:id="@+id/switch_products"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:minHeight="48dp"
+                android:minWidth="48dp"
+                android:text="" />
+        </LinearLayout>
 
         <!-- RecyclerView para mostrar los productos -->
         <androidx.recyclerview.widget.RecyclerView
@@ -58,3 +87,5 @@
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
+
+
