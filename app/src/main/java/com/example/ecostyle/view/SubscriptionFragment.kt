@@ -44,6 +44,7 @@ class SubscriptionFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_subscription, container, false)
     }
 
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -83,37 +84,19 @@ class SubscriptionFragment : Fragment() {
         plan2Button.setOnClickListener { handleButtonClick("Premium Plan", userId) }
     }
 
-    private fun fetchPlanFromFirebase(userId: String) {
-        progressBar.visibility = View.VISIBLE
-        db.collection("users").document(userId).get()
-            .addOnSuccessListener { document ->
-                progressBar.visibility = View.GONE
-                currentPlan = document.getString("subscription_plan")
-                cachePlan(currentPlan) // Update cache
-                updateUI()
-                if (currentPlan != null) {
-                    Toast.makeText(
-                        requireContext(),
-                        "You are online. Your current plan is: $currentPlan",
-                        Toast.LENGTH_LONG
-                    ).show()
-                } else {
-                    Toast.makeText(
-                        requireContext(),
-                        "You are online. No subscription plan is selected.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-            .addOnFailureListener {
-                progressBar.visibility = View.GONE
-                currentPlan = sharedPreferences.getString("selected_plan", null)
-                updateUI()
-                Toast.makeText(requireContext(), "Failed to fetch plan from server.", Toast.LENGTH_SHORT).show()
-            }
-    }
-
     private fun handleButtonClick(plan: String, userId: String?) {
+        if (!isOnline()) {
+            // Offline: Show specific message based on button clicked
+            if (currentPlan == null) {
+                Toast.makeText(requireContext(), "You are offline. No cached plan available to manage.", Toast.LENGTH_SHORT).show()
+            } else if (plan == currentPlan) {
+                Toast.makeText(requireContext(), "Wait until you have a connection to cancel your plan.", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(requireContext(), "Wait until you have a connection to upgrade your plan.", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+
         if (userId == null) {
             Toast.makeText(requireContext(), "User not logged in.", Toast.LENGTH_SHORT).show()
             return
@@ -187,5 +170,39 @@ class SubscriptionFragment : Fragment() {
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    private fun fetchPlanFromFirebase(userId: String) {
+        progressBar.visibility = View.VISIBLE
+        db.collection("users").document(userId).get()
+            .addOnSuccessListener { document ->
+                progressBar.visibility = View.GONE
+                currentPlan = document.getString("subscription_plan")
+                cachePlan(currentPlan) // Cache the fetched plan
+                updateUI() // Update the UI with the fetched plan
+                if (currentPlan != null) {
+                    Toast.makeText(
+                        requireContext(),
+                        "You are online. Your current plan is: $currentPlan",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    Toast.makeText(
+                        requireContext(),
+                        "You are online. No subscription plan is selected.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+            .addOnFailureListener {
+                progressBar.visibility = View.GONE
+                currentPlan = sharedPreferences.getString("selected_plan", null)
+                updateUI() // Update UI with the cached plan
+                Toast.makeText(
+                    requireContext(),
+                    "Failed to fetch plan from server. Using cached data if available.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
     }
 }
