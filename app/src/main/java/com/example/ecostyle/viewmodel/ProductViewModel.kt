@@ -53,13 +53,21 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         performInternalAnalysis()
 
  */
+
         val isProximityFilterCached = sharedPreferences.getBoolean("proximity_filter", false)
         _isProximityFilterApplied.value = isProximityFilterCached
-        if (!isProximityFilterCached) {
+        if (isProximityFilterCached) {
+            val cachedLatitude = sharedPreferences.getFloat("cached_latitude", Float.NaN)
+            val cachedLongitude = sharedPreferences.getFloat("cached_longitude", Float.NaN)
+            if (!cachedLatitude.isNaN() && !cachedLongitude.isNaN()) {
+                loadProductsByProximity(cachedLatitude.toDouble(), cachedLongitude.toDouble())
+            }
+        } else {
             loadAllProducts()
         }
         listenToLikes()
         performInternalAnalysis()
+
 
     }
 
@@ -118,46 +126,49 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun loadProductsByProximity(userLatitude: Double, userLongitude: Double) {
+        // Check if the proximity filter is OFF and exit early
+        if (_isProximityFilterApplied.value == false) {
+            Log.d("ProximityFilter", "Proximity filter is OFF. Skipping loadProductsByProximity.")
+            return
+        }
+
         Log.d("ProductViewModel", "loadProductsByProximity called with location: $userLatitude, $userLongitude")
         Log.d("ProximityFilter", "User location: $userLatitude, $userLongitude")
+
         viewModelScope.launch {
             try {
-
-                //if (_isProximityFilterApplied.value == false) return@launch
-
-
                 saveLastKnownLocation(userLatitude, userLongitude)
                 Log.d("ProximityFilter", "Saving user location: Latitude = $userLatitude, Longitude = $userLongitude")
 
-                val products = repository.getProducts() // Llamada suspendida
-
+                val products = repository.getProducts() // Suspend function call to fetch products
                 val productsWithLikes = updateProductsWithLikes(products)
+
+                // Filter products based on proximity
                 val filteredProducts = productsWithLikes.filter { product ->
                     Log.d("ProductCoordinates", "Product: ${product.name}, Latitude: ${product.latitude}, Longitude: ${product.longitude}")
-
                     if (product.latitude != null && product.longitude != null) {
                         val distance = calculateDistance(userLatitude, userLongitude, product.latitude!!, product.longitude!!)
                         Log.d("ProximityFilter", "Product: ${product.name}, Distance: $distance")
-                        distance<= 5.0
+                        distance <= 5.0
                     } else {
                         Log.d("Product", "Product ${product.name} has null latitude/longitude")
                         false
                     }
-
                 }
                 Log.d("ProximityFilter", "Filtered products count: ${filteredProducts.size}")
 
+                // Update proximity filter state and cache
                 _isProximityFilterApplied.value = true
                 sharedPreferences.edit().putBoolean("proximity_filter", true).apply()
                 productList.value = filteredProducts
                 Log.d("ProximityFilter", "productList updated with ${filteredProducts.size} products.")
-
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading products by proximity", e)
-                productList.value = emptyList() // En caso de error, devolver lista vacía
+                productList.value = emptyList() // Return an empty list in case of an error
             }
         }
     }
+
 
     private fun filterProductsBasedOnBattery(products: List<Product>): List<Product> {
         if (products.isEmpty()) {
@@ -197,10 +208,10 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
 
     fun toggleProximityFilter(userLatitude: Double, userLongitude: Double) {
         if (_isProximityFilterApplied.value == true) {
-            // Si el filtro de proximidad ya está aplicado, cargar todos los productos
+            _isProximityFilterApplied.value = false
             loadAllProducts()
         } else {
-            // Si no está aplicado, cargar productos dentro de los 10 km
+            _isProximityFilterApplied.value = true
             loadProductsByProximity(userLatitude, userLongitude)
         }
     }

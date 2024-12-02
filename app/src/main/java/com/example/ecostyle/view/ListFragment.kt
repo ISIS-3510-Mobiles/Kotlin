@@ -89,21 +89,15 @@ class ListFragment : Fragment() {
         productViewModel = ViewModelProvider(this).get(ProductViewModel::class.java)
 
         productViewModel.getProductList().observe(viewLifecycleOwner) { products ->
-            Log.d("ListFragment", "Observer triggered. Received ${products.size} products.")
-
-            Log.d("ListFragment", "Received ${products.size} products from ViewModel.")
-            productAdapter.setProductList(products)
-            Log.d("ListFragment", "RecyclerView updated with ${products.size} products.")
-        }
-        productViewModel.isEcoFriendlyFilterApplied.observe(viewLifecycleOwner) { isEcoFriendly ->
-            if (isEcoFriendly) {
-                showEcoFriendlyMessage()
-                resetFilterButton.visibility = View.VISIBLE
+            val isFiltered = productViewModel.isProximityFilterApplied.value ?: false
+            if (isFiltered) {
+                Log.d("ListFragment", "Filtered product list received: ${products.size} products.")
             } else {
-                hideEcoFriendlyMessage()
-//                resetFilterButton.visibility = View.GONE
+                Log.d("ListFragment", "Unfiltered product list received: ${products.size} products.")
             }
+            productAdapter.setProductList(products)
         }
+
 
         checkLocationPermission()
 
@@ -132,13 +126,7 @@ class ListFragment : Fragment() {
         analytics.logEvent(eventName, bundle)
     }
 
-    private fun showEcoFriendlyMessage() {
-        ecoFriendlyMessage.visibility = View.VISIBLE
-    }
 
-    private fun hideEcoFriendlyMessage() {
-        ecoFriendlyMessage.visibility = View.GONE
-    }
     private fun checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
