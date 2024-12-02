@@ -23,10 +23,10 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 
-
 class ProductViewModel(application: Application) : AndroidViewModel(application) {
     private val productList: MutableLiveData<List<Product>> = MutableLiveData()
     private val repository = ProductRepository()
+
 
     private val _isEcoFriendlyFilterApplied = MutableLiveData<Boolean>()
     val isEcoFriendlyFilterApplied: LiveData<Boolean> get() = _isEcoFriendlyFilterApplied
@@ -41,18 +41,6 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     val likedProductIds: LiveData<Set<String>> get() = _likedProductIds
 
     init {
-/*
-        loadProducts()
-        listenToLikes()
-
-        val isProximityFilterCached = sharedPreferences.getBoolean("proximity_filter", false)
-        sharedPreferences.edit().putBoolean("proximity_filter", false).apply()
-
-        Log.d("Initialization", "Proximity filter initialized as OFF.")
-        _isProximityFilterApplied.value = isProximityFilterCached
-        performInternalAnalysis()
-
- */
 
         val isProximityFilterCached = sharedPreferences.getBoolean("proximity_filter", false)
         _isProximityFilterApplied.value = isProximityFilterCached
@@ -61,13 +49,15 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             val cachedLongitude = sharedPreferences.getFloat("cached_longitude", Float.NaN)
             if (!cachedLatitude.isNaN() && !cachedLongitude.isNaN()) {
                 loadProductsByProximity(cachedLatitude.toDouble(), cachedLongitude.toDouble())
+            } else {
+                // Handle missing location data gracefully
+                Log.d("ProductViewModel", "Cached location is missing. Loading all products.")
+                _isProximityFilterApplied.value = false
+                loadAllProducts()
             }
         } else {
             loadAllProducts()
         }
-        listenToLikes()
-        performInternalAnalysis()
-
 
     }
 
