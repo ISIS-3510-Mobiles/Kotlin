@@ -13,5 +13,6 @@ data class Product(
     val quantity: Int = 0,
     val brand: String? = null,
     val initialPrice: String? = null,
-    var firebaseId: String = ""
+    var firebaseId: String = "",
+    val number_comments: Int = 0
 )
