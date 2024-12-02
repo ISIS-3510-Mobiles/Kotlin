@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.ecostyle.R
@@ -25,7 +26,9 @@ class SubscriptionFragment : Fragment() {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var plan1Button: Button
     private lateinit var plan2Button: Button
+    private lateinit var currentPlanTextView: TextView
     private lateinit var db: FirebaseFirestore
+    private var currentPlan: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,16 +50,18 @@ class SubscriptionFragment : Fragment() {
         progressBar = view.findViewById(R.id.subscription_progress_bar)
         plan1Button = view.findViewById(R.id.plan_1_subscribe_button)
         plan2Button = view.findViewById(R.id.plan_2_subscribe_button)
+        currentPlanTextView = view.findViewById(R.id.current_plan_text_view)
 
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
         if (!isOnline()) {
             // Offline: Use cached plan
-            val cachedPlan = sharedPreferences.getString("selected_plan", null)
-            if (cachedPlan != null) {
+            currentPlan = sharedPreferences.getString("selected_plan", null)
+            updateUI()
+            if (currentPlan != null) {
                 Toast.makeText(
                     requireContext(),
-                    "You are offline. Your current plan is: $cachedPlan",
+                    "You are offline. Your current plan is: $currentPlan",
                     Toast.LENGTH_LONG
                 ).show()
             } else {
@@ -83,17 +88,16 @@ class SubscriptionFragment : Fragment() {
         db.collection("users").document(userId).get()
             .addOnSuccessListener { document ->
                 progressBar.visibility = View.GONE
-                val plan = document.getString("subscription_plan")
-                if (plan != null) {
-                    // Plan exists in Firebase
+                currentPlan = document.getString("subscription_plan")
+                cachePlan(currentPlan) // Update cache
+                updateUI()
+                if (currentPlan != null) {
                     Toast.makeText(
                         requireContext(),
-                        "You are online. Your current plan is: $plan",
+                        "You are online. Your current plan is: $currentPlan",
                         Toast.LENGTH_LONG
                     ).show()
-                    cachePlan(plan) // Update cache
                 } else {
-                    // No plan in Firebase
                     Toast.makeText(
                         requireContext(),
                         "You are online. No subscription plan is selected.",
@@ -103,21 +107,9 @@ class SubscriptionFragment : Fragment() {
             }
             .addOnFailureListener {
                 progressBar.visibility = View.GONE
+                currentPlan = sharedPreferences.getString("selected_plan", null)
+                updateUI()
                 Toast.makeText(requireContext(), "Failed to fetch plan from server.", Toast.LENGTH_SHORT).show()
-                val cachedPlan = sharedPreferences.getString("selected_plan", null)
-                if (cachedPlan != null) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Using cached plan: $cachedPlan",
-                        Toast.LENGTH_LONG
-                    ).show()
-                } else {
-                    Toast.makeText(
-                        requireContext(),
-                        "No cached plan available.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
             }
     }
 
@@ -127,58 +119,40 @@ class SubscriptionFragment : Fragment() {
             return
         }
 
-        if (isOnline()) {
-            // Online: Check Firebase first
-            progressBar.visibility = View.VISIBLE
-            db.collection("users").document(userId).get()
-                .addOnSuccessListener { document ->
-                    progressBar.visibility = View.GONE
-                    val currentPlan = document.getString("subscription_plan")
-                    if (currentPlan != null) {
-                        // User already has a plan
-                        Toast.makeText(
-                            requireContext(),
-                            "You are already subscribed to $currentPlan. Cannot change plan.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        // No plan exists, allow subscription
-                        handleSubscription(plan, userId)
-                    }
-                }
-                .addOnFailureListener {
-                    progressBar.visibility = View.GONE
-                    Toast.makeText(requireContext(), "Failed to check subscription status.", Toast.LENGTH_SHORT).show()
-                }
+        if (plan == currentPlan) {
+            // Cancel current plan
+            cancelPlan(userId)
         } else {
-            // Offline: Use cached data
-            val cachedPlan = sharedPreferences.getString("selected_plan", null)
-            if (cachedPlan != null) {
-                Toast.makeText(
-                    requireContext(),
-                    "You are offline and already subscribed to $cachedPlan.",
-                    Toast.LENGTH_SHORT
-                ).show()
-            } else {
-                Toast.makeText(requireContext(), "You are offline. Unable to subscribe.", Toast.LENGTH_SHORT).show()
-            }
+            // Subscribe to a new plan
+            subscribeToPlan(plan, userId)
         }
     }
 
-    private fun handleSubscription(plan: String, userId: String) {
+    private fun cancelPlan(userId: String) {
         progressBar.visibility = View.VISIBLE
-        val userDoc = db.collection("users").document(userId)
-        userDoc.set(mapOf("subscription_plan" to plan))
+        db.collection("users").document(userId).update("subscription_plan", null)
             .addOnSuccessListener {
                 progressBar.visibility = View.GONE
-                Toast.makeText(
-                    requireContext(),
-                    "Subscription successful for $plan!",
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(requireContext(), "Plan canceled successfully!", Toast.LENGTH_LONG).show()
+                currentPlan = null
+                cachePlan(null)
+                updateUI()
+            }
+            .addOnFailureListener {
+                progressBar.visibility = View.GONE
+                Toast.makeText(requireContext(), "Failed to cancel plan. Try again later.", Toast.LENGTH_SHORT).show()
+            }
+    }
 
-                logSubscriptionEvent(plan)
-                cachePlan(plan) // Cache the plan locally
+    private fun subscribeToPlan(plan: String, userId: String) {
+        progressBar.visibility = View.VISIBLE
+        db.collection("users").document(userId).set(mapOf("subscription_plan" to plan))
+            .addOnSuccessListener {
+                progressBar.visibility = View.GONE
+                Toast.makeText(requireContext(), "Subscribed to $plan!", Toast.LENGTH_LONG).show()
+                currentPlan = plan
+                cachePlan(plan)
+                updateUI()
             }
             .addOnFailureListener {
                 progressBar.visibility = View.GONE
@@ -186,14 +160,25 @@ class SubscriptionFragment : Fragment() {
             }
     }
 
-    private fun logSubscriptionEvent(plan: String) {
-        firebaseAnalytics.logEvent("subscription_event") {
-            param("subscription_plan", plan)
-            param("subscription_status", "success")
+    private fun updateUI() {
+        currentPlanTextView.text = if (currentPlan != null) {
+            "Current Plan: $currentPlan"
+        } else {
+            "No plan selected"
+        }
+
+        plan1Button.text = when (currentPlan) {
+            "Basic Plan" -> "Cancel Plan"
+            else -> if (currentPlan != null) "Change to Basic Plan" else "Subscribe to Basic Plan"
+        }
+
+        plan2Button.text = when (currentPlan) {
+            "Premium Plan" -> "Cancel Plan"
+            else -> if (currentPlan != null) "Change to Premium Plan" else "Subscribe to Premium Plan"
         }
     }
 
-    private fun cachePlan(plan: String) {
+    private fun cachePlan(plan: String?) {
         sharedPreferences.edit().putString("selected_plan", plan).apply()
     }
 
