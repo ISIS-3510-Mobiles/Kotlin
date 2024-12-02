@@ -43,10 +43,12 @@ object LocalStorageManager {
     fun addPendingComment(context: Context, productId: String, comment: Comment) {
         val pendingComments = getPendingComments(context).toMutableMap()
         val commentsForProduct = pendingComments[productId]?.toMutableList() ?: mutableListOf()
-        commentsForProduct.add(comment)
-        pendingComments[productId] = commentsForProduct
-        savePendingComments(context, pendingComments)
-        notifyCommentListeners(productId, commentsForProduct)
+        if (commentsForProduct.none { it.isSameAs(comment) }) {
+            commentsForProduct.add(comment)
+            pendingComments[productId] = commentsForProduct
+            savePendingComments(context, pendingComments)
+            notifyCommentListeners(productId, commentsForProduct)
+        }
     }
 
     fun getPendingComments(context: Context): Map<String, List<Comment>> {

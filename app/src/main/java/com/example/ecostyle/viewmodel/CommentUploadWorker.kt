@@ -19,19 +19,25 @@ class CommentUploadWorker(context: Context, workerParams: WorkerParameters) : Co
         val db = FirebaseFirestore.getInstance()
 
         try {
+
             for ((productId, comments) in pendingComments) {
                 val commentsRef = db.collection("Products").document(productId).collection("Comments")
 
                 for (comment in comments) {
                     try {
-                        // Subir cada comentario a Firebase
-                        commentsRef.add(comment).await()
-
-                        // Eliminar el comentario del almacenamiento local tras subirlo
-                        LocalStorageManager.removePendingComment(applicationContext, productId, comment)
+                        val existingComments = commentsRef
+                            .whereEqualTo("userId", comment.userId)
+                            .whereEqualTo("timestamp", comment.timestamp)
+                            .get()
+                            .await()
+                        if (existingComments.isEmpty) {
+                            // Subir comentario si no existe en Firebase
+                            commentsRef.add(comment).await()
+                            LocalStorageManager.removePendingComment(applicationContext, productId, comment)
+                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        return Result.retry() // Volver a intentar si falla
+                        return Result.retry()
                     }
                 }
             }

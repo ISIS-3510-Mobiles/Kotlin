@@ -5,4 +5,8 @@ data class Comment(
     val userName: String = "",
     val content: String = "",
     val timestamp: Long = 0L
-)
+) {
+    fun isSameAs(other: Comment): Boolean {
+        return this.userId == other.userId && this.timestamp == other.timestamp
+    }
+}

@@ -352,7 +352,6 @@ class ProductDetailFragment : Fragment() {
         val product = viewModel.product.value
         val productId = product?.firebaseId ?: return
 
-        // Cargar comentarios desde Firebase
         db.collection("Products").document(productId)
             .collection("Comments")
             .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
@@ -363,29 +362,30 @@ class ProductDetailFragment : Fragment() {
                 }
 
                 if (snapshots != null) {
-                    commentsList.clear()
+                    val firebaseComments = mutableListOf<Comment>()
                     for (doc in snapshots.documents) {
                         val comment = doc.toObject(Comment::class.java)
                         if (comment != null) {
-                            commentsList.add(comment)
+                            firebaseComments.add(comment)
                         }
                     }
 
-                    // Añadir comentarios almacenados localmente
-                    val localComments = LocalStorageManager.getPendingComments(requireContext())
-                    commentsList.addAll(localComments[productId] ?: emptyList())
+                    // Combinar comentarios de Firebase y locales, evitando duplicados
+                    val localComments = LocalStorageManager.getPendingComments(requireContext())[productId] ?: emptyList()
+                    val combinedComments = (firebaseComments + localComments).distinctBy { "${it.userId}_${it.timestamp}" }
 
-                    // Actualizar la interfaz
+                    commentsList.clear()
+                    commentsList.addAll(combinedComments)
+
                     commentAdapter.setCommentList(commentsList)
                     commentsTitle.text = "Comments (${commentsList.size})"
 
-                    noCommentsTextView.visibility =
-                        if (commentsList.isEmpty()) View.VISIBLE else View.GONE
-                    commentsRecyclerView.visibility =
-                        if (commentsList.isEmpty()) View.GONE else View.VISIBLE
+                    noCommentsTextView.visibility = if (commentsList.isEmpty()) View.VISIBLE else View.GONE
+                    commentsRecyclerView.visibility = if (commentsList.isEmpty()) View.GONE else View.VISIBLE
                 }
             }
     }
+
 
 
 
@@ -414,20 +414,23 @@ class ProductDetailFragment : Fragment() {
     }
 
     private fun addComment(commentText: String) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
         val userName = FirebaseAuth.getInstance().currentUser?.displayName ?: "Anonymous"
         val product = viewModel.product.value
         val productId = product?.firebaseId ?: return
 
         val comment = Comment(
-            userId = userId ?: "",
+            userId = userId,
             userName = userName,
             content = commentText,
             timestamp = System.currentTimeMillis()
         )
 
-        commentsList.add(0, comment)
-        commentAdapter.setCommentList(commentsList)
+        // Evitar duplicados en la lista local
+        if (commentsList.none { it.isSameAs(comment) }) {
+            commentsList.add(0, comment)
+            commentAdapter.setCommentList(commentsList)
+        }
 
         if (hasInternetConnection()) {
             val db = FirebaseFirestore.getInstance()
@@ -436,22 +439,17 @@ class ProductDetailFragment : Fragment() {
                 .addOnSuccessListener {
                     incrementCommentCount(productId)
                 }
-                .addOnFailureListener { e ->
-                    Log.e("ProductDetailFragment", "Failed to upload comment: $comment", e)
+                .addOnFailureListener {
                     LocalStorageManager.addPendingComment(requireContext(), productId, comment)
                     scheduleCommentUploadWorker(requireContext())
                 }
         } else {
-            // Guardar localmente si no hay conexión
             LocalStorageManager.addPendingComment(requireContext(), productId, comment)
             scheduleCommentUploadWorker(requireContext())
-            Toast.makeText(
-                requireContext(),
-                "No Internet. Comment saved locally and will sync when online.",
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(requireContext(), "No Internet. Comment saved locally.", Toast.LENGTH_SHORT).show()
         }
     }
+
 
 
 
