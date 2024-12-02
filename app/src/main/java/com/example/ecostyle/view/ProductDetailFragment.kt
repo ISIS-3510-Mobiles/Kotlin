@@ -2,6 +2,7 @@
 
 package com.example.ecostyle.view
 
+import CommentUploadWorker
 import android.app.AlertDialog
 import android.content.Context
 import android.net.ConnectivityManager
@@ -33,6 +34,10 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
 import com.example.ecostyle.adapter.CommentAdapter
 import com.example.ecostyle.model.Comment
 import com.google.firebase.firestore.FieldValue
@@ -85,6 +90,7 @@ class ProductDetailFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         uploadPendingComments()
+        scheduleCommentUploadWorker(requireContext())
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -420,7 +426,6 @@ class ProductDetailFragment : Fragment() {
             timestamp = System.currentTimeMillis()
         )
 
-        // Añadir a la lista y actualizar la interfaz de inmediato
         commentsList.add(0, comment)
         commentAdapter.setCommentList(commentsList)
 
@@ -434,10 +439,12 @@ class ProductDetailFragment : Fragment() {
                 .addOnFailureListener { e ->
                     Log.e("ProductDetailFragment", "Failed to upload comment: $comment", e)
                     LocalStorageManager.addPendingComment(requireContext(), productId, comment)
+                    scheduleCommentUploadWorker(requireContext())
                 }
         } else {
             // Guardar localmente si no hay conexión
             LocalStorageManager.addPendingComment(requireContext(), productId, comment)
+            scheduleCommentUploadWorker(requireContext())
             Toast.makeText(
                 requireContext(),
                 "No Internet. Comment saved locally and will sync when online.",
@@ -477,6 +484,23 @@ class ProductDetailFragment : Fragment() {
                 }
         }
     }
+
+    private fun scheduleCommentUploadWorker(context: Context) {
+        // Configurar restricciones para que solo se ejecute con conexión
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        // Crear una solicitud de trabajo única
+        val uploadWorkRequest = OneTimeWorkRequest.Builder(CommentUploadWorker::class.java)
+            .setConstraints(constraints) // Asignar restricciones
+            .build()
+
+        // Encolar la tarea en WorkManager
+        WorkManager.getInstance(context).enqueue(uploadWorkRequest)
+    }
+
+
 
 
 }
