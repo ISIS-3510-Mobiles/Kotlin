@@ -486,28 +486,31 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun saveDataToCsv(eventType: String, data: Map<String, Any>) {
         try {
-            // Get the internal app-specific directory
+            // Get internal directory for CSV file
             val file = File(filesDir, "analytics_data.csv")
+            val isNewFile = !file.exists()
 
-            // Write to file using printWriter
-            file.printWriter().use { writer ->
-                // Check if the file is new and write the header if necessary
-                if (!file.exists()) {
-                    writer.println("Event Type,Key,Value")
-                }
+            // Open file in append mode
+            val writer = FileWriter(file, true)
 
-                // Append data
-                data.forEach { (key, value) ->
-                    writer.println("$eventType,$key,$value")
-                }
+            // Write header only for new files
+            if (isNewFile) {
+                writer.append("Event Type,Key,Value\n")
             }
 
-            Log.d("CSV", "Data saved to ${file.absolutePath}")
-            //Toast.makeText(this, "CSV saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+            // Append event data
+            data.forEach { (key, value) ->
+                writer.append("$eventType,$key,$value\n")
+            }
 
+            writer.flush()
+            writer.close()
+
+            Log.d("CSV", "Data saved to ${file.absolutePath}")
         } catch (e: IOException) {
             Log.e("CSV", "Error saving data: ${e.message}")
-            //Toast.makeText(this, "Failed to save CSV: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
+
+
 }
