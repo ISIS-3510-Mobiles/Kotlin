@@ -35,6 +35,8 @@ import com.example.ecostyle.view.HistoryFragment
 import com.example.ecostyle.view.LikesFragment
 import com.example.ecostyle.view.PublishItemFragment
 import com.google.android.gms.location.LocationServices
+import com.example.ecostyle.view.SubscriptionFragment
+
 
 enum class ProviderType {
     BASIC,
@@ -206,6 +208,11 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, SustainabilityFragment())
+                    .commit()
+            }
+            R.id.nav_item_9 -> {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, SubscriptionFragment())
                     .commit()
             }
             R.id.nav_item_5 -> {
