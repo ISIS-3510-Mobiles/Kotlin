@@ -37,6 +37,7 @@ class CommentAdapter(private var commentList: List<Comment>) :
         holder.timestampText.text = sdf.format(date)
     }
 
+
     override fun getItemCount(): Int = commentList.size
 
     fun setCommentList(newList: List<Comment>) {

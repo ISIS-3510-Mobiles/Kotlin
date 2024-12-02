@@ -50,10 +50,13 @@ class ProductDetailFragment : Fragment() {
     private lateinit var favoriteButton: ImageButton
     private lateinit var addToCartButton: Button
 
+    private lateinit var commentsTitle: TextView
     private lateinit var commentsRecyclerView: RecyclerView
     private lateinit var noCommentsTextView: TextView
-    private lateinit var addCommentButton: Button
+    private lateinit var newCommentInput: EditText
+    private lateinit var postCommentButton: Button
     private lateinit var commentAdapter: CommentAdapter
+
     private var commentsList: MutableList<Comment> = mutableListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,9 +97,12 @@ class ProductDetailFragment : Fragment() {
         favoriteButton = view.findViewById(R.id.favorite_icon)
         addToCartButton = view.findViewById(R.id.btn_add_to_cart)
 
+        commentsTitle = view.findViewById(R.id.comments_title)
         commentsRecyclerView = view.findViewById(R.id.comments_recyclerview)
         noCommentsTextView = view.findViewById(R.id.no_comments_text)
-        addCommentButton = view.findViewById(R.id.add_comment_button)
+        newCommentInput = view.findViewById(R.id.new_comment_input)
+        postCommentButton = view.findViewById(R.id.post_comment_button)
+
 
         // Configurar RecyclerView
         commentAdapter = CommentAdapter(commentsList)
@@ -112,10 +118,9 @@ class ProductDetailFragment : Fragment() {
                 .load(product.imageResource)
                 .into(productImage)
 
-            // Verificar si el producto está marcado como favorito en el almacenamiento local
-            product.isFavorite = LocalStorageManager.isProductLiked(requireContext(), product.firebaseId)
 
-            // Actualizar el icono de "like"
+            product.isFavorite =
+                LocalStorageManager.isProductLiked(requireContext(), product.firebaseId)
             updateLikeIcon(product.isFavorite)
             loadComments()
         }
@@ -140,9 +145,18 @@ class ProductDetailFragment : Fragment() {
                 addToCart(product)
             }
         }
-        addCommentButton.setOnClickListener {
-            showAddCommentDialog()
+
+        postCommentButton.setOnClickListener {
+            val commentText = newCommentInput.text.toString().trim()
+            if (commentText.isNotEmpty()) {
+                addComment(commentText)
+                newCommentInput.text.clear()
+            } else {
+                Toast.makeText(requireContext(), "Comment cannot be empty", Toast.LENGTH_SHORT)
+                    .show()
+            }
         }
+
     }
 
     private fun toggleFavorite(product: Product) {
@@ -162,14 +176,25 @@ class ProductDetailFragment : Fragment() {
                                 .addOnSuccessListener {
                                     product.isFavorite = false
                                     updateLikeIcon(product.isFavorite)
-                                    Toast.makeText(context, "${product.name} removed from favorites", Toast.LENGTH_SHORT).show()
-                                    LocalStorageManager.removeLikedProduct(context, product.firebaseId)
+                                    Toast.makeText(
+                                        context,
+                                        "${product.name} removed from favorites",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    LocalStorageManager.removeLikedProduct(
+                                        context,
+                                        product.firebaseId
+                                    )
 
                                     // Aquí puedes registrar el evento de 'like' eliminado
                                     product.name?.let { it1 -> logLikeEvent(it1, false) }
                                 }
                                 .addOnFailureListener { e ->
-                                    Toast.makeText(context, "Error removing from favorites", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Error removing from favorites",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                         }
                     } else {
@@ -185,14 +210,22 @@ class ProductDetailFragment : Fragment() {
                             .addOnSuccessListener {
                                 product.isFavorite = true
                                 updateLikeIcon(product.isFavorite)
-                                Toast.makeText(context, "${product.name} added to favorites", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "${product.name} added to favorites",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 LocalStorageManager.addLikedProduct(context, product.firebaseId)
 
                                 // Aquí puedes registrar el evento de 'like' añadido
                                 product.name?.let { it1 -> logLikeEvent(it1, true) }
                             }
                             .addOnFailureListener { e ->
-                                Toast.makeText(context, "Error adding to favorites", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Error adding to favorites",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                     }
                 }
@@ -230,7 +263,11 @@ class ProductDetailFragment : Fragment() {
 
         // Verificar conexión a Internet antes de continuar
         if (!hasInternetConnection()) {
-            Toast.makeText(requireContext(), "No Internet connection. Unable to add to cart.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                "No Internet connection. Unable to add to cart.",
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
 
@@ -240,7 +277,8 @@ class ProductDetailFragment : Fragment() {
             GlobalScope.launch(Dispatchers.IO) {
                 try {
                     // Verificar si el producto ya está en el carrito
-                    val documents = cartRef.whereEqualTo("firebaseId", product.firebaseId).get().await()
+                    val documents =
+                        cartRef.whereEqualTo("firebaseId", product.firebaseId).get().await()
 
                     if (!documents.isEmpty) {
                         for (document in documents) {
@@ -253,7 +291,11 @@ class ProductDetailFragment : Fragment() {
                                 .await()
 
                             withContext(Dispatchers.Main) {
-                                Toast.makeText(requireContext(), "Updated quantity in cart", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Updated quantity in cart",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     } else {
@@ -270,12 +312,17 @@ class ProductDetailFragment : Fragment() {
                         cartRef.add(cartItem).await()
 
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(requireContext(), "${product.name} added to cart", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                requireContext(),
+                                "${product.name} added to cart",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }
             }
@@ -285,11 +332,13 @@ class ProductDetailFragment : Fragment() {
     }
 
     private fun hasInternetConnection(): Boolean {
-        val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val connectivityManager =
+            requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false
         val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
         return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || activeNetwork.hasTransport(
-            NetworkCapabilities.TRANSPORT_CELLULAR)
+            NetworkCapabilities.TRANSPORT_CELLULAR
+        )
     }
 
     private fun loadComments() {
@@ -315,6 +364,7 @@ class ProductDetailFragment : Fragment() {
                         }
                     }
                     commentAdapter.setCommentList(commentsList)
+                    commentsTitle.text = "Comments (${commentsList.size})"
 
                     if (commentsList.isEmpty()) {
                         noCommentsTextView.visibility = View.VISIBLE
@@ -326,6 +376,7 @@ class ProductDetailFragment : Fragment() {
                 }
             }
     }
+
 
     private fun showAddCommentDialog() {
         val builder = AlertDialog.Builder(requireContext())
@@ -340,7 +391,8 @@ class ProductDetailFragment : Fragment() {
             if (commentText.isNotEmpty()) {
                 addComment(commentText)
             } else {
-                Toast.makeText(requireContext(), "Comment cannot be empty", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Comment cannot be empty", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
         builder.setNegativeButton("Cancel") { dialog, which ->
@@ -373,14 +425,20 @@ class ProductDetailFragment : Fragment() {
                     incrementCommentCount(productId)
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(requireContext(), "Failed to add comment", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Failed to add comment", Toast.LENGTH_SHORT)
+                        .show()
                 }
         } else {
             // Guardar comentario en almacenamiento local
             LocalStorageManager.addPendingComment(requireContext(), productId, comment)
-            Toast.makeText(requireContext(), "No Internet. Comment saved locally and will be uploaded when online.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                requireContext(),
+                "No Internet. Comment saved locally and will be uploaded when online.",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
+
 
     private fun incrementCommentCount(productId: String) {
         val db = FirebaseFirestore.getInstance()
@@ -404,8 +462,8 @@ class ProductDetailFragment : Fragment() {
             commentsRef.add(comment)
                 .addOnSuccessListener {
                     incrementCommentCount(productId)
-                    // Después de subir todos los comentarios, eliminarlos del almacenamiento local
-                    LocalStorageManager.removePendingCommentsForProduct(requireContext(), productId)
+                    // Eliminar el comentario de local storage
+                    LocalStorageManager.removePendingComment(requireContext(), productId, comment)
                 }
                 .addOnFailureListener { e ->
                     // Manejar errores si es necesario
@@ -413,3 +471,4 @@ class ProductDetailFragment : Fragment() {
         }
     }
 }
+

@@ -70,4 +70,17 @@ object LocalStorageManager {
         prefs.edit().putString(KEY_PENDING_COMMENTS, json).apply()
     }
 
+    fun removePendingComment(context: Context, productId: String, comment: Comment) {
+        val pendingComments = getPendingComments(context).toMutableMap()
+        val commentsForProduct = pendingComments[productId]?.toMutableList()
+        commentsForProduct?.remove(comment)
+        if (commentsForProduct.isNullOrEmpty()) {
+            pendingComments.remove(productId)
+        } else {
+            pendingComments[productId] = commentsForProduct
+        }
+        savePendingComments(context, pendingComments)
+    }
+
+
 }

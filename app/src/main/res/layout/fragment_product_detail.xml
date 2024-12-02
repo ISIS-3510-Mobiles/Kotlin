@@ -112,14 +112,32 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp" />
 
-            <Button
-                android:id="@+id/add_comment_button"
+            <!-- Reemplazar el botón de agregar comentario por un EditText y un botón de enviar -->
+
+            <!-- Caja de texto para nuevo comentario -->
+            <EditText
+                android:id="@+id/new_comment_input"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Add Comment"
-                android:layout_marginTop="16dp"
+                android:hint="Add a public comment..."
+                android:background="@drawable/rounded_graylight"
+                android:padding="12dp"
+                android:inputType="textMultiLine"
+                android:minLines="1"
+                android:maxLines="5"
+                android:gravity="top|start"
+                android:layout_marginTop="16dp" />
+
+            <!-- Botón para enviar el comentario -->
+            <Button
+                android:id="@+id/post_comment_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Post"
                 android:textColor="@android:color/white"
-                android:background="@drawable/rounded_lima_green" />
+                android:background="@drawable/rounded_lima_green"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

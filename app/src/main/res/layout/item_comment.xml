@@ -1,26 +1,26 @@
-<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/comment_item_layout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/rounded_graylight"
+    android:background="@drawable/comment_background"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:padding="12dp"
+    android:layout_marginBottom="8dp">
 
     <TextView
         android:id="@+id/comment_user_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textStyle="bold"
-        android:textColor="@android:color/black" />
+        android:textColor="@color/black" />
 
     <TextView
         android:id="@+id/comment_content"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:textColor="@android:color/black" />
+        android:textColor="@color/gray_medium" />
 
     <TextView
         android:id="@+id/comment_timestamp"
@@ -28,5 +28,5 @@
         android:layout_height="wrap_content"
         android:textSize="12sp"
         android:layout_marginTop="4dp"
-        android:textColor="@android:color/darker_gray" />
+        android:textColor="@color/gray_light" />
 </LinearLayout>
