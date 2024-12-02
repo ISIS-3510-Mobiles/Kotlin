@@ -35,6 +35,14 @@ import com.example.ecostyle.view.HistoryFragment
 import com.example.ecostyle.view.LikesFragment
 import com.example.ecostyle.view.PublishItemFragment
 import com.google.android.gms.location.LocationServices
+import com.example.ecostyle.view.SubscriptionFragment
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
+import android.os.Environment
+
 
 enum class ProviderType {
     BASIC,
@@ -50,11 +58,15 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var sessionLatitude: Double? = null
     private var sessionLongitude: Double? = null
 
+    private var activeFragment: String? = null
+    private var fragmentStartTime: Long = 0L
+
     private lateinit var drawer: DrawerLayout
     private lateinit var toggle: ActionBarDrawerToggle
     private val db = FirebaseFirestore.getInstance()
 
     private lateinit var firebaseAnalytics: FirebaseAnalytics
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -189,11 +201,14 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         when (item.itemId) {
             R.id.nav_item_1 -> {
+                logFragmentChange("ListFragment")
+
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, ListFragment())
                     .commit()
             }
             R.id.nav_item_2 -> {
+                logFragmentChange("CheckoutFragment")
 
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, CheckoutFragment())
@@ -203,12 +218,22 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 Toast.makeText(this, "Settings", Toast.LENGTH_SHORT).show()
             }
             R.id.nav_item_4 -> {
+                logFragmentChange("SustainabilityFragment")
 
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, SustainabilityFragment())
                     .commit()
             }
+            R.id.nav_item_9 -> {
+                logFragmentChange("SubscriptionFragment")
+
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, SubscriptionFragment())
+                    .commit()
+            }
             R.id.nav_item_5 -> {
+                logFragmentChange("ProfileFragment")
+
                 val profileFragment = ProfileFragment()
                 val bundle = Bundle().apply {
                     putString("email", email)
@@ -221,18 +246,21 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     .commit()
             }
             R.id.nav_item_6 -> {
+                logFragmentChange("PublishFragment")
+
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, PublishItemFragment())
                     .commit()
                 }
             R.id.nav_item_7 -> {
+                logFragmentChange("LikesFragment")
 
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, LikesFragment())
                     .commit()
             }
             R.id.nav_item_8 -> {
-
+                logFragmentChange("HistoryFragment")
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, HistoryFragment())
                     .commit()
@@ -337,9 +365,18 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         val sessionEndTime = System.currentTimeMillis()
         val sessionDuration = sessionEndTime - sessionStartTime
+        val onlineStatus = if (isOnline()) "online" else "offline"
 
         val calendar = Calendar.getInstance()
         val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+
+
+        val sessionBundle = Bundle().apply {
+            putLong("user_session_duration", sessionDuration)
+            putString("connectivity_status", onlineStatus)
+        }
+        firebaseAnalytics.logEvent("session_info", sessionBundle)
+        Log.d("HomeActivity", "Logged session duration: $sessionDuration ms, connectivity: $onlineStatus")
 
         val durationBundle = Bundle().apply {
             putLong("user_session_duration", sessionDuration)
@@ -370,7 +407,7 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 Log.d("FirebaseAnalytics", "Logging session_location event: lat=$latitude, long=$longitude")
             }
         }
-
+/*
         val sessionBundle = Bundle().apply {
             putLong("user_session_duration", sessionDuration)
             putLong("session_start_time", sessionStartTime)
@@ -380,10 +417,101 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             sessionLongitude?.let { putDouble("longitude", it) }
         }
         firebaseAnalytics.logEvent("session_info", sessionBundle)
+
+ */
+        val sessionData = mapOf(
+            "session_duration" to sessionDuration,
+            "session_start_time" to sessionStartTime,
+            "session_end_time" to sessionEndTime,
+            "connectivity_status" to onlineStatus
+        )
+        saveDataToCsv("session_info", sessionData)
+        firebaseAnalytics.logEvent("session_info", Bundle().apply {
+            putLong("session_duration", sessionDuration)
+        })
+
+        Log.d("HomeActivity", "Session logged: $sessionData")
+
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putLong("SESSION_START_TIME", sessionStartTime)
     }
+
+    private fun logFragmentChange(fragmentName: String) {
+        // Calculate time spent in the previous fragment
+        if (activeFragment != null) {
+            val fragmentEndTime = System.currentTimeMillis()
+            val fragmentDuration = fragmentEndTime - fragmentStartTime
+            val onlineStatus = if (isOnline()) "online" else "offline"
+
+            // Log the previous fragment's duration and online status
+            val bundle = Bundle().apply {
+                putString("fragment_name", activeFragment)
+                putLong("duration", fragmentDuration)
+                putString("connectivity_status", onlineStatus)
+            }
+
+            val fragmentData = mapOf(
+                "fragment_name" to activeFragment.orEmpty(),
+                "duration" to fragmentDuration
+            )
+
+            saveDataToCsv("fragment_duration", fragmentData)
+            firebaseAnalytics.logEvent("fragment_duration", bundle)
+            Log.d(
+                "HomeActivity",
+                "Logged fragment: $activeFragment, duration: $fragmentDuration ms, connectivity: $onlineStatus"
+            )
+        }
+
+        // Update the active fragment
+        activeFragment = fragmentName
+        fragmentStartTime = System.currentTimeMillis()
+    }
+    private fun isOnline(): Boolean {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        connectivityManager?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val network = it.activeNetwork
+                val networkCapabilities = it.getNetworkCapabilities(network)
+                return networkCapabilities != null && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            } else {
+                val activeNetworkInfo = it.activeNetworkInfo
+                return activeNetworkInfo != null && activeNetworkInfo.isConnected
+            }
+        }
+        return false
+    }
+
+    private fun saveDataToCsv(eventType: String, data: Map<String, Any>) {
+        try {
+            // Get internal directory for CSV file
+            val file = File(filesDir, "analytics_data.csv")
+            val isNewFile = !file.exists()
+
+            // Open file in append mode
+            val writer = FileWriter(file, true)
+
+            // Write header only for new files
+            if (isNewFile) {
+                writer.append("Event Type,Key,Value\n")
+            }
+
+            // Append event data
+            data.forEach { (key, value) ->
+                writer.append("$eventType,$key,$value\n")
+            }
+
+            writer.flush()
+            writer.close()
+
+            Log.d("CSV", "Data saved to ${file.absolutePath}")
+        } catch (e: IOException) {
+            Log.e("CSV", "Error saving data: ${e.message}")
+        }
+    }
+
+
 }
