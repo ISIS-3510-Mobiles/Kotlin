@@ -346,6 +346,7 @@ class ProductDetailFragment : Fragment() {
         val product = viewModel.product.value
         val productId = product?.firebaseId ?: return
 
+        // Cargar comentarios desde Firebase
         db.collection("Products").document(productId)
             .collection("Comments")
             .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
@@ -363,19 +364,23 @@ class ProductDetailFragment : Fragment() {
                             commentsList.add(comment)
                         }
                     }
+
+                    // Añadir comentarios almacenados localmente
+                    val localComments = LocalStorageManager.getPendingComments(requireContext())
+                    commentsList.addAll(localComments[productId] ?: emptyList())
+
+                    // Actualizar la interfaz
                     commentAdapter.setCommentList(commentsList)
                     commentsTitle.text = "Comments (${commentsList.size})"
 
-                    if (commentsList.isEmpty()) {
-                        noCommentsTextView.visibility = View.VISIBLE
-                        commentsRecyclerView.visibility = View.GONE
-                    } else {
-                        noCommentsTextView.visibility = View.GONE
-                        commentsRecyclerView.visibility = View.VISIBLE
-                    }
+                    noCommentsTextView.visibility =
+                        if (commentsList.isEmpty()) View.VISIBLE else View.GONE
+                    commentsRecyclerView.visibility =
+                        if (commentsList.isEmpty()) View.GONE else View.VISIBLE
                 }
             }
     }
+
 
 
     private fun showAddCommentDialog() {
@@ -415,29 +420,32 @@ class ProductDetailFragment : Fragment() {
             timestamp = System.currentTimeMillis()
         )
 
+        // Añadir a la lista y actualizar la interfaz de inmediato
+        commentsList.add(0, comment)
+        commentAdapter.setCommentList(commentsList)
+
         if (hasInternetConnection()) {
-            // Subir comentario a Firebase
             val db = FirebaseFirestore.getInstance()
             val commentsRef = db.collection("Products").document(productId).collection("Comments")
             commentsRef.add(comment)
                 .addOnSuccessListener {
-                    Toast.makeText(requireContext(), "Comment added", Toast.LENGTH_SHORT).show()
                     incrementCommentCount(productId)
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(requireContext(), "Failed to add comment", Toast.LENGTH_SHORT)
-                        .show()
+                    Log.e("ProductDetailFragment", "Failed to upload comment: $comment", e)
+                    LocalStorageManager.addPendingComment(requireContext(), productId, comment)
                 }
         } else {
-            // Guardar comentario en almacenamiento local
+            // Guardar localmente si no hay conexión
             LocalStorageManager.addPendingComment(requireContext(), productId, comment)
             Toast.makeText(
                 requireContext(),
-                "No Internet. Comment saved locally and will be uploaded when online.",
-                Toast.LENGTH_LONG
+                "No Internet. Comment saved locally and will sync when online.",
+                Toast.LENGTH_SHORT
             ).show()
         }
     }
+
 
 
     private fun incrementCommentCount(productId: String) {
@@ -452,7 +460,6 @@ class ProductDetailFragment : Fragment() {
         val pendingComments = LocalStorageManager.getPendingComments(requireContext())
         val product = viewModel.product.value
         val productId = product?.firebaseId ?: return
-
         val commentsForProduct = pendingComments[productId] ?: return
 
         val db = FirebaseFirestore.getInstance()
@@ -462,13 +469,15 @@ class ProductDetailFragment : Fragment() {
             commentsRef.add(comment)
                 .addOnSuccessListener {
                     incrementCommentCount(productId)
-                    // Eliminar el comentario de local storage
                     LocalStorageManager.removePendingComment(requireContext(), productId, comment)
+                    Log.d("ProductDetailFragment", "Uploaded pending comment: $comment")
                 }
                 .addOnFailureListener { e ->
-                    // Manejar errores si es necesario
+                    Log.e("ProductDetailFragment", "Failed to upload comment: $comment", e)
                 }
         }
     }
+
+
 }
 

@@ -11,6 +11,7 @@ object LocalStorageManager {
     private const val PREFS_NAME = "EcostylePrefs"
     private const val KEY_LIKED_PRODUCTS = "LikedProducts"
     private const val KEY_PENDING_COMMENTS = "PendingComments"
+    private val commentListeners = mutableListOf<(String, List<Comment>) -> Unit>()
 
     fun saveLikedProducts(context: Context, likedProductIds: Set<String>) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -45,6 +46,7 @@ object LocalStorageManager {
         commentsForProduct.add(comment)
         pendingComments[productId] = commentsForProduct
         savePendingComments(context, pendingComments)
+        notifyCommentListeners(productId, commentsForProduct)
     }
 
     fun getPendingComments(context: Context): Map<String, List<Comment>> {
@@ -58,17 +60,26 @@ object LocalStorageManager {
         }
     }
 
-    fun removePendingCommentsForProduct(context: Context, productId: String) {
-        val pendingComments = getPendingComments(context).toMutableMap()
-        pendingComments.remove(productId)
-        savePendingComments(context, pendingComments)
-    }
-
     private fun savePendingComments(context: Context, pendingComments: Map<String, List<Comment>>) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val json = Gson().toJson(pendingComments)
         prefs.edit().putString(KEY_PENDING_COMMENTS, json).apply()
     }
+
+    fun addCommentListener(listener: (String, List<Comment>) -> Unit) {
+        commentListeners.add(listener)
+    }
+
+    fun removeCommentListener(listener: (String, List<Comment>) -> Unit) {
+        commentListeners.remove(listener)
+    }
+
+    private fun notifyCommentListeners(productId: String, comments: List<Comment>) {
+        commentListeners.forEach { listener ->
+            listener(productId, comments)
+        }
+    }
+
 
     fun removePendingComment(context: Context, productId: String, comment: Comment) {
         val pendingComments = getPendingComments(context).toMutableMap()
