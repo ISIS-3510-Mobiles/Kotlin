@@ -89,13 +89,13 @@
             <!-- Sección de comentarios -->
             <TextView
                 android:id="@+id/comments_title"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Comments"
-                android:textSize="20sp"
-                android:textStyle="bold"
                 android:layout_marginTop="24dp"
-                android:textColor="@android:color/black" />
+                android:text="Comments"
+                android:textColor="@android:color/black"
+                android:textSize="40sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/no_comments_text"

@@ -117,10 +117,11 @@ class ProductDetailFragment : Fragment() {
 
             // Actualizar el icono de "like"
             updateLikeIcon(product.isFavorite)
+            loadComments()
         }
 
         viewModel.loadProduct(productId)
-        loadComments()
+
 
         favoriteButton.setOnClickListener {
             val product = viewModel.product.value

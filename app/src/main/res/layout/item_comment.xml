@@ -4,6 +4,7 @@
     android:id="@+id/comment_item_layout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/rounded_graylight"
     android:orientation="vertical"
     android:padding="8dp">
 
