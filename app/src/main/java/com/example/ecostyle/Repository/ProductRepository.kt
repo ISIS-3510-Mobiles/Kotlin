@@ -102,7 +102,8 @@ class ProductRepository {
                     "longitude" to longitude,
                     "quantity" to quantity,
                     "brand" to brand,
-                    "initialPrice" to initialPrice
+                    "initialPrice" to initialPrice,
+                    "number_comments" to 0
                 )
 
                 val productRef = db.collection("Products").add(productData).await()
