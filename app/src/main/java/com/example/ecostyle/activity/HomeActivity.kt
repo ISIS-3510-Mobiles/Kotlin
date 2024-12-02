@@ -422,7 +422,8 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val sessionData = mapOf(
             "session_duration" to sessionDuration,
             "session_start_time" to sessionStartTime,
-            "session_end_time" to sessionEndTime
+            "session_end_time" to sessionEndTime,
+            "connectivity_status" to onlineStatus
         )
         saveDataToCsv("session_info", sessionData)
         firebaseAnalytics.logEvent("session_info", Bundle().apply {
