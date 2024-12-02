@@ -27,6 +27,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     private val productList: MutableLiveData<List<Product>> = MutableLiveData()
     private val repository = ProductRepository()
 
+    private val _productState = MutableLiveData<ProductState>()
+    val productState: LiveData<ProductState> get() = _productState
 
     private val _isEcoFriendlyFilterApplied = MutableLiveData<Boolean>()
     val isEcoFriendlyFilterApplied: LiveData<Boolean> get() = _isEcoFriendlyFilterApplied
@@ -68,6 +70,10 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         val productCount: Int
     )
 
+    data class ProductState(
+        val isFiltered: Boolean,
+        val products: List<Product>
+    )
     fun getProductList(): LiveData<List<Product>> {
         return productList
     }
@@ -99,65 +105,51 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             try {
-                val products = repository.getProducts() // Llamada suspendida
+                val products = repository.getProducts()
                 val productsWithLikes = updateProductsWithLikes(products)
-                _isEcoFriendlyFilterApplied.value = false
-                _isProximityFilterApplied.value = false
-                sharedPreferences.edit().putBoolean("proximity_filter", false).apply()
 
-                productList.value = productsWithLikes
+                // Emit the state after fetching products
+                _productState.postValue(ProductState(isFiltered = false, products = productsWithLikes))
+                _isProximityFilterApplied.postValue(false)
+                sharedPreferences.edit().putBoolean("proximity_filter", false).apply()
 
                 Log.d("ProximityFilter", "Loaded all products. Proximity filter is OFF.")
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading all products", e)
-                productList.value = emptyList() // En caso de error, devolver lista vacía
+                _productState.postValue(ProductState(isFiltered = false, products = emptyList()))
             }
         }
     }
 
+
     fun loadProductsByProximity(userLatitude: Double, userLongitude: Double) {
-        // Check if the proximity filter is OFF and exit early
-        if (_isProximityFilterApplied.value == false) {
-            Log.d("ProximityFilter", "Proximity filter is OFF. Skipping loadProductsByProximity.")
-            return
-        }
+        if (_isProximityFilterApplied.value == false) return
 
         Log.d("ProductViewModel", "loadProductsByProximity called with location: $userLatitude, $userLongitude")
-        Log.d("ProximityFilter", "User location: $userLatitude, $userLongitude")
 
         viewModelScope.launch {
             try {
-                saveLastKnownLocation(userLatitude, userLongitude)
-                Log.d("ProximityFilter", "Saving user location: Latitude = $userLatitude, Longitude = $userLongitude")
-
-                val products = repository.getProducts() // Suspend function call to fetch products
+                val products = repository.getProducts()
                 val productsWithLikes = updateProductsWithLikes(products)
 
-                // Filter products based on proximity
                 val filteredProducts = productsWithLikes.filter { product ->
-                    Log.d("ProductCoordinates", "Product: ${product.name}, Latitude: ${product.latitude}, Longitude: ${product.longitude}")
-                    if (product.latitude != null && product.longitude != null) {
-                        val distance = calculateDistance(userLatitude, userLongitude, product.latitude!!, product.longitude!!)
-                        Log.d("ProximityFilter", "Product: ${product.name}, Distance: $distance")
-                        distance <= 5.0
-                    } else {
-                        Log.d("Product", "Product ${product.name} has null latitude/longitude")
-                        false
-                    }
+                    product.latitude != null && product.longitude != null &&
+                            calculateDistance(userLatitude, userLongitude, product.latitude!!, product.longitude!!) <= 5.0
                 }
-                Log.d("ProximityFilter", "Filtered products count: ${filteredProducts.size}")
 
-                // Update proximity filter state and cache
-                _isProximityFilterApplied.value = true
+                // Emit the state after filtering products
+                _productState.postValue(ProductState(isFiltered = true, products = filteredProducts))
+                _isProximityFilterApplied.postValue(true)
                 sharedPreferences.edit().putBoolean("proximity_filter", true).apply()
-                productList.value = filteredProducts
-                Log.d("ProximityFilter", "productList updated with ${filteredProducts.size} products.")
+
+                Log.d("ProximityFilter", "Filtered products count: ${filteredProducts.size}")
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading products by proximity", e)
-                productList.value = emptyList() // Return an empty list in case of an error
+                _productState.postValue(ProductState(isFiltered = true, products = emptyList()))
             }
         }
     }
+
 
 
     private fun filterProductsBasedOnBattery(products: List<Product>): List<Product> {
@@ -344,4 +336,5 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             apply()
         }
     }
+
 }

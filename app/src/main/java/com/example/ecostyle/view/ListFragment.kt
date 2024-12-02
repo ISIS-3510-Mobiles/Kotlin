@@ -88,14 +88,16 @@ class ListFragment : Fragment() {
 
         productViewModel = ViewModelProvider(this).get(ProductViewModel::class.java)
 
-        productViewModel.getProductList().observe(viewLifecycleOwner) { products ->
-            val isFiltered = productViewModel.isProximityFilterApplied.value ?: false
-            if (isFiltered) {
-                Log.d("ListFragment", "Filtered product list received: ${products.size} products.")
+        productViewModel.productState.observe(viewLifecycleOwner) { state ->
+            if (state.isFiltered) {
+                Log.d("ListFragment", "Filtered product list received: ${state.products.size} products.")
             } else {
-                Log.d("ListFragment", "Unfiltered product list received: ${products.size} products.")
+                Log.d("ListFragment", "Unfiltered product list received: ${state.products.size} products.")
             }
-            productAdapter.setProductList(products)
+
+            productAdapter.setProductList(state.products)
+
+            // Update UI based on filter state
         }
 
 
