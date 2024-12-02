@@ -8,12 +8,6 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Eliminamos el include de la barra superior -->
-    <!-- <include
-        layout="@layout/app_bar_main"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" /> -->
-
     <!-- Contenido principal -->
     <ScrollView
         android:layout_width="match_parent"
@@ -92,6 +86,58 @@
                     android:textColor="@android:color/white"
                     android:background="@drawable/rounded_lima_green" />
             </LinearLayout>
+            <!-- Sección de comentarios -->
+            <TextView
+                android:id="@+id/comments_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Comments"
+                android:textColor="@android:color/black"
+                android:textSize="40sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/no_comments_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Still no comments"
+                android:textSize="16sp"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/comments_recyclerview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" />
+
+            <!-- Reemplazar el botón de agregar comentario por un EditText y un botón de enviar -->
+
+            <!-- Caja de texto para nuevo comentario -->
+            <EditText
+                android:id="@+id/new_comment_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Add a public comment..."
+                android:background="@drawable/rounded_graylight"
+                android:padding="12dp"
+                android:inputType="textMultiLine"
+                android:minLines="1"
+                android:maxLines="5"
+                android:gravity="top|start"
+                android:layout_marginTop="16dp" />
+
+            <!-- Botón para enviar el comentario -->
+            <Button
+                android:id="@+id/post_comment_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Post"
+                android:textColor="@android:color/white"
+                android:background="@drawable/rounded_lima_green"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
