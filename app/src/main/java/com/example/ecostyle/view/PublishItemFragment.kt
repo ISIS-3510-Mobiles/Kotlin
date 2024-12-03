@@ -175,7 +175,7 @@ class PublishItemFragment : Fragment() {
     }
 
 
-    private fun createThousandSeparatorTextWatcher(editText: EditText, errorTextView: TextView): TextWatcher {
+    private fun createThousandSeparatorTextWatcher(editTextBinding: EditText, errorTextViewBinding: TextView): TextWatcher {
         return object : TextWatcher {
             private var currentText = ""
 
@@ -185,26 +185,25 @@ class PublishItemFragment : Fragment() {
 
             override fun afterTextChanged(s: Editable?) {
                 if (s.toString() != currentText) {
-                    editText.removeTextChangedListener(this)
+                    editTextBinding.removeTextChangedListener(this)
 
-                    // Limitar a 7 dígitos antes de procesar
                     val cleanText = s.toString().replace(".", "")
                     if (cleanText.length > 7) {
-                        editText.setText(currentText) // Restaurar el texto anterior si excede 7 dígitos
-                        editText.setSelection(currentText.length)
+                        editTextBinding.setText(currentText) // Restaurar el texto anterior si excede 7 dígitos
+                        editTextBinding.setSelection(currentText.length)
                     } else {
                         if (cleanText.isNotEmpty()) {
                             val formatted = formatToThousandSeparator(cleanText.toDouble())
                             currentText = formatted
 
-                            editText.setText(formatted)
-                            editText.setSelection(formatted.length)
+                            editTextBinding.setText(formatted)
+                            editTextBinding.setSelection(formatted.length)
 
-                            validatePrice(editText, errorTextView)
+                            validatePrice(editTextBinding, errorTextViewBinding)
                         }
                     }
 
-                    editText.addTextChangedListener(this)
+                    editTextBinding.addTextChangedListener(this)
                 }
             }
         }
