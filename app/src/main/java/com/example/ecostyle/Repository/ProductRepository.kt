@@ -15,29 +15,6 @@ class ProductRepository {
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    suspend fun getProductById(productId: Int): Product? {
-        return withContext(Dispatchers.IO) {
-            try {
-                val documents = db.collection("Products")
-                    .whereEqualTo("id", productId)
-                    .get()
-                    .await()
-
-                if (!documents.isEmpty) {
-                    val product = documents.documents[0].toObject(Product::class.java)
-                    product?.firebaseId = documents.documents[0].id  // Asigna el firebaseId
-                    product
-                } else {
-                    Log.d("ProductRepository", "Product not found with id: $productId")
-                    null
-                }
-            } catch (e: Exception) {
-                Log.e("ProductRepository", "Error fetching product", e)
-                null
-            }
-        }
-    }
-
     suspend fun getProducts(): List<Product> {
         return withContext(Dispatchers.IO) {
             try {
