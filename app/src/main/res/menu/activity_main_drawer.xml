@@ -25,6 +25,10 @@
             android:icon="@drawable/ic_eco"
             android:title="Sustainability" />
 
+        <item
+            android:id="@+id/nav_item_9"
+            android:icon="@drawable/baseline_workspace_premium_24"
+            android:title="Subscription Plans" />
 
         <item
             android:id="@+id/nav_item_5"

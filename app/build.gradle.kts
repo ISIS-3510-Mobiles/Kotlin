@@ -111,7 +111,9 @@ dependencies {
         implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4") // Usa la versión más reciente
 
     // Para utilizar 'await()' con Firebase
-        implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4") // Asegúrate de que coincida con la versión de coroutines-core
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
+
+    implementation ("com.google.code.gson:gson:2.8.9")
 
 
 }
