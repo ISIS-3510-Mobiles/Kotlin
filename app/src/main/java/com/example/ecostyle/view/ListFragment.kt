@@ -197,7 +197,6 @@ class ListFragment : Fragment() {
                     }
                 }
                 .addOnFailureListener { e ->
-                    Log.e("ListFragment", "Failed to get live location", e)
                     val cachedLocation = getCachedLocation()
                     if (cachedLocation != null) {
                         userLatitude = cachedLocation.first
@@ -215,14 +214,12 @@ class ListFragment : Fragment() {
             productViewModel.loadProductsByProximity(userLatitude, userLongitude)  // Fallback to cached location
 
              */
-            Log.d("ListFragment", "Offline. Using cached location.")
             val cachedLocation = getCachedLocation()
             if (cachedLocation != null) {
                 userLatitude = cachedLocation.first
                 userLongitude = cachedLocation.second
                 productViewModel.loadProductsByProximity(userLatitude, userLongitude)
             } else {
-                Log.d("ListFragment", "No cached location found. Loading all products.")
                 productViewModel.loadAllProducts()
             }
         }
@@ -238,7 +235,6 @@ class ListFragment : Fragment() {
         val sharedPreferences = requireContext().getSharedPreferences("EcoStylePrefs", Context.MODE_PRIVATE)
         val cachedLat = sharedPreferences.getFloat("cached_latitude", Float.NaN)
         val cachedLon = sharedPreferences.getFloat("cached_longitude", Float.NaN)
-        Log.d("ListFragment", "Retrieved cached location: Latitude = $cachedLat, Longitude = $cachedLon")
 
         return if (!cachedLat.isNaN() && !cachedLon.isNaN()) {
             Pair(cachedLat.toDouble(), cachedLon.toDouble())
@@ -254,7 +250,6 @@ class ListFragment : Fragment() {
             putFloat("cached_longitude", longitude.toFloat())
             apply()
         }
-        Log.d("ListFragment", "Saved location: Latitude = $latitude, Longitude = $longitude")
 
     }
 
