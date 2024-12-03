@@ -159,19 +159,14 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    private fun filterProductsBasedOnBattery(products: List<Product>): List<Product> {
-        if (products.isEmpty()) {
-            return emptyList()
-        }
-
+    private suspend fun filterProductsBasedOnBattery(products: List<Product>): List<Product> {
         return try {
             val batteryManager = getApplication<Application>().getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
             val batteryLevel = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 100
-            Log.d("BatteryLevel", "Current battery level: $batteryLevel")
 
             if (batteryLevel <= 20) {
                 _isEcoFriendlyFilterApplied.value = true
-                products.filter { it.ecofriend == true }
+                withContext(Dispatchers.Default) { products.filter { it.ecofriend == true } }
             } else {
                 _isEcoFriendlyFilterApplied.value = false
                 products
@@ -182,18 +177,25 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        Log.d("DistanceCalc", "Calculating distance: From ($lat1, $lon1) to ($lat2, $lon2)")
 
-        val earthRadius = 6371.0
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2)
-        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-        return earthRadius * c
+    private val distanceCache = mutableMapOf<Pair<String, String>, Double>()
+
+    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val key = Pair("$lat1-$lon1", "$lat2-$lon2")
+        return distanceCache[key] ?: run {
+            val earthRadius = 6371.0
+            val dLat = Math.toRadians(lat2 - lat1)
+            val dLon = Math.toRadians(lon2 - lon1)
+            val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+            val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+            val distance = earthRadius * c
+            distanceCache[key] = distance
+            distance
+        }
     }
+
 
     fun toggleProximityFilter(userLatitude: Double, userLongitude: Double) {
         if (_isProximityFilterApplied.value == true) {
