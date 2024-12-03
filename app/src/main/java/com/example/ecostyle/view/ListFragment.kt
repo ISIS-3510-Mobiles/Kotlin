@@ -25,9 +25,12 @@ import com.example.ecostyle.viewmodel.ProductViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.analytics.FirebaseAnalytics
+import android.widget.ProgressBar
+
 
 class ListFragment : Fragment() {
 
+    private lateinit var progressBar: ProgressBar
     private lateinit var productViewModel: ProductViewModel
     private lateinit var productAdapter: ProductAdapter
     private lateinit var recyclerView: RecyclerView
@@ -59,6 +62,7 @@ class ListFragment : Fragment() {
         ecoFriendlyMessage = view.findViewById(R.id.eco_friendly_message)
         resetFilterButton = view.findViewById(R.id.reset_filter_button)
         proximityFilterButton = view.findViewById(R.id.proximity_filter_button)
+        progressBar = view.findViewById(R.id.progress_bar)
 
         val gridLayoutManager = GridLayoutManager(context, 2)
         recyclerView.layoutManager = gridLayoutManager
@@ -88,19 +92,26 @@ class ListFragment : Fragment() {
 
         productViewModel = ViewModelProvider(this).get(ProductViewModel::class.java)
 
-        productViewModel.productState.observe(viewLifecycleOwner) { state ->
-            if (state.isFiltered) {
-                Log.d("ListFragment", "Filtered product list received: ${state.products.size} products.")
-            } else {
-                Log.d("ListFragment", "Unfiltered product list received: ${state.products.size} products.")
-            }
-
-            productAdapter.setProductList(state.products)
-
-            // Update UI based on filter state
+        productViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            Log.d("ListFragment", "Progress bar visibility updated: $isLoading")
+            toggleProgressBar(isLoading) // Show/hide progress bar
         }
 
+        productViewModel.productState.observe(viewLifecycleOwner) { state ->
+            Log.d("ListFragment", "ProductState updated: ${state.products.size} items received")
+            if (state.products.isNullOrEmpty()) {
+                Log.d("ListFragment", "Empty product list, showing empty state message")
+                ecoFriendlyMessage.visibility = View.VISIBLE
+            } else {
+                ecoFriendlyMessage.visibility = View.GONE
+                productAdapter.setProductList(state.products)
+                Log.d("ListFragment", "Product list updated in adapter")
+            }
+        }
 
+        productViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            toggleProgressBar(isLoading) // Observe and toggle progress bar
+        }
         checkLocationPermission()
 
 
@@ -114,6 +125,7 @@ class ListFragment : Fragment() {
         }
 
         resetFilterButton.setOnClickListener {
+            toggleProgressBar(true)
             productViewModel.toggleProximityFilter(userLatitude, userLongitude)
         }
     }
@@ -162,17 +174,20 @@ class ListFragment : Fragment() {
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return
         }
+        toggleProgressBar(true)
 
         if (hasInternetConnection()) {
             // Online mode: get live location
             fusedLocationClient.lastLocation
                 .addOnSuccessListener { location ->
+                    toggleProgressBar(false)
                     if (location != null) {
                         userLatitude = location.latitude
                         userLongitude = location.longitude
                         saveCachedLocation(userLatitude, userLongitude)
                         productViewModel.loadProductsByProximity(userLatitude, userLongitude)
                     } else {
+                        toggleProgressBar(false)
                         Log.d("ListFragment", "Live location is null. Using cached location.")
                         val cachedLocation = getCachedLocation()
                         if (cachedLocation != null) {
@@ -187,6 +202,7 @@ class ListFragment : Fragment() {
                     }
                 }
                 .addOnFailureListener { e ->
+                    toggleProgressBar(false)
                     Log.e("ListFragment", "Failed to get live location", e)
                     val cachedLocation = getCachedLocation()
                     if (cachedLocation != null) {
@@ -248,4 +264,7 @@ class ListFragment : Fragment() {
 
     }
 
+    private fun toggleProgressBar(isVisible: Boolean) {
+        progressBar.visibility = if (isVisible) View.VISIBLE else View.GONE
+    }
 }

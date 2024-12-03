@@ -42,25 +42,32 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     private val _likedProductIds = MutableLiveData<Set<String>>()
     val likedProductIds: LiveData<Set<String>> get() = _likedProductIds
 
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> get() = _isLoading
+
+
     init {
 
+        // Retrieve cached proximity filter state
         val isProximityFilterCached = sharedPreferences.getBoolean("proximity_filter", false)
-        _isProximityFilterApplied.value = isProximityFilterCached
-        if (isProximityFilterCached) {
-            val cachedLatitude = sharedPreferences.getFloat("cached_latitude", Float.NaN)
-            val cachedLongitude = sharedPreferences.getFloat("cached_longitude", Float.NaN)
-            if (!cachedLatitude.isNaN() && !cachedLongitude.isNaN()) {
-                loadProductsByProximity(cachedLatitude.toDouble(), cachedLongitude.toDouble())
-            } else {
-                // Handle missing location data gracefully
-                Log.d("ProductViewModel", "Cached location is missing. Loading all products.")
-                _isProximityFilterApplied.value = false
-                loadAllProducts()
-            }
+
+        // Retrieve cached location
+        val cachedLatitude = sharedPreferences.getFloat("cached_latitude", Float.NaN)
+        val cachedLongitude = sharedPreferences.getFloat("cached_longitude", Float.NaN)
+
+        // Validate cached location
+        val isCachedLocationValid = !cachedLatitude.isNaN() && !cachedLongitude.isNaN()
+
+        if (isProximityFilterCached && isCachedLocationValid) {
+            Log.d("ProductViewModel", "Applying cached proximity filter with valid location.")
+            _isProximityFilterApplied.value = true
+            loadProductsByProximity(cachedLatitude.toDouble(), cachedLongitude.toDouble())
         } else {
+            Log.d("ProductViewModel", "Cached proximity filter or location is invalid. Loading all products.")
+            _isProximityFilterApplied.value = false
+            sharedPreferences.edit().putBoolean("proximity_filter", false).apply()
             loadAllProducts()
         }
-
     }
 
     data class ResaleMetrics(
@@ -104,6 +111,7 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         Log.d("ProductViewModel", "loadAllProducts called")
 
         viewModelScope.launch {
+            _isLoading.postValue(true)
             try {
                 val products = repository.getProducts()
                 val productsWithLikes = updateProductsWithLikes(products)
@@ -118,6 +126,9 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                 Log.e("ProductViewModel", "Error loading all products", e)
                 _productState.postValue(ProductState(isFiltered = false, products = emptyList()))
             }
+            finally {
+                _isLoading.postValue(false)
+            }
         }
     }
 
@@ -128,14 +139,31 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         Log.d("ProductViewModel", "loadProductsByProximity called with location: $userLatitude, $userLongitude")
 
         viewModelScope.launch {
+            _isLoading.postValue(true)
+            val startTime = System.currentTimeMillis()
+
             try {
+                Log.d("ProductViewModel", "Fetching products from repository")
+
+                val fetchStartTime = System.currentTimeMillis()
                 val products = repository.getProducts()
+                Log.d("ProductViewModel", "Fetched products in ${System.currentTimeMillis() - fetchStartTime}ms")
+
+                Log.d("ProductViewModel", "Updating products with likes")
+                val updateStartTime = System.currentTimeMillis()
+
                 val productsWithLikes = updateProductsWithLikes(products)
+                Log.d("ProductViewModel", "Updated products with likes in ${System.currentTimeMillis() - updateStartTime}ms")
+
+                Log.d("ProductViewModel", "Filtering products by proximity")
+                val filterStartTime = System.currentTimeMillis()
+
 
                 val filteredProducts = productsWithLikes.filter { product ->
                     product.latitude != null && product.longitude != null &&
                             calculateDistance(userLatitude, userLongitude, product.latitude!!, product.longitude!!) <= 5.0
                 }
+                Log.d("ProductViewModel", "Filtered products in ${System.currentTimeMillis() - filterStartTime}ms")
 
                 // Emit the state after filtering products
                 _productState.postValue(ProductState(isFiltered = true, products = filteredProducts))
@@ -146,6 +174,10 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading products by proximity", e)
                 _productState.postValue(ProductState(isFiltered = true, products = emptyList()))
+            }
+            finally {
+                _isLoading.postValue(false)
+                Log.d("ProductViewModel", "loadProductsByProximity completed in ${System.currentTimeMillis() - startTime}ms")
             }
         }
     }
@@ -336,5 +368,7 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             apply()
         }
     }
+
+
 
 }
