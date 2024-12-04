@@ -56,6 +56,10 @@ class ListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (!hasInternetConnection()) {
+            Toast.makeText(requireContext(), "You are offline. Images will be displayed when online.", Toast.LENGTH_LONG).show()
+        }
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
         recyclerView = view.findViewById(R.id.recycler_view_products)
@@ -267,6 +271,7 @@ class ListFragment : Fragment() {
 
     private fun toggleProgressBar(isVisible: Boolean) {
         progressBar.visibility = if (isVisible) View.VISIBLE else View.GONE
+
     }
 
 
