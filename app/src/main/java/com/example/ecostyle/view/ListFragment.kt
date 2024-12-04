@@ -1,3 +1,4 @@
+// ListFragment.kt
 package com.example.ecostyle.view
 
 import android.Manifest
@@ -7,10 +8,9 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.Button
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
@@ -32,24 +32,24 @@ class ListFragment : Fragment() {
     private lateinit var productAdapter: ProductAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var ecoFriendlyMessage: TextView
-    private lateinit var resetFilterButton: Button
+    private lateinit var resetFilterButton: Switch
     private lateinit var proximityFilterButton: Button
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var userLatitude: Double = 0.0
     private var userLongitude: Double = 0.0
 
+    companion object {
+        const val LOCATION_PERMISSION_REQUEST_CODE = 1001
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
+
     ): View? {
-        // Asegúrate de que el layout corresponde al nuevo archivo sin la barra superior
         return inflater.inflate(R.layout.fragment_list, container, false)
     }
 
-    companion object {
-        const val LOCATION_PERMISSION_REQUEST_CODE = 1001
-    }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -59,6 +59,9 @@ class ListFragment : Fragment() {
         ecoFriendlyMessage = view.findViewById(R.id.eco_friendly_message)
         resetFilterButton = view.findViewById(R.id.reset_filter_button)
         proximityFilterButton = view.findViewById(R.id.proximity_filter_button)
+
+        // Set the default state to OFF
+        resetFilterButton.isChecked = false
 
         val gridLayoutManager = GridLayoutManager(context, 2)
         recyclerView.layoutManager = gridLayoutManager
@@ -81,48 +84,44 @@ class ListFragment : Fragment() {
             Log.d("ListFragment", "Navigating to product details with ID: ${product.id}")
         })
 
-
-
-
         recyclerView.adapter = productAdapter
 
         productViewModel = ViewModelProvider(this).get(ProductViewModel::class.java)
 
         productViewModel.getProductList().observe(viewLifecycleOwner) { products ->
             Log.d("ListFragment", "Observer triggered. Received ${products.size} products.")
-
-            Log.d("ListFragment", "Received ${products.size} products from ViewModel.")
             productAdapter.setProductList(products)
             Log.d("ListFragment", "RecyclerView updated with ${products.size} products.")
         }
+
         productViewModel.isEcoFriendlyFilterApplied.observe(viewLifecycleOwner) { isEcoFriendly ->
             if (isEcoFriendly) {
                 showEcoFriendlyMessage()
                 resetFilterButton.visibility = View.VISIBLE
             } else {
                 hideEcoFriendlyMessage()
-//                resetFilterButton.visibility = View.GONE
+            }
+        }
+
+        productViewModel.isProximityFilterApplied.observe(viewLifecycleOwner) { isFiltered ->
+            Log.d("ListFragment", "Proximity filter state: $isFiltered")
+            resetFilterButton.isChecked = isFiltered
+        }
+
+        resetFilterButton.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                // Apply the proximity filter
+                productViewModel.setProximityFilter(true)
+            } else {
+                // Remove the proximity filter
+                productViewModel.setProximityFilter(false)
             }
         }
 
         checkLocationPermission()
-
-
-        productViewModel.isProximityFilterApplied.observe(viewLifecycleOwner) { isFiltered ->
-            Log.d("ListFragment", "Proximity filter state: $isFiltered")
-            if (isFiltered) {
-                resetFilterButton.visibility = View.VISIBLE
-            } else {
-//                resetFilterButton.visibility = View.GONE
-            }
-        }
-
-        resetFilterButton.setOnClickListener {
-            productViewModel.toggleProximityFilter(userLatitude, userLongitude)
-        }
     }
 
-    // Función para registrar el evento
+    // Function to log the event
     private fun logProductLikeEvent(productName: String) {
         val eventName = "liked_$productName"
 
@@ -139,6 +138,7 @@ class ListFragment : Fragment() {
     private fun hideEcoFriendlyMessage() {
         ecoFriendlyMessage.visibility = View.GONE
     }
+
     private fun checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
@@ -155,6 +155,7 @@ class ListFragment : Fragment() {
         requestCode: Int,
         permissions: Array<out String>,
         grantResults: IntArray
+
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
@@ -173,57 +174,40 @@ class ListFragment : Fragment() {
             return
         }
 
-        if (hasInternetConnection()) {
-            // Online mode: get live location
-            fusedLocationClient.lastLocation
-                .addOnSuccessListener { location ->
-                    if (location != null) {
-                        userLatitude = location.latitude
-                        userLongitude = location.longitude
-                        saveCachedLocation(userLatitude, userLongitude)
-                        productViewModel.loadProductsByProximity(userLatitude, userLongitude)
-                    } else {
-                        Log.d("ListFragment", "Live location is null. Using cached location.")
-                        val cachedLocation = getCachedLocation()
-                        if (cachedLocation != null) {
-                            userLatitude = cachedLocation.first
-                            userLongitude = cachedLocation.second
-                            Log.d("ListFragment", "Using cached location: Latitude = $userLatitude, Longitude = $userLongitude")
-                            productViewModel.loadProductsByProximity(userLatitude, userLongitude)
-                        } else {
-                            Log.d("ListFragment", "No cached location found. Loading all products.")
-                            productViewModel.loadAllProducts()
-                        }
-                    }
-                }
-                .addOnFailureListener { e ->
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location ->
+                if (location != null) {
+                    userLatitude = location.latitude
+                    userLongitude = location.longitude
+                    saveCachedLocation(userLatitude, userLongitude)
+                    productViewModel.setUserLocation(userLatitude, userLongitude)
+                } else {
                     val cachedLocation = getCachedLocation()
                     if (cachedLocation != null) {
                         userLatitude = cachedLocation.first
                         userLongitude = cachedLocation.second
-                        productViewModel.loadProductsByProximity(userLatitude, userLongitude)
+                        productViewModel.setUserLocation(userLatitude, userLongitude)
                     } else {
                         Toast.makeText(requireContext(), "Unable to retrieve location.", Toast.LENGTH_SHORT).show()
-                        productViewModel.loadAllProducts()
                     }
                 }
-        } else {
-            /*
-            // Offline mode: use cached location
-            Toast.makeText(requireContext(), "You are offline. Using last known location.", Toast.LENGTH_SHORT).show()
-            productViewModel.loadProductsByProximity(userLatitude, userLongitude)  // Fallback to cached location
-
-             */
-            val cachedLocation = getCachedLocation()
-            if (cachedLocation != null) {
-                userLatitude = cachedLocation.first
-                userLongitude = cachedLocation.second
-                productViewModel.loadProductsByProximity(userLatitude, userLongitude)
-            } else {
-                productViewModel.loadAllProducts()
+                // Load data based on the switch's state
+                productViewModel.reloadData()
             }
-        }
+            .addOnFailureListener {
+                // Handle failure
+                val cachedLocation = getCachedLocation()
+                if (cachedLocation != null) {
+                    userLatitude = cachedLocation.first
+                    userLongitude = cachedLocation.second
+                    productViewModel.setUserLocation(userLatitude, userLongitude)
+                } else {
+                    Toast.makeText(requireContext(), "Unable to retrieve location.", Toast.LENGTH_SHORT).show()
+                }
+                productViewModel.reloadData()
+            }
     }
+
     private fun hasInternetConnection(): Boolean {
         val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false
@@ -250,7 +234,5 @@ class ListFragment : Fragment() {
             putFloat("cached_longitude", longitude.toFloat())
             apply()
         }
-
     }
-
 }
