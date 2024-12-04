@@ -1,8 +1,15 @@
 package com.example.ecostyle.Repository
 
+
+import android.content.Context
+
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.util.Log
+import com.example.ecostyle.activity.Notification
 import com.example.ecostyle.model.Product
+import com.example.ecostyle.model.ProductEntity
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
@@ -14,30 +21,10 @@ class ProductRepository {
 
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
+    private val productDao = ProductDatabase.getDatabase(Notification.getAppContext()).productDao()
 
-    suspend fun getProductById(productId: Int): Product? {
-        return withContext(Dispatchers.IO) {
-            try {
-                val documents = db.collection("Products")
-                    .whereEqualTo("id", productId)
-                    .get()
-                    .await()
 
-                if (!documents.isEmpty) {
-                    val product = documents.documents[0].toObject(Product::class.java)
-                    product?.firebaseId = documents.documents[0].id  // Asigna el firebaseId
-                    product
-                } else {
-                    Log.d("ProductRepository", "Product not found with id: $productId")
-                    null
-                }
-            } catch (e: Exception) {
-                Log.e("ProductRepository", "Error fetching product", e)
-                null
-            }
-        }
-    }
-
+    /*
     suspend fun getProducts(): List<Product> {
         return withContext(Dispatchers.IO) {
             try {
@@ -55,6 +42,41 @@ class ProductRepository {
                 emptyList()
             }
         }
+    }
+
+     */
+    suspend fun getProducts(): List<Product> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (hasInternetConnection()) {
+                    val result = db.collection("Products").get().await()
+                    val products = result.mapNotNull { document ->
+                        document.toObject(Product::class.java)?.toEntity()
+                    }
+
+                    // Sync with local database
+                    productDao.clearProducts()
+                    productDao.insertProducts(products)
+
+                    // Return fetched data
+                    products.map { it.toProduct() }
+                } else {
+                    // Fetch from local database
+                    productDao.getAllProducts().map { it.toProduct() }
+                }
+            } catch (e: Exception) {
+                Log.e("ProductRepository", "Error fetching products", e)
+                productDao.getAllProducts().map { it.toProduct() }
+            }
+        }
+    }
+
+    private fun hasInternetConnection(): Boolean {
+        val connectivityManager = Notification.getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return activeNetwork.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
+                activeNetwork.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR)
     }
 
     suspend fun publishProductToFirestore(
@@ -138,6 +160,51 @@ class ProductRepository {
                 "compras" to emptyList<Map<String, Any>>()
             )
             historyRef.set(initialData).await()
+        }
+    }
+
+    fun Product.toEntity(): ProductEntity {
+        return ProductEntity(
+            id = id,
+            name = name,
+            price = price,
+            imageResource = imageResource,
+            description = description,
+            ecoFriendly = ecofriend,
+            latitude = latitude,
+            longitude = longitude,
+            quantity = quantity,
+            brand = brand,
+            initialPrice = initialPrice
+        )
+    }
+
+    fun ProductEntity.toProduct(): Product {
+        return Product(
+            id = id,
+            name = name,
+            price = price,
+            imageResource = imageResource,
+            description = description,
+            ecofriend = ecoFriendly,
+            latitude = latitude,
+            longitude = longitude,
+            quantity = quantity,
+            brand = brand,
+            initialPrice = initialPrice
+        )
+    }
+
+    suspend fun getCachedProducts(): List<Product> {
+        return withContext(Dispatchers.IO) {
+            productDao.getAllProducts().map { it.toProduct() }
+        }
+    }
+
+    suspend fun syncWithLocalDatabase(products: List<Product>) {
+        withContext(Dispatchers.IO) {
+            productDao.clearProducts()
+            productDao.insertProducts(products.map { it.toEntity() })
         }
     }
 

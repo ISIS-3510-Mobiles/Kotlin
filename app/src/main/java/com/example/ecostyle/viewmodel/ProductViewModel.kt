@@ -1,5 +1,6 @@
 package com.example.ecostyle.viewmodel
 
+import com.example.ecostyle.activity.Notification
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
@@ -116,7 +117,19 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             _isLoading.postValue(true)
             try {
-                val products = repository.getProducts()
+                // Check for internet connection
+                val hasInternet = hasInternetConnection() // No argument passed
+
+                val products = if (hasInternet) {
+                    // Fetch from Firestore and sync with Room
+                    val fetchedProducts = repository.getProducts()
+                    repository.syncWithLocalDatabase(fetchedProducts)
+                    fetchedProducts
+                } else {
+                    // Fetch from Room
+                    repository.getCachedProducts()
+                }
+
                 val productsWithLikes = updateProductsWithLikes(products)
 
                 // Emit the state after fetching products
@@ -128,13 +141,11 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading all products", e)
                 _productState.postValue(ProductState(isFiltered = false, products = emptyList()))
-            }
-            finally {
+            } finally {
                 _isLoading.postValue(false)
             }
         }
     }
-
 
     fun loadProductsByProximity(userLatitude: Double, userLongitude: Double) {
         if (_isProximityFilterApplied.value == false) return
@@ -146,27 +157,24 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             val startTime = System.currentTimeMillis()
 
             try {
-                Log.d("ProductViewModel", "Fetching products from repository")
+                val hasInternet = hasInternetConnection() // No argument passed
 
-                val fetchStartTime = System.currentTimeMillis()
-                val products = repository.getProducts()
-                Log.d("ProductViewModel", "Fetched products in ${System.currentTimeMillis() - fetchStartTime}ms")
-
-                Log.d("ProductViewModel", "Updating products with likes")
-                val updateStartTime = System.currentTimeMillis()
+                val products = if (hasInternet) {
+                    // Fetch from Firestore and sync with Room
+                    val fetchedProducts = repository.getProducts()
+                    repository.syncWithLocalDatabase(fetchedProducts)
+                    fetchedProducts
+                } else {
+                    // Fetch from Room
+                    repository.getCachedProducts()
+                }
 
                 val productsWithLikes = updateProductsWithLikes(products)
-                Log.d("ProductViewModel", "Updated products with likes in ${System.currentTimeMillis() - updateStartTime}ms")
-
-                Log.d("ProductViewModel", "Filtering products by proximity")
-                val filterStartTime = System.currentTimeMillis()
-
 
                 val filteredProducts = productsWithLikes.filter { product ->
                     product.latitude != null && product.longitude != null &&
                             calculateDistance(userLatitude, userLongitude, product.latitude!!, product.longitude!!) <= 5.0
                 }
-                Log.d("ProductViewModel", "Filtered products in ${System.currentTimeMillis() - filterStartTime}ms")
 
                 // Emit the state after filtering products
                 _productState.postValue(ProductState(isFiltered = true, products = filteredProducts))
@@ -177,14 +185,12 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error loading products by proximity", e)
                 _productState.postValue(ProductState(isFiltered = true, products = emptyList()))
-            }
-            finally {
+            } finally {
                 _isLoading.postValue(false)
                 Log.d("ProductViewModel", "loadProductsByProximity completed in ${System.currentTimeMillis() - startTime}ms")
             }
         }
     }
-
 
 
     private fun filterProductsBasedOnBattery(products: List<Product>): List<Product> {
@@ -375,6 +381,15 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     fun setProximityFilter(isApplied: Boolean) {
         _isProximityFilterApplied.value = isApplied
         sharedPreferences.edit().putBoolean("proximity_filter", isApplied).apply()
+    }
+
+    private fun hasInternetConnection(): Boolean {
+        val context = Notification.getAppContext()
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
     }
 
 }

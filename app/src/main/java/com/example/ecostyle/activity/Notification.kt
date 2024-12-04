@@ -13,11 +13,21 @@ import com.example.ecostyle.R
 
 class Notification : Application() {
 
+    companion object {
+        private lateinit var instance: Notification
+        fun getAppContext(): Context {
+            if (!this::instance.isInitialized) {
+                throw IllegalStateException("Application context not initialized!")
+            }
+            return instance.applicationContext
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
-
         // Registra el listener para el ciclo de vida de la aplicación
         registerActivityLifecycleCallbacks(AppLifecycleListener())
+        instance = this
     }
 
     fun checkCartAndSendNotification() {
