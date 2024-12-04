@@ -60,8 +60,11 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
 
         if (isProximityFilterCached && isCachedLocationValid) {
             Log.d("ProductViewModel", "Applying cached proximity filter with valid location.")
-            _isProximityFilterApplied.value = true
-            loadProductsByProximity(cachedLatitude.toDouble(), cachedLongitude.toDouble())
+            _isProximityFilterApplied.value = false
+            //loadProductsByProximity(cachedLatitude.toDouble(), cachedLongitude.toDouble())
+            sharedPreferences.edit().putBoolean("proximity_filter", false).apply()
+            loadAllProducts()
+
         } else {
             Log.d("ProductViewModel", "Cached proximity filter or location is invalid. Loading all products.")
             _isProximityFilterApplied.value = false
@@ -369,6 +372,9 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-
+    fun setProximityFilter(isApplied: Boolean) {
+        _isProximityFilterApplied.value = isApplied
+        sharedPreferences.edit().putBoolean("proximity_filter", isApplied).apply()
+    }
 
 }

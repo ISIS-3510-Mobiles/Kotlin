@@ -246,10 +246,11 @@ class ListFragment : Fragment() {
         val cachedLon = sharedPreferences.getFloat("cached_longitude", Float.NaN)
         Log.d("ListFragment", "Retrieved cached location: Latitude = $cachedLat, Longitude = $cachedLon")
 
-        return if (!cachedLat.isNaN() && !cachedLon.isNaN()) {
-            Pair(cachedLat.toDouble(), cachedLon.toDouble())
+        if (!cachedLat.isNaN() && !cachedLon.isNaN()) {
+            return Pair(cachedLat.toDouble(), cachedLon.toDouble())
         } else {
-            null
+            productViewModel.setProximityFilter(false)
+            return null
         }
     }
 
@@ -267,4 +268,6 @@ class ListFragment : Fragment() {
     private fun toggleProgressBar(isVisible: Boolean) {
         progressBar.visibility = if (isVisible) View.VISIBLE else View.GONE
     }
+
+
 }
