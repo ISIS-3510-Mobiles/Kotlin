@@ -65,7 +65,7 @@
             android:gravity="center_horizontal"
             android:paddingHorizontal="25dp"
             android:textColor="@color/black"
-            android:text="Name"
+            android:text="Felipe Rueda"
             android:textSize="40dp" /> <!-- TextView para mostrar el nombre -->
 
         <TextView
